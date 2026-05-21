@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Select-Object Name, LastWriteTime)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\" | Where-Object { $_.Name -ne \"node_modules\" } | Format-Table Name, LastWriteTime -AutoSize)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\\\\thankam_static_site\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\\\\apps\" -Recurse | Where-Object { !$_.PSIsContainer -and $_.FullName -notmatch \"node_modules\" } | Select-Object FullName | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\\\\apps\\\\web\\\\src\\\\pages\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\\\\apps\\\\web\\\\src\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\\\\apps\\\\web\" | Where-Object { $_.Name -ne \"node_modules\" } | Format-Table Name -AutoSize)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\\\\apps\\\\web\\\\public\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
+      "WebFetch(domain:thankamevents.in)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\" -Depth 2 | Where-Object { $_.Extension -match '\\\\.\\(html|css|jsx|tsx|js|ts\\)$' -and $_.FullName -notmatch 'node_modules' } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"e:\\\\thankam_events\" -Recurse -Depth 3 | Where-Object { $_.FullName -notmatch 'node_modules' } | Select-Object FullName)",
+      "PowerShell(dir \"e:\\\\thankam_events\\\\apps\\\\web\" -Recurse | Where-Object { $_.Extension -match '\\\\.\\(tsx|jsx|ts|js|css\\)$' } | Select-Object FullName)",
+      "PowerShell(dir \"e:\\\\thankam_events\\\\apps\\\\web\" -Recurse | Select-Object FullName | Where-Object { $_.FullName -notmatch 'node_modules' })",
+      "Bash(grep -E '\\\\.\\(ts|tsx\\)$')",
+      "Bash(xargs grep -l \"EditableLine\\\\|toggleItem\\\\|onAddItem\\\\|onRemoveItem\\\\|LineItem\")",
+      "Bash(xargs grep -l \"agreement-pdf\\\\|quote-pdf\\\\|customer-portal\")",
+      "Bash(npx tsc *)",
+      "PowerShell(Get-ChildItem -Path \"e:\\\\thankam_events\" -Recurse -Directory | Select-Object -First 20 | ForEach-Object { Write-Output $_.FullName })",
+      "Bash(npx prisma *)",
+      "Bash(xargs grep -l \"\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr :4000)",
+      "Bash(taskkill /PID 4224 /F)",
+      "PowerShell(Stop-Process -Id 4224 -Force)"
+    ]
+  }
+}

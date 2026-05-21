@@ -1,0 +1,14 @@
+﻿{
+  "name": "thankam-events-management",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @thankam/web run dev",
+    "dev:api": "npm --workspace @thankam/api run start:dev",
+    "build": "npm run build --workspace @thankam/api && npm run build --workspace @thankam/web"
+  }
+}

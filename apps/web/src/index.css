@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 99%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 178 68% 28%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 210 36% 96%;
+  --muted-foreground: 215 17% 35%;
+  --border: 214 31% 90%;
+  --input: 214 31% 90%;
+  --ring: 178 68% 28%;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-image:
+    radial-gradient(circle at 8% -2%, rgba(20, 184, 166, 0.08) 0, transparent 26%),
+    radial-gradient(circle at 96% 0%, rgba(14, 165, 233, 0.1) 0, transparent 24%);
+  background-attachment: fixed;
+}
+
+* {
+  @apply border-border;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7d2e5;
+  border-radius: 9999px;
+}

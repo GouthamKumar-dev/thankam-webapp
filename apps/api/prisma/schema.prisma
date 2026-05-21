@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum QuotationStatus {
+  DRAFT
+  FINALIZED
+}
+
+enum QuotationSource {
+  ADMIN
+  CUSTOMER_PORTAL
+}
+
+enum CustomerRequestStatus {
+  NEW
+  OTP_VERIFIED
+  CONTACTED
+  QUOTED
+  CONVERTED
+  CLOSED_REJECTED
+}
+
+enum AgreementStatus {
+  NOT_INITIATED
+  INITIATED
+  REJECTED
+  ACCEPTED
+}
+
+enum TemplateStyle {
+  MODERN_MINIMAL
+  PREMIUM_GOLD
+  TRADITIONAL_KERALA
+  ELEGANT_CORPORATE
+  CLEAN_SIMPLE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model User {
+  id            String             @id @default(uuid())
+  name          String
+  email         String             @unique
+  phone         String?
+  passwordHash  String
+  role          Role               @default(STAFF)
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  refreshTokens RefreshToken[]
+  quotations    Quotation[]
+  media         Media[]            @relation("UploadedBy")
+  resetTokens   PasswordResetToken[]
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  replacedBy String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  parentId    String?
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  items       Item[]
+
+  @@index([parentId])
+  @@unique([parentId, name])
+}
+
+model Item {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  unit        String?
+  basePrice   Decimal  @db.Decimal(12, 2)
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  menuItems   MenuItem[]
+  quotationItems QuotationItem[]
+
+  @@index([categoryId])
+  @@unique([categoryId, name])
+}
+
+model Menu {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  menuItems   MenuItem[]
+  quotations  Quotation[]
+
+  @@unique([name])
+}
+
+model MenuItem {
+  id        String   @id @default(uuid())
+  menuId    String
+  itemId    String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([menuId, itemId])
+  @@index([menuId])
+  @@index([itemId])
+}
+
+model Quotation {
+  id                 String           @id @default(uuid())
+  quotationNumber    String           @unique
+  status             QuotationStatus  @default(DRAFT)
+  source             QuotationSource  @default(ADMIN)
+  requestStatus      CustomerRequestStatus?
+  requestStatusUpdatedAt DateTime?
+  agreementStatus    AgreementStatus  @default(NOT_INITIATED)
+  agreementRejectReason String?
+  agreementUpdatedAt DateTime?
+  agreementAcceptedAt DateTime?
+  templateStyle      TemplateStyle    @default(MODERN_MINIMAL)
+  customerName       String
+  customerPhone      String
+  customerAddress    String?
+  eventDate          DateTime
+  eventType          String
+  venue              String
+  guestCount         Int
+  menuId             String?
+  notes              String?
+  terms              String?
+  discountAmount     Decimal          @default(0) @db.Decimal(12, 2)
+  extraChargesAmount Decimal          @default(0) @db.Decimal(12, 2)
+  gstPercent         Decimal          @default(18) @db.Decimal(5, 2)
+  subTotal           Decimal          @default(0) @db.Decimal(12, 2)
+  gstAmount          Decimal          @default(0) @db.Decimal(12, 2)
+  grandTotal         Decimal          @default(0) @db.Decimal(12, 2)
+  isDeleted          Boolean          @default(false)
+  createdById        String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  menu               Menu?            @relation(fields: [menuId], references: [id], onDelete: SetNull)
+  createdBy          User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  items              QuotationItem[]
+
+  @@index([createdById])
+  @@index([eventDate])
+  @@index([source, requestStatus])
+}
+
+model CustomerPortalOtp {
+  id        String   @id @default(uuid())
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  verifiedAt DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+  @@index([expiresAt])
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  itemId      String?
+  name        String
+  quantity    Decimal   @default(1) @db.Decimal(10, 2)
+  unit        String?
+  unitPrice   Decimal   @default(0) @db.Decimal(12, 2)
+  amount      Decimal   @default(0) @db.Decimal(12, 2)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  item        Item?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([quotationId])
+  @@index([itemId])
+}
+
+model Media {
+  id               String   @id @default(uuid())
+  title            String?
+  description      String?
+  type             MediaType
+  url              String
+  thumbnailUrl     String?
+  isWebsiteGallery Boolean  @default(false)
+  isSocialContent  Boolean  @default(false)
+  isFeatured       Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  uploadedById     String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  uploadedBy       User     @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+}
+
+model WebsiteReview {
+  id           String   @id @default(uuid())
+  clientName   String?
+  title        String?
+  testimonial  String?
+  rating       Int?
+  mediaUrl     String?
+  mediaType    MediaType?
+  isFeatured   Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model EventSelfie {
+  id           String   @id @default(uuid())
+  customerName String
+  phone        String
+  imageUrl     String
+  isApproved   Boolean  @default(false)
+  isFeatured   Boolean  @default(false)
+  adminNote    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([phone])
+  @@index([createdAt])
+}
+
+model EventReview {
+  id           String   @id @default(uuid())
+  customerName String
+  phone        String
+  imageUrl     String?
+  reviewText   String
+  rating       Int      @default(5)
+  isApproved   Boolean  @default(false)
+  isFeatured   Boolean  @default(false)
+  adminNote    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([phone])
+  @@index([createdAt])
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuotationTemplate {
+  id          String        @id @default(uuid())
+  style       TemplateStyle @unique
+  name        String
+  description String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
