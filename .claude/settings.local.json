@@ -24,7 +24,9 @@
       "Bash(netstat -ano)",
       "Bash(findstr :4000)",
       "Bash(taskkill /PID 4224 /F)",
-      "PowerShell(Stop-Process -Id 4224 -Force)"
+      "PowerShell(Stop-Process -Id 4224 -Force)",
+      "Bash(Get-ChildItem -Path \"e:\\\\thankam_events\" -Force)",
+      "Bash(Select-Object -Property Mode, Name)"
     ]
   }
 }

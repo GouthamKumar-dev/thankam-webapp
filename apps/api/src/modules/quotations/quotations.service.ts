@@ -17,6 +17,7 @@ import {
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { toSkipTake } from '../../common/dto/pagination.util';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { Msg91Service } from '../notifications/msg91.service';
 import {
   CreateQuotationDto,
   QuotationLineDto,
@@ -34,6 +35,7 @@ export class QuotationsService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly workflowGateway: QuotationsWorkflowGateway,
+    private readonly msg91: Msg91Service,
   ) {}
 
   async create(dto: CreateQuotationDto, createdById: string) {
@@ -1173,6 +1175,8 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
         expiresAt,
       },
     });
+
+    await this.msg91.sendOtp(normalizedPhone, code);
 
     if (process.env.NODE_ENV !== 'production') {
       this.logger.log(`Customer OTP for ${normalizedPhone}: ${code}`);

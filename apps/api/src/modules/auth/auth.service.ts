@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -10,10 +9,10 @@ import { JwtService } from '@nestjs/jwt';
 import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
-import * as nodemailer from 'nodemailer';
 import { v4 as uuid } from 'uuid';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { Msg91Service } from '../notifications/msg91.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -32,6 +31,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly msg91: Msg91Service,
   ) {}
 
   async login(dto: LoginDto) {
@@ -339,55 +339,17 @@ export class AuthService {
   }
 
   private async sendPasswordResetEmail(email: string, resetUrl: string) {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const port = Number(this.configService.get<number>('SMTP_PORT') ?? 587);
-    const smtpUser = this.configService.get<string>('SMTP_USER');
-    const pass = this.configService.get<string>('SMTP_PASS');
-    const configuredFrom = this.configService.get<string>('SMTP_FROM');
-    const isGmailSmtp = host?.includes('gmail') ?? false;
-    const from =
-      isGmailSmtp && configuredFrom && smtpUser && !configuredFrom.includes(smtpUser)
-        ? smtpUser
-        : configuredFrom || smtpUser;
-
-    if (!host || !smtpUser || !pass) {
-      this.logger.warn(
-        'SMTP credentials are not fully configured. Password reset email was not sent.',
-      );
-      throw new InternalServerErrorException(
-        'Email service is not configured. Please contact administrator.',
-      );
-    }
-
-    try {
-      const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user: smtpUser, pass },
-      });
-
-      await transporter.sendMail({
-        from,
-        to: email,
-        subject: 'Reset your Thankam Events password',
-        html: `
-          <p>Hello,</p>
-          <p>We received a request to reset your password.</p>
-          <p><a href="${resetUrl}">Click here to reset your password</a></p>
-          <p>This link will expire in 30 minutes.</p>
-          <p>If you did not request this, you can ignore this email.</p>
-        `,
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to send password reset email to ${email}`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      throw new InternalServerErrorException(
-        'Failed to send reset email. Please verify SMTP settings.',
-      );
-    }
+    await this.msg91.sendEmail({
+      to: { name: email, email },
+      subject: 'Reset your Thankam Events password',
+      html: `
+        <p>Hello,</p>
+        <p>We received a request to reset your password.</p>
+        <p><a href="${resetUrl}">Click here to reset your password</a></p>
+        <p>This link will expire in 30 minutes.</p>
+        <p>If you did not request this, you can ignore this email.</p>
+      `,
+    });
   }
 
   private normalizePhone(phone: string) {
