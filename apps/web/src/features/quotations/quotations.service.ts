@@ -4,6 +4,7 @@ import { PaginatedResponse } from '@/types/api';
 export type QuotationRow = {
   id: string;
   quotationNumber: string;
+  createdAt?: string;
   customerName: string;
   customerPhone?: string;
   eventDate: string;

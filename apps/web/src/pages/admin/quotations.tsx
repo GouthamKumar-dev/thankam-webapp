@@ -424,7 +424,7 @@ export function QuotationsPage() {
         gstAmount:  form.gstEnabled ? totals.gst : undefined,
         grandTotal: totals.grandTotal,
         agreementStatus: d.agreementStatus,
-        agreementAcceptedAt: d.agreementAcceptedAt,
+        agreementAcceptedAt: d.agreementAcceptedAt ?? undefined,
         terms: form.terms,
         notes: form.notes,
         companyName:    company?.name,
