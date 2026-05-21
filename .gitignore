@@ -6,7 +6,6 @@ coverage/
 !.env.example
 .DS_Store
 *.log
-apps/api/prisma/migrations/
 apps/web/.vite/
 uploads/
 apps/api/uploads/
