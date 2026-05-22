@@ -190,6 +190,11 @@ export function CustomerPortalPage() {
   });
 
   useEffect(() => {
+    document.body.style.overflow = showCart ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [showCart]);
+
+  useEffect(() => {
     setLoading(true);
     void customerPortalService
       .catalog()
@@ -1277,18 +1282,7 @@ export function CustomerPortalPage() {
                       <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-900">
                         {item.name}
                       </p>
-                      <div className="flex items-center justify-between gap-2 pt-1">
-                        {item.basePrice > 0 ? (
-                          <p className="text-xs font-semibold text-slate-500">
-                            {formatInr(item.basePrice, {
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 0,
-                            })}
-                            <span className="font-normal">/plate</span>
-                          </p>
-                        ) : (
-                          <span />
-                        )}
+                      <div className="flex items-center justify-end gap-2 pt-1">
                         <Button
                           variant={selected ? "outline" : "primary"}
                           className={`h-8 rounded-full px-3 text-xs ${
@@ -1331,7 +1325,7 @@ export function CustomerPortalPage() {
 
       {showCart ? (
         <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm md:items-center md:p-4"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm md:items-center md:p-4"
           onClick={() => setShowCart(false)}
         >
           <div
@@ -1369,77 +1363,119 @@ export function CustomerPortalPage() {
             </div>
 
             {/* ── Step indicator ── */}
-            <div className="flex border-b border-slate-100">
-              {["Cart", "Event Details"].map((label, idx) => (
-                <div
-                  key={label}
-                  className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-xs font-bold transition-colors ${
-                    (idx === 0 && !showCheckout) || (idx === 1 && showCheckout)
-                      ? "border-b-2 border-amber-400 text-[#0F1B3C]"
-                      : "text-slate-400"
-                  }`}
-                >
-                  <span className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-black ${
-                    (idx === 0 && !showCheckout) || (idx === 1 && showCheckout)
-                      ? "bg-[#0F1B3C] text-white"
-                      : (idx === 0 && showCheckout) ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-400"
+            <div className="border-b border-slate-100 px-8 py-3">
+              <div className="flex items-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`grid h-7 w-7 place-items-center rounded-full text-xs font-black transition-colors ${
+                    !showCheckout ? "bg-[#0F1B3C] text-white ring-2 ring-[#0F1B3C]/20" : "bg-emerald-500 text-white"
                   }`}>
-                    {idx === 0 && showCheckout ? "✓" : idx + 1}
+                    {showCheckout ? "✓" : "1"}
                   </span>
-                  {label}
+                  <span className={`text-[10px] font-bold transition-colors ${!showCheckout ? "text-[#0F1B3C]" : "text-emerald-600"}`}>
+                    Cart
+                  </span>
                 </div>
-              ))}
+                <div className="relative mx-3 h-0.5 flex-1 rounded-full bg-slate-200">
+                  <div className={`absolute inset-y-0 left-0 rounded-full bg-emerald-400 transition-all duration-300 ${showCheckout ? "w-full" : "w-0"}`} />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`grid h-7 w-7 place-items-center rounded-full text-xs font-black transition-colors ${
+                    showCheckout ? "bg-[#0F1B3C] text-white ring-2 ring-[#0F1B3C]/20" : "bg-slate-100 text-slate-400"
+                  }`}>
+                    2
+                  </span>
+                  <span className={`text-[10px] font-bold transition-colors ${showCheckout ? "text-[#0F1B3C]" : "text-slate-400"}`}>
+                    Event Details
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="flex max-h-[70vh] flex-col overflow-hidden">
               {/* ══ CART VIEW ══ */}
               {!showCheckout ? (
-                <div className="p-4">
-                  {selectedItems.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[#D4A017]/40 bg-[#FFFDF7] p-8 text-center">
-                      <ShoppingCart size={28} className="mx-auto mb-2 text-slate-300" />
-                      <p className="text-sm font-semibold text-slate-600">Your cart is empty</p>
-                      <p className="mt-1 text-xs text-slate-400">Add items from the catalog to get started.</p>
-                      <button
-                        type="button"
-                        onClick={() => { setShowCart(false); setShowCheckout(false); }}
-                        className="mt-4 rounded-2xl bg-[#0F1B3C] px-6 py-2.5 text-sm font-bold text-white"
-                      >
-                        Browse Catalog
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <>
+                  {selectedItems.length > 0 && (
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-4 py-2.5">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#B8860B]">
                         {selectedItems.length} item{selectedItems.length > 1 ? "s" : ""} selected
                       </p>
-                      <div className="space-y-2">
-                        {selectedItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-3 rounded-2xl border border-[#EDE8DF] bg-[#FFFDF7] px-4 py-3"
-                          >
-                            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#FDF3D0] text-[#B8860B]">
-                              <Salad size={15} />
-                            </div>
-                            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
-                              {item.name}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => onToggleItem(item)}
-                              className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))}
+                      <span className="grid h-5 w-5 place-items-center rounded-full bg-[#0F1B3C] text-[10px] font-black text-white">
+                        {selectedItems.length}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 overflow-y-auto p-4">
+                    {selectedItems.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-[#D4A017]/40 bg-[#FFFDF7] p-8 text-center">
+                        <ShoppingCart size={28} className="mx-auto mb-2 text-slate-300" />
+                        <p className="text-sm font-semibold text-slate-600">Your cart is empty</p>
+                        <p className="mt-1 text-xs text-slate-400">Add items from the catalog to get started.</p>
+                        <button
+                          type="button"
+                          onClick={() => { setShowCart(false); setShowCheckout(false); }}
+                          className="mt-4 rounded-2xl bg-[#0F1B3C] px-6 py-2.5 text-sm font-bold text-white"
+                        >
+                          Browse Catalog
+                        </button>
                       </div>
-
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          {Object.entries(
+                            selectedItems.reduce<Record<string, typeof selectedItems>>((acc, item) => {
+                              (acc[item.leafCategory] ??= []).push(item);
+                              return acc;
+                            }, {})
+                          ).map(([leafCat, items]) => {
+                            const topCat = items[0].topCategory;
+                            const Icon = TOP_CATEGORY_ICONS[topCat as keyof typeof TOP_CATEGORY_ICONS] ?? Salad;
+                            return (
+                              <div key={leafCat}>
+                                <div className="mb-1.5 flex items-center gap-2">
+                                  <div className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-[#FDF3D0] text-[#B8860B]">
+                                    <Icon size={11} />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-[#B8860B]">
+                                    {leafCat}
+                                  </span>
+                                  <div className="h-px flex-1 bg-[#EDE8DF]" />
+                                  <span className="text-[10px] font-semibold text-slate-400">
+                                    {items.length}
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                  {items.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center gap-3 rounded-2xl border border-[#EDE8DF] bg-[#FFFDF7] px-4 py-2.5"
+                                    >
+                                      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
+                                        {item.name}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={() => onToggleItem(item)}
+                                        className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {selectedItems.length > 0 && (
+                    <div className="border-t border-slate-100 bg-white p-4 pt-3">
                       <button
                         type="button"
                         onClick={() => { setShowCart(false); setShowCheckout(false); }}
-                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D4A017]/50 bg-[#FFFDF7] py-3 text-sm font-semibold text-[#B8860B] transition-all hover:border-[#B8860B]/70 hover:bg-[#FDF3D0] active:scale-[0.98]"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D4A017]/50 bg-[#FFFDF7] py-3 text-sm font-semibold text-[#B8860B] transition-all hover:border-[#B8860B]/70 hover:bg-[#FDF3D0] active:scale-[0.98]"
                       >
                         <span className="text-base font-black leading-none">+</span>
                         Add more items
@@ -1453,12 +1489,13 @@ export function CustomerPortalPage() {
                         Continue to Event Details
                         <ArrowLeft size={15} className="rotate-180" />
                       </button>
-                    </>
+                    </div>
                   )}
-                </div>
+                </>
               ) : (
                 /* ══ EVENT DETAILS VIEW ══ */
-                <div className="p-5 space-y-5">
+                <>
+                  <div className="flex-1 overflow-y-auto p-5 space-y-5">
 
                   {/* ── Your Details ── */}
                   <div>
@@ -1662,23 +1699,25 @@ export function CustomerPortalPage() {
                     </p>
                   </div>
 
-                  {/* Submit */}
-                  <button
-                    type="button"
-                    onClick={() => void onSubmit()}
-                    disabled={submitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0F1B3C] py-4 text-sm font-bold text-white transition-all hover:bg-[#1a2d5a] active:scale-[0.98] disabled:opacity-60"
-                  >
-                    {submitting ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    ) : (
-                      <Sparkles size={15} />
-                    )}
-                    {submitting
-                      ? editingQuotationId ? "Updating…" : "Submitting…"
-                      : editingQuotationId ? "Update Request" : "Submit Quotation Request"}
-                  </button>
-                </div>
+                  </div>
+                  <div className="border-t border-slate-100 bg-white p-4">
+                    <button
+                      type="button"
+                      onClick={() => void onSubmit()}
+                      disabled={submitting}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0F1B3C] py-4 text-sm font-bold text-white transition-all hover:bg-[#1a2d5a] active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {submitting ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      ) : (
+                        <Sparkles size={15} />
+                      )}
+                      {submitting
+                        ? editingQuotationId ? "Updating…" : "Submitting…"
+                        : editingQuotationId ? "Update Request" : "Submit Quotation Request"}
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -2103,9 +2142,9 @@ export function CustomerPortalPage() {
         )}
       </FormDialog>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#EDE8DF] bg-white shadow-[0_-4px_24px_rgba(15,27,60,0.08)]">
+      <div className="fixed inset-x-0 bottom-0 z-50 overflow-visible border-t border-[#EDE8DF] bg-white shadow-[0_-4px_24px_rgba(15,27,60,0.08)]">
         <div
-          className={`mx-auto grid h-16 w-full max-w-5xl px-2 ${
+          className={`relative mx-auto grid h-16 w-full max-w-5xl px-2 ${
             isAuthenticated ? "grid-cols-5" : "grid-cols-3"
           }`}
         >
@@ -2131,20 +2170,22 @@ export function CustomerPortalPage() {
             </button>
           ) : null}
 
-          <button
-            type="button"
-            className="relative mx-auto flex h-12 w-12 flex-col items-center justify-center rounded-2xl bg-[#0F1B3C] text-white shadow-lg"
-            onClick={() => {
-              openCartWithLoginGuard();
-            }}
-          >
-            <ShoppingCart size={17} />
+          <div className="relative flex items-center justify-center">
+            <button
+              type="button"
+              className="absolute bottom-3 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full bg-[#0F1B3C] text-white shadow-[0_4px_20px_rgba(15,27,60,0.45)]"
+              onClick={() => {
+                openCartWithLoginGuard();
+              }}
+            >
+              <ShoppingCart size={22} />
+            </button>
             {selectedItems.length > 0 ? (
-              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-white px-1 text-[10px] font-bold text-[#0F1B3C]">
+              <span className="absolute bottom-[44px] left-[calc(50%+10px)] grid h-5 min-w-5 place-items-center rounded-full bg-[#B8860B] px-1 text-[10px] font-bold text-white shadow">
                 {selectedItems.length}
               </span>
             ) : null}
-          </button>
+          </div>
 
           <button
             type="button"

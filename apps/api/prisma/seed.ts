@@ -2866,20 +2866,20 @@ async function main() {
   const passwordHash = await bcrypt.hash('Admin@123', 12);
 
   await prisma.user.upsert({
-    where: { email: 'admin@thankamevents.in' },
+    where: { email: 'gouthamkumar091@gmail.com' },
     update: {
       name: 'Super Admin',
       role: Role.ADMIN,
       passwordHash,
-      phone: '9999999999',
+      phone: '9876543210',
       isActive: true,
     },
     create: {
       name: 'Super Admin',
-      email: 'admin@thankamevents.in',
+      email: 'gouthamkumar091@gmail.com',
       role: Role.ADMIN,
       passwordHash,
-      phone: '9999999999',
+      phone: '9876543210',
     },
   });
 

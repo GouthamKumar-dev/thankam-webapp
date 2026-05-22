@@ -23,7 +23,7 @@ Production-ready event quotation management platform.
 
 ## Default Admin Login
 
-- Email: `admin@thankamevents.in`
+- Email: `gouthamkumar091@gmail.com`
 - Password: `Admin@123`
 
 ## Domains
