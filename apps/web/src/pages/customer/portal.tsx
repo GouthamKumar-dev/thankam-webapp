@@ -2000,6 +2000,7 @@ export function CustomerPortalPage() {
                     <div className="border-t border-slate-100 px-4 py-2.5">
                       {(() => {
                         const split = splitNotificationItems(item.items);
+                        const showItemWiseQuantity = shouldShowNotificationItemQuantity(item);
                         return (
                           <>
                       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -2018,11 +2019,11 @@ export function CustomerPortalPage() {
                               <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                                 Included
                               </span>
-                            ) : (
+                            ) : showItemWiseQuantity ? (
                               <span className="shrink-0 text-xs text-slate-500">
                                 {it.quantity} {it.unit || "unit"}
                               </span>
-                            )}
+                            ) : null}
                           </div>
                         ))}
                         {split.perPersonQuote ? (
@@ -2335,6 +2336,12 @@ function notificationAgreementLabel(agreementStatus?: string): string {
     case "REJECTED": return "Rejected";
     default: return "";
   }
+}
+
+function shouldShowNotificationItemQuantity(item: NotificationItem): boolean {
+  if (item.status?.toUpperCase() === "FINALIZED") return true;
+  const requestStatus = String(item.requestStatus ?? "").trim().toUpperCase();
+  return requestStatus === "QUOTED" || requestStatus === "ACCEPTED";
 }
 
 function splitNotificationItems(
