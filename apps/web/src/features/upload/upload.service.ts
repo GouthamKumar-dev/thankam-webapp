@@ -19,15 +19,24 @@ export const uploadService = {
     const formData = new FormData();
     files.forEach((file) => formData.append('files', file));
 
-    const { data } = await apiClient.post<UploadedAsset[]>('/upload/media', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (event) => {
-        if (!event.total || !onProgress) return;
-        onProgress(Math.round((event.loaded / event.total) * 100));
-      },
-    });
+    try {
+      const { data } = await apiClient.post<UploadedAsset[]>('/upload/media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (event) => {
+          if (!event.total || !onProgress) return;
+          onProgress(Math.round((event.loaded / event.total) * 100));
+        },
+      });
 
-    return data;
+      return data;
+    } catch (error: any) {
+      const status = Number(error?.response?.status ?? 0);
+      if (status === 413) {
+        throw new Error(
+          'Upload failed: file is too large for the server limit. Please reduce file size and try again.',
+        );
+      }
+      throw error;
+    }
   },
 };
-

@@ -1026,7 +1026,7 @@ export function CustomerPortalPage() {
               {/* Company logo + name */}
               <div className="flex items-center gap-2.5">
                 {/* Logo pill — white background so any logo is visible on dark header */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl p-1 shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
                   {companyLogo ? (
                     <img
                       src={companyLogo}
@@ -1039,7 +1039,7 @@ export function CustomerPortalPage() {
                 </div>
 
                 {/* Company name + tagline */}
-                <div className="hidden sm:block">
+                <div className="block">
                   <p className="text-sm font-black leading-tight tracking-tight text-white">
                     {companyName}
                   </p>

@@ -258,6 +258,8 @@ export function CustomerTrackPage() {
 
   const st = uiStatus(selected?.requestStatus);
   const isFinalized = selected?.status?.toUpperCase() === 'FINALIZED';
+  const hasQuotedPricing =
+    isFinalized || st === 'QUOTED' || st === 'ACCEPTED' || st === 'DECLINED';
   const agreementStatus = selected?.agreementStatus?.toUpperCase();
   const rejectionHistory = parseRejectionHistory(selected?.notes);
 
@@ -385,7 +387,7 @@ export function CustomerTrackPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Download PDF — visible once the quote is priced */}
-                      {billing && billing.grand > 0 && (() => {
+                      {hasQuotedPricing && billing && billing.grand > 0 && (() => {
                         const ppLine = (selected.items ?? []).find((i: any) => isPerPerson(i));
                         const isPP   = Boolean(ppLine && Number(ppLine?.unitPrice || 0) > 0);
                         return (
@@ -531,7 +533,7 @@ export function CustomerTrackPage() {
                 </div>
               )}
 
-              {billing && billing.grand > 0 && (
+              {hasQuotedPricing && billing && billing.grand > 0 && (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="border-b border-slate-100 bg-slate-50 px-5 py-3">
                     <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
@@ -572,6 +574,11 @@ export function CustomerTrackPage() {
                   <div className="border-b border-slate-100 bg-slate-50 px-5 py-3">
                     <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Selected Items</p>
                   </div>
+                  {!hasQuotedPricing ? (
+                    <div className="border-b border-amber-100 bg-amber-50 px-5 py-2.5 text-xs text-amber-700">
+                      Pricing will appear once admin sends the quote.
+                    </div>
+                  ) : null}
                   <div className="max-h-72 overflow-y-auto">
                     {/* Always show the menu items table when there are regular items */}
                     {grouped.length > 0 ? (
@@ -583,8 +590,12 @@ export function CustomerTrackPage() {
                             {!items.isPP ? (
                               <>
                                 <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide text-slate-400">Qty</th>
-                                <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide text-slate-400">Unit Price</th>
-                                <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide text-slate-400">Amount</th>
+                                {hasQuotedPricing ? (
+                                  <>
+                                    <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide text-slate-400">Unit Price</th>
+                                    <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide text-slate-400">Amount</th>
+                                  </>
+                                ) : null}
                               </>
                             ) : null}
                           </tr>
@@ -600,7 +611,7 @@ export function CustomerTrackPage() {
                           {grouped.map(({ cat, items: catItems }) => (
                             <Fragment key={cat}>
                               <tr className="bg-slate-50/70">
-                                <td colSpan={items.isPP ? 2 : 5} className="px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">{cat}</td>
+                                <td colSpan={items.isPP ? 2 : hasQuotedPricing ? 5 : 3} className="px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">{cat}</td>
                               </tr>
                               {catItems.map((item: any) => {
                                 const qty = Number(item.quantity ?? 0);
@@ -618,12 +629,16 @@ export function CustomerTrackPage() {
                                         <td className="px-4 py-2.5 text-right text-slate-600">
                                           {qty} <span className="text-xs text-slate-400">{item.unit || 'unit'}</span>
                                         </td>
-                                        <td className="px-4 py-2.5 text-right text-slate-600">
-                                          {isPPRow ? <span className="text-[10px] text-slate-400 italic">per-person rate</span> : up > 0 ? formatInr(up) : '—'}
-                                        </td>
-                                        <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
-                                          {isPPRow ? '—' : amt > 0 ? formatInr(amt) : '—'}
-                                        </td>
+                                        {hasQuotedPricing ? (
+                                          <>
+                                            <td className="px-4 py-2.5 text-right text-slate-600">
+                                              {isPPRow ? <span className="text-[10px] text-slate-400 italic">per-person rate</span> : up > 0 ? formatInr(up) : '—'}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-right font-semibold text-slate-800">
+                                              {isPPRow ? '—' : amt > 0 ? formatInr(amt) : '—'}
+                                            </td>
+                                          </>
+                                        ) : null}
                                       </>
                                     ) : null}
                                   </tr>
@@ -638,7 +653,7 @@ export function CustomerTrackPage() {
                     )}
 
                     {/* Per-person pricing summary strip */}
-                    {items.perPerson && (
+                    {hasQuotedPricing && items.perPerson && (
                       <div className="border-t-2 border-[#0F1B3C] bg-[#0F1B3C]/5 px-5 py-3">
                         <div className="flex items-center justify-between gap-2">
                           <div>

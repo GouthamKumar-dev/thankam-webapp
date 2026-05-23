@@ -34,6 +34,9 @@ type CompanySetting = {
   address: string;
 };
 
+const COMPANY_ASSET_MAX_BYTES = 900 * 1024; // Keep below common 1 MB proxy limits
+const COMPANY_ASSET_TARGET_BYTES = 720 * 1024;
+
 function initialCompanySetting(): CompanySetting {
   return {
     app: 'https://thankamevents.in/admin',
@@ -179,12 +182,13 @@ export function SettingsPage() {
 
     try {
       setAssetUploading(field === 'logoUrl' ? 'logo' : 'favicon');
-      const uploaded = await uploadService.uploadOne(file);
+      const uploadFile = await prepareCompanyAssetUpload(file, field);
+      const uploaded = await uploadService.uploadOne(uploadFile);
       const absoluteUrl = toMediaUrl(uploaded.url);
       setCompanyForm((prev) => ({ ...prev, [field]: absoluteUrl }));
       toast.success(`${field === 'logoUrl' ? 'Logo' : 'Favicon'} uploaded`);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message ?? 'Failed to upload asset');
+      toast.error(error?.response?.data?.message ?? error?.message ?? 'Failed to upload asset');
     } finally {
       setAssetUploading(null);
     }
@@ -529,4 +533,110 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </div>
   );
+}
+
+async function prepareCompanyAssetUpload(
+  file: File,
+  field: 'logoUrl' | 'faviconUrl',
+): Promise<File> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Please choose an image file');
+  }
+
+  if (file.size <= COMPANY_ASSET_MAX_BYTES) {
+    return file;
+  }
+
+  const optimized = await compressImageForCompanyAsset(file, field);
+  if (optimized.size <= COMPANY_ASSET_MAX_BYTES) {
+    return optimized;
+  }
+
+  throw new Error(
+    `Selected file is ${formatFileSize(file.size)}. Please use a smaller image (under ${formatFileSize(
+      COMPANY_ASSET_MAX_BYTES,
+    )}).`,
+  );
+}
+
+async function compressImageForCompanyAsset(
+  file: File,
+  field: 'logoUrl' | 'faviconUrl',
+): Promise<File> {
+  const source = await readFileAsImage(file);
+  const maxEdge = field === 'logoUrl' ? 1200 : 512;
+  const { width, height } = fitWithin(source.naturalWidth, source.naturalHeight, maxEdge);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Unable to process image. Please try another file.');
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(source, 0, 0, width, height);
+
+  const qualitySteps = [0.9, 0.84, 0.78, 0.72, 0.66, 0.6];
+  let bestBlob: Blob | null = null;
+
+  for (const quality of qualitySteps) {
+    const blob = await canvasToBlob(canvas, 'image/webp', quality);
+    if (!blob) continue;
+    bestBlob = blob;
+    if (blob.size <= COMPANY_ASSET_TARGET_BYTES) break;
+  }
+
+  if (!bestBlob) {
+    throw new Error('Unable to optimize image. Please upload a smaller file.');
+  }
+
+  return new File([bestBlob], toWebpFileName(file.name), {
+    type: bestBlob.type || 'image/webp',
+    lastModified: Date.now(),
+  });
+}
+
+function readFileAsImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Unable to read image file'));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality);
+  });
+}
+
+function fitWithin(width: number, height: number, maxEdge: number) {
+  if (width <= maxEdge && height <= maxEdge) return { width, height };
+  const ratio = width / height;
+  if (ratio >= 1) {
+    return { width: maxEdge, height: Math.max(1, Math.round(maxEdge / ratio)) };
+  }
+  return { width: Math.max(1, Math.round(maxEdge * ratio)), height: maxEdge };
+}
+
+function toWebpFileName(fileName: string) {
+  const name = fileName.replace(/\.[^.]+$/, '');
+  return `${name || 'asset'}.webp`;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
