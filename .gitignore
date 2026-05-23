@@ -9,3 +9,4 @@ coverage/
 apps/web/.vite/
 uploads/
 apps/api/uploads/
+*.tsbuildinfo

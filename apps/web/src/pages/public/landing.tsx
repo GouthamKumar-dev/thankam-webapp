@@ -266,8 +266,8 @@ export function PublicLandingPage() {
       ([e]) => {
         if (e.isIntersecting && !counted) {
           setCounted(true);
-          run("events", 1500, 2000);
-          run("years", 13, 1400);
+          run("events", 2500, 2000);
+          run("years", 19, 1400);
           run("guests", 100000, 2600);
         }
       },
@@ -454,7 +454,7 @@ export function PublicLandingPage() {
             <div className="lp-hero-left">
               <div className="lp-hero-eyebrow">
                 <i className="bi bi-award-fill" /> Premier Event Management ·
-                Since 2012
+                Since 2006
               </div>
               <h1>
                 <span className="lp-h1-accent">Thankam</span>
@@ -506,7 +506,7 @@ export function PublicLandingPage() {
                   <i className="bi bi-trophy-fill" />
                 </div>
                 <div>
-                  <span className="lp-hero-badge-num">13+ Years</span>
+                  <span className="lp-hero-badge-num">19+ Years</span>
                   <span className="lp-hero-badge-label">of Excellence</span>
                 </div>
               </div>
@@ -787,8 +787,8 @@ export function PublicLandingPage() {
                 <img src={logoSrc} alt="Thankam Events" />
                 <div className="lp-about-stats">
                   {[
-                    { num: "13+", label: "Years" },
-                    { num: "1500+", label: "Events" },
+                    { num: "19+", label: "Years" },
+                    { num: "2500+", label: "Events" },
                     { num: "100K+", label: "Guests" },
                     { num: "100%", label: "Satisfaction" },
                   ].map((s) => (
@@ -827,7 +827,7 @@ export function PublicLandingPage() {
                     {
                       icon: "bi-people",
                       title: "Expert Team",
-                      desc: "Seasoned professionals with 13+ years of celebration expertise.",
+                      desc: "Seasoned professionals with 19+ years of celebration expertise.",
                     },
                   ].map((f) => (
                     <div key={f.title} className="lp-abt-feat">
@@ -933,7 +933,7 @@ export function PublicLandingPage() {
                 <img src={logoSrc} alt="Thankam Events" />
               </div>
               <p className="lp-ft-desc">
-                Creating unforgettable moments since 2012 — Kollam's trusted
+                Creating unforgettable moments since 2006 — Kollam's trusted
                 name for events and catering.
               </p>
               <div className="lp-ft-info">
