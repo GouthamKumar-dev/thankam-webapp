@@ -28,6 +28,30 @@ import { websiteReviewService, ReviewRow, CreateReviewPayload } from '@/features
 import { uploadService } from '@/features/upload/upload.service';
 
 type Tab = 'selfies' | 'reviews' | 'staff' | 'testimonials' | 'gallery';
+type GalleryFilter = 'all' | 'IMAGE' | 'VIDEO';
+
+const SECTION_META: Record<Tab, { title: string; subtitle: string }> = {
+  gallery: {
+    title: 'Gallery',
+    subtitle: 'Upload and manage photos or videos displayed in the customer gallery.',
+  },
+  testimonials: {
+    title: 'Testimonials',
+    subtitle: 'Manage featured client stories displayed on the landing page.',
+  },
+  selfies: {
+    title: 'Selfies',
+    subtitle: 'Review and curate selfies submitted by customers.',
+  },
+  reviews: {
+    title: 'Reviews',
+    subtitle: 'Approve and feature customer reviews submitted after events.',
+  },
+  staff: {
+    title: 'Staff Uploads',
+    subtitle: 'Review media submitted by staff before publishing it to the gallery.',
+  },
+};
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 function fmt(d: string) {
@@ -87,30 +111,64 @@ function MediaModal({ src, onClose }: { src: string; onClose: () => void }) {
 
 /* ── Gallery Upload Dialog ───────────────────────────────────────── */
 function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const maxFiles = 10;
+  const maxFileSize = 50 * 1024 * 1024;
   const [files, setFiles]           = useState<File[]>([]);
   const [previews, setPreviews]     = useState<{ url: string; type: string }[]>([]);
   const [title, setTitle]           = useState('');
   const [isFeatured, setFeatured]   = useState(false);
   const [uploading, setUploading]   = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileRef                     = useRef<HTMLInputElement>(null);
+  const photoCount                  = files.filter(file => file.type.startsWith('image/')).length;
+  const videoCount                  = files.filter(file => file.type.startsWith('video/')).length;
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
+    e.target.value = '';
     if (!selected.length) return;
-    setFiles(selected);
-    setPreviews(selected.map(f => ({ url: URL.createObjectURL(f), type: f.type })));
+
+    const mediaFiles = selected.filter(file => /^(image|video)\//.test(file.type));
+    const acceptedFiles = mediaFiles.filter(file => file.size <= maxFileSize);
+    const existingKeys = new Set(files.map(file => `${file.name}:${file.size}:${file.lastModified}`));
+    const uniqueFiles = acceptedFiles.filter(file => {
+      const key = `${file.name}:${file.size}:${file.lastModified}`;
+      if (existingKeys.has(key)) return false;
+      existingKeys.add(key);
+      return true;
+    });
+    const availableSlots = maxFiles - files.length;
+
+    if (mediaFiles.length !== selected.length) {
+      toast.error('Only image and video files can be uploaded');
+    }
+    if (acceptedFiles.length !== mediaFiles.length) {
+      toast.error('Each file must be 50 MB or smaller');
+    }
+    if (uniqueFiles.length > availableSlots) {
+      toast.error(`A maximum of ${maxFiles} files can be uploaded at once`);
+    }
+    if (availableSlots <= 0) return;
+
+    setFiles(prev => [...prev, ...uniqueFiles.slice(0, availableSlots)]);
   };
 
   const removeFile = (idx: number) => {
     setFiles(prev => prev.filter((_, i) => i !== idx));
-    setPreviews(prev => prev.filter((_, i) => i !== idx));
   };
+
+  useEffect(() => {
+    const nextPreviews = files.map(file => ({ url: URL.createObjectURL(file), type: file.type }));
+    setPreviews(nextPreviews);
+    return () => nextPreviews.forEach(preview => URL.revokeObjectURL(preview.url));
+  }, [files]);
 
   const handleUpload = async () => {
     if (!files.length) { toast.error('Select at least one file'); return; }
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const assets = await uploadService.uploadMany(files);
+      const assets = await uploadService.uploadMany(files, setUploadProgress);
       await Promise.all(assets.map(a =>
         galleryService.create({
           url: a.url,
@@ -122,12 +180,13 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
       ));
       toast.success(`${assets.length} file${assets.length > 1 ? 's' : ''} added to gallery`);
       onDone();
-    } catch { toast.error('Upload failed'); }
+    } catch (error: any) { toast.error(error?.message ?? 'Upload failed'); }
     finally { setUploading(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={() => { if (!uploading) onClose(); }}>
       <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
         onClick={e => e.stopPropagation()}>
         {/* Header */}
@@ -136,8 +195,8 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Landing Page</p>
             <p className="text-sm font-black text-white">Upload to Gallery</p>
           </div>
-          <button onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-xl border border-white/15 bg-white/10 text-white/60 hover:bg-white/20">
+          <button onClick={onClose} disabled={uploading}
+            className="grid h-8 w-8 place-items-center rounded-xl border border-white/15 bg-white/10 text-white/60 hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50">
             <X size={14} />
           </button>
         </div>
@@ -145,14 +204,14 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* File picker */}
           {previews.length === 0 ? (
-            <button onClick={() => fileRef.current?.click()}
-              className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 py-10 hover:border-[#0F1B3C]/30 transition-colors">
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 py-10 hover:border-[#0F1B3C]/30 transition-colors disabled:cursor-not-allowed disabled:opacity-60">
               <div className="grid h-14 w-14 place-items-center rounded-2xl bg-slate-50">
                 <Upload size={24} className="text-[#0F1B3C]/50" />
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-slate-700">Click to select photos or videos</p>
-                <p className="mt-0.5 text-xs text-slate-400">JPG, PNG, MP4, MOV · up to 20 MB each · multiple allowed</p>
+                <p className="mt-0.5 text-xs text-slate-400">Up to 10 files per upload | 50 MB each</p>
               </div>
             </button>
           ) : (
@@ -164,8 +223,8 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
                   ) : (
                     <img src={p.url} alt="" className="w-full h-full object-cover" />
                   )}
-                  <button onClick={() => removeFile(i)}
-                    className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                  <button onClick={() => removeFile(i)} disabled={uploading}
+                    className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50">
                     <X size={10} />
                   </button>
                   {p.type.startsWith('video/') && (
@@ -173,13 +232,26 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
                   )}
                 </div>
               ))}
-              <button onClick={() => fileRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center hover:border-[#0F1B3C]/30 transition-colors">
-                <Plus size={20} className="text-slate-400" />
-              </button>
+              {files.length < maxFiles && (
+                <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center hover:border-[#0F1B3C]/30 transition-colors disabled:cursor-not-allowed disabled:opacity-60">
+                  <Plus size={20} className="text-slate-400" />
+                </button>
+              )}
             </div>
           )}
           <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFiles} />
+          {files.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs">
+              <p className="font-semibold text-slate-600">
+                {files.length} selected | {photoCount} photo{photoCount === 1 ? '' : 's'} | {videoCount} video{videoCount === 1 ? '' : 's'}
+              </p>
+              <button type="button" onClick={() => setFiles([])} disabled={uploading}
+                className="font-bold text-slate-400 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50">
+                Clear all
+              </button>
+            </div>
+          )}
 
           {/* Title */}
           <div>
@@ -187,6 +259,7 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
               Title <span className="font-normal normal-case text-slate-400">(optional)</span>
             </label>
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Wedding Ceremony 2025" />
+            {files.length > 1 && <p className="mt-1 text-xs text-slate-400">This title will be applied to all selected media.</p>}
           </div>
 
           {/* Featured toggle */}
@@ -200,12 +273,23 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
               <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform shadow ${isFeatured ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
+          {uploading && (
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs font-semibold text-slate-500">
+                <span>Uploading {files.length} media file{files.length === 1 ? '' : 's'}</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-[#0F1B3C] transition-all" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
-          <button onClick={onClose}
-            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+          <button onClick={onClose} disabled={uploading}
+            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
             Cancel
           </button>
           <button onClick={() => void handleUpload()} disabled={uploading || !files.length}
@@ -373,15 +457,16 @@ function TestimonialModal({
 /* ═══════════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════════ */
-export function EventMediaPage() {
+export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
   const { confirm, confirmModal } = useConfirmModal();
-  const [tab, setTab]               = useState<Tab>('testimonials');
+  const tab = section;
   const [selfies, setSelfies]       = useState<EventSelfieRow[]>([]);
   const [reviews, setReviews]       = useState<EventReviewRow[]>([]);
   const [staffMedia, setStaff]      = useState<MediaRow[]>([]);
   const [testimonials, setTestimonials] = useState<ReviewRow[]>([]);
   const [loading, setLoading]       = useState(false);
   const [viewImg, setViewImg]       = useState<string | null>(null);
+  const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'featured'>('all');
   const [testimonialModal, setTestimonialModal] = useState<(CreateReviewPayload & { id?: string }) | null>(null);
   const [uploadDialog, setUploadDialog]         = useState(false);
@@ -389,18 +474,20 @@ export function EventMediaPage() {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [s, r, m, t] = await Promise.all([
-        eventMediaService.listSelfies(),
-        eventMediaService.listReviews(),
-        galleryService.list(),
-        websiteReviewService.list(),
-      ]);
-      setSelfies(s); setReviews(r); setStaff(m); setTestimonials(t);
+      if (tab === 'selfies') {
+        setSelfies(await eventMediaService.listSelfies());
+      } else if (tab === 'reviews') {
+        setReviews(await eventMediaService.listReviews());
+      } else if (tab === 'testimonials') {
+        setTestimonials(await websiteReviewService.list());
+      } else {
+        setStaff(await galleryService.list());
+      }
     } catch { toast.error('Failed to load data'); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => { void refresh(); }, [tab]);
 
   /* ── Selfie actions ── */
   const approveSelfie = async (id: string, curr: boolean) => {
@@ -481,17 +568,14 @@ export function EventMediaPage() {
   }, [reviews, statusFilter]);
 
   const galleryItems = staffMedia.filter(m => m.isWebsiteGallery);
-
-  const tabs = [
-    { key: 'gallery'      as Tab, icon: GalleryHorizontal, label: 'Gallery',      count: galleryItems.length, pending: 0,                                          note: `${galleryItems.filter(m => m.isFeatured).length} featured` },
-    { key: 'testimonials' as Tab, icon: MessageSquarePlus, label: 'Testimonials', count: testimonials.length, pending: 0,                                          note: `${testimonials.filter(t => t.isFeatured).length} featured` },
-    { key: 'selfies'      as Tab, icon: Camera,            label: 'Selfies',      count: selfies.length,      pending: selfies.filter(s => !s.isApproved).length,  note: '' },
-    { key: 'reviews'      as Tab, icon: Star,              label: 'Reviews',      count: reviews.length,      pending: reviews.filter(r => !r.isApproved).length,  note: '' },
-    { key: 'staff'        as Tab, icon: Layers3,           label: 'Staff Uploads',count: staffMedia.filter(m => !m.isWebsiteGallery).length, pending: staffMedia.filter(m => !m.isWebsiteGallery).length, note: '' },
-  ];
+  const galleryPhotoCount = galleryItems.filter(m => m.type === 'IMAGE').length;
+  const galleryVideoCount = galleryItems.filter(m => m.type === 'VIDEO').length;
+  const filteredGalleryItems = galleryFilter === 'all'
+    ? galleryItems
+    : galleryItems.filter(m => m.type === galleryFilter);
 
   return (
-    <PageShell title="Event Media" subtitle="Manage testimonials, customer selfies, reviews, and staff event photos">
+    <PageShell title={SECTION_META[tab].title} subtitle={SECTION_META[tab].subtitle}>
       {confirmModal}
       {viewImg && <MediaModal src={viewImg} onClose={() => setViewImg(null)} />}
       {testimonialModal && (
@@ -508,41 +592,41 @@ export function EventMediaPage() {
         />
       )}
 
-      {/* ── Summary tab cards ── */}
-      <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`rounded-2xl border p-4 text-left transition-all ${tab === t.key ? 'border-[#0F1B3C] bg-[#0F1B3C] shadow-md' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
-            <t.icon size={18} className={tab === t.key ? 'text-amber-400 mb-2' : 'text-slate-400 mb-2'} />
-            <p className={`text-2xl font-black ${tab === t.key ? 'text-white' : 'text-[#0F1B3C]'}`}>{t.count}</p>
-            <p className={`text-xs font-semibold ${tab === t.key ? 'text-white/60' : 'text-slate-500'}`}>{t.label}</p>
-            {t.pending > 0 && (
-              <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${tab === t.key ? 'bg-amber-400/20 text-amber-300' : 'bg-rose-100 text-rose-600'}`}>
-                {t.pending} pending
-              </span>
-            )}
-            {t.note && t.pending === 0 && (
-              <span className={`mt-1 inline-block text-[10px] font-semibold ${tab === t.key ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                {t.note}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
       {/* ── Toolbar ── */}
       <div className="flex items-center justify-between mb-3 gap-3">
         {tab === 'gallery' ? (
-          <button onClick={() => setUploadDialog(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0F1B3C] px-4 py-2 text-sm font-bold text-white hover:bg-[#1a2d5a]">
-            <Upload size={15} /> Upload to Gallery
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* <button onClick={() => setUploadDialog(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0F1B3C] px-4 py-2 text-sm font-bold text-white hover:bg-[#1a2d5a]">
+              <Upload size={15} /> Upload to Gallery
+            </button> */}
+            <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+              {[
+                { key: 'all' as GalleryFilter, label: 'All', count: galleryItems.length },
+                { key: 'IMAGE' as GalleryFilter, label: 'Photos', count: galleryPhotoCount },
+                { key: 'VIDEO' as GalleryFilter, label: 'Videos', count: galleryVideoCount },
+              ].map(filter => (
+                <button key={filter.key} type="button" aria-pressed={galleryFilter === filter.key}
+                  onClick={() => setGalleryFilter(filter.key)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                    galleryFilter === filter.key ? 'bg-[#0F1B3C] text-white' : 'text-slate-500 hover:text-slate-800'
+                  }`}>
+                  {filter.label}
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                    galleryFilter === filter.key ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {filter.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         ) : tab === 'testimonials' ? (
           <button onClick={() => setTestimonialModal({ ...EMPTY_FORM })}
             className="inline-flex items-center gap-2 rounded-xl bg-[#0F1B3C] px-4 py-2 text-sm font-bold text-white hover:bg-[#1a2d5a]">
             <Plus size={15} /> Add Testimonial
           </button>
-        ) : (
+        ) : tab === 'selfies' || tab === 'reviews' ? (
           <div className="inline-flex gap-1 rounded-xl border border-slate-200 bg-white p-1">
             {(['all', 'pending', 'approved', 'featured'] as const).map(f => (
               <button key={f} onClick={() => setStatusFilter(f)}
@@ -551,6 +635,8 @@ export function EventMediaPage() {
               </button>
             ))}
           </div>
+        ) : (
+          <div />
         )}
         <button onClick={() => void refresh()}
           className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 flex-shrink-0">
@@ -574,9 +660,22 @@ export function EventMediaPage() {
                 </button>
               }
             />
+          ) : filteredGalleryItems.length === 0 ? (
+            <EmptyState
+              icon={galleryFilter === 'VIDEO'
+                ? <Video size={32} className="text-slate-300" />
+                : <GalleryHorizontal size={32} className="text-slate-300" />}
+              text={galleryFilter === 'VIDEO' ? 'No videos in the gallery yet' : 'No photos in the gallery yet'}
+              action={
+                <button onClick={() => setUploadDialog(true)}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-[#0F1B3C]/20 px-4 py-2 text-xs font-bold text-[#0F1B3C] hover:bg-[#0F1B3C]/5">
+                  <Upload size={13} /> Upload photos or videos
+                </button>
+              }
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {galleryItems.map(m => (
+              {filteredGalleryItems.map(m => (
                 <div key={m.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="relative">
                     {m.type === 'IMAGE' ? (

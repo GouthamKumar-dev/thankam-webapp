@@ -1115,6 +1115,7 @@ export function CustomerPortalPage() {
 
           {/* ── Row 3: Category pills ── */}
           <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+
             {topCategories.map((category) => {
               const active = category === activeTopCategory;
               const Icon = TOP_CATEGORY_ICONS[category as keyof typeof TOP_CATEGORY_ICONS] ?? TOP_CATEGORY_ICONS.default;

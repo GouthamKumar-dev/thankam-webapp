@@ -2,6 +2,7 @@ import {
   Bell,
   Camera,
   CheckCheck,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -12,14 +13,16 @@ import {
   Layers3,
   LayoutDashboard,
   Menu,
+  MessageSquare,
   LogOut,
   Settings,
+  Star,
   Trash2,
   Users,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '@/hooks/store';
 import { Button } from '@/components/ui/button';
@@ -48,6 +51,7 @@ type SidebarLink = {
   label: string;
   to: string;
   icon: typeof LayoutDashboard;
+  children?: SidebarLink[];
 };
 
 type SidebarSection = {
@@ -69,7 +73,18 @@ const adminSections: SidebarSection[] = [
     links: [
       { label: 'Categories', to: '/admin/categories', icon: Layers3 },
       { label: 'Menus', to: '/admin/menus', icon: ClipboardList },
-      { label: 'Event Media', to: '/admin/event-media', icon: Camera },
+      {
+        label: 'Event Media',
+        to: '/admin/event-media/gallery',
+        icon: Camera,
+        children: [
+          { label: 'Gallery', to: '/admin/event-media/gallery', icon: Image },
+          { label: 'Testimonials', to: '/admin/event-media/testimonials', icon: MessageSquare },
+          { label: 'Selfies', to: '/admin/event-media/selfies', icon: Camera },
+          { label: 'Reviews', to: '/admin/event-media/reviews', icon: Star },
+          { label: 'Staff Uploads', to: '/admin/event-media/staff-uploads', icon: Layers3 },
+        ],
+      },
     ],
   },
   {
@@ -123,9 +138,11 @@ export function DashboardLayout() {
   );
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
+  const [isEventMediaExpanded, setIsEventMediaExpanded] = useState(true);
 
   const [branding, setBranding] = useState<CompanyBranding>(
     defaultCompanyBranding,
@@ -191,6 +208,12 @@ export function DashboardLayout() {
       isSidebarCollapsed ? '1' : '0',
     );
   }, [isSidebarCollapsed]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin/event-media')) {
+      setIsEventMediaExpanded(true);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     let active = true;
@@ -469,46 +492,97 @@ export function DashboardLayout() {
                     </p>
                   ) : null}
                   <div className="space-y-1.5">
-                    {section.links.map((link) => (
-                      <NavLink
-                        key={link.to}
-                        to={link.to}
-                        title={
-                          isSidebarCollapsed
-                            ? link.label
-                            : undefined
-                        }
-                        className={({ isActive }) =>
-                          `group relative block overflow-hidden rounded-2xl transition-all duration-300 ${
-                            isActive
-                              ? 'border border-white/10 bg-white/10 shadow-[0_0_30px_rgba(45,212,191,0.25)] backdrop-blur-xl'
-                              : 'hover:translate-x-[2px] hover:bg-white/[0.06]'
-                          } ${
-                            isSidebarCollapsed
-                              ? 'mx-auto h-14 w-14 p-0'
-                              : 'px-3 py-2.5'
-                          }`
-                        }
-                      >
-                        <span
-                          className={`relative z-10 ${
-                            isSidebarCollapsed
-                              ? 'flex h-full items-center justify-center'
-                              : 'grid grid-cols-[38px_1fr] items-center gap-2.5'
-                          }`}
-                        >
-                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/5 transition-all duration-300 group-hover:bg-teal-400/20">
-                            <link.icon size={17} />
-                          </span>
+                    {section.links.map((link) => {
+                      const childActive = link.children?.some((child) => location.pathname === child.to) ?? false;
 
-                          {!isSidebarCollapsed ? (
-                            <span className="truncate text-[0.92rem] font-semibold tracking-[-0.01em]">
-                              {link.label}
+                      if (link.children && !isSidebarCollapsed) {
+                        return (
+                          <div key={link.to} className="space-y-1.5">
+                            <button
+                              type="button"
+                              aria-expanded={isEventMediaExpanded}
+                              onClick={() => setIsEventMediaExpanded((open) => !open)}
+                              className={`group relative flex w-full items-center justify-between overflow-hidden rounded-2xl px-3 py-2.5 text-left transition-all duration-300 ${
+                                childActive
+                                  ? 'border border-white/10 bg-white/10 shadow-[0_0_30px_rgba(45,212,191,0.25)] backdrop-blur-xl'
+                                  : 'hover:translate-x-[2px] hover:bg-white/[0.06]'
+                              }`}
+                            >
+                              <span className="relative z-10 grid grid-cols-[38px_1fr] items-center gap-2.5">
+                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/5 transition-all duration-300 group-hover:bg-teal-400/20">
+                                  <link.icon size={17} />
+                                </span>
+                                <span className="truncate text-[0.92rem] font-semibold tracking-[-0.01em]">
+                                  {link.label}
+                                </span>
+                              </span>
+                              <ChevronDown
+                                size={15}
+                                className={`text-slate-400 transition-transform ${isEventMediaExpanded ? 'rotate-180' : ''}`}
+                              />
+                            </button>
+
+                            {isEventMediaExpanded ? (
+                              <div className="ml-5 space-y-1 border-l border-white/10 pl-3">
+                                {link.children.map((child) => (
+                                  <NavLink
+                                    key={child.to}
+                                    to={child.to}
+                                    className={({ isActive }) =>
+                                      `group flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-all ${
+                                        isActive
+                                          ? 'bg-teal-400/15 font-semibold text-teal-200'
+                                          : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                                      }`
+                                    }
+                                  >
+                                    <child.icon size={14} />
+                                    <span>{child.label}</span>
+                                  </NavLink>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <NavLink
+                          key={link.to}
+                          to={link.to}
+                          title={isSidebarCollapsed ? link.label : undefined}
+                          className={({ isActive }) =>
+                            `group relative block overflow-hidden rounded-2xl transition-all duration-300 ${
+                              isActive || childActive
+                                ? 'border border-white/10 bg-white/10 shadow-[0_0_30px_rgba(45,212,191,0.25)] backdrop-blur-xl'
+                                : 'hover:translate-x-[2px] hover:bg-white/[0.06]'
+                            } ${
+                              isSidebarCollapsed
+                                ? 'mx-auto h-14 w-14 p-0'
+                                : 'px-3 py-2.5'
+                            }`
+                          }
+                        >
+                          <span
+                            className={`relative z-10 ${
+                              isSidebarCollapsed
+                                ? 'flex h-full items-center justify-center'
+                                : 'grid grid-cols-[38px_1fr] items-center gap-2.5'
+                            }`}
+                          >
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/5 transition-all duration-300 group-hover:bg-teal-400/20">
+                              <link.icon size={17} />
                             </span>
-                          ) : null}
-                        </span>
-                      </NavLink>
-                    ))}
+
+                            {!isSidebarCollapsed ? (
+                              <span className="truncate text-[0.92rem] font-semibold tracking-[-0.01em]">
+                                {link.label}
+                              </span>
+                            ) : null}
+                          </span>
+                        </NavLink>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -646,30 +720,83 @@ export function DashboardLayout() {
                     {section.title}
                   </p>
                   <div className="space-y-1.5">
-                    {section.links.map((link) => (
-                      <NavLink
-                        key={link.to}
-                        to={link.to}
-                        onClick={() =>
-                          setIsNavDrawerOpen(false)
-                        }
-                        className={({ isActive }) =>
-                          `grid grid-cols-[38px_1fr] items-center gap-2.5 rounded-2xl px-3 py-2.5 transition-all ${
-                            isActive
-                              ? 'border border-white/10 bg-white/10 backdrop-blur-xl'
-                              : 'hover:bg-white/5'
-                          }`
-                        }
-                      >
-                        <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/5">
-                          <link.icon size={17} />
-                        </span>
+                    {section.links.map((link) => {
+                      const childActive = link.children?.some((child) => location.pathname === child.to) ?? false;
 
-                        <span className="truncate text-sm font-semibold">
-                          {link.label}
-                        </span>
-                      </NavLink>
-                    ))}
+                      if (link.children) {
+                        return (
+                          <div key={link.to} className="space-y-1">
+                            <button
+                              type="button"
+                              aria-expanded={isEventMediaExpanded}
+                              onClick={() => setIsEventMediaExpanded((open) => !open)}
+                              className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 transition-all ${
+                                childActive
+                                  ? 'border border-white/10 bg-white/10 backdrop-blur-xl'
+                                  : 'hover:bg-white/5'
+                              }`}
+                            >
+                              <span className="grid grid-cols-[38px_1fr] items-center gap-2.5">
+                                <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/5">
+                                  <link.icon size={17} />
+                                </span>
+                                <span className="truncate text-sm font-semibold">
+                                  {link.label}
+                                </span>
+                              </span>
+                              <ChevronDown
+                                size={15}
+                                className={`text-slate-400 transition-transform ${isEventMediaExpanded ? 'rotate-180' : ''}`}
+                              />
+                            </button>
+                            {isEventMediaExpanded ? (
+                              <div className="ml-5 space-y-1 border-l border-white/10 pl-3">
+                                {link.children.map((child) => (
+                                  <NavLink
+                                    key={child.to}
+                                    to={child.to}
+                                    onClick={() => setIsNavDrawerOpen(false)}
+                                    className={({ isActive }) =>
+                                      `flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-all ${
+                                        isActive
+                                          ? 'bg-teal-400/15 font-semibold text-teal-200'
+                                          : 'text-slate-300 hover:bg-white/5'
+                                      }`
+                                    }
+                                  >
+                                    <child.icon size={14} />
+                                    <span>{child.label}</span>
+                                  </NavLink>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <NavLink
+                          key={link.to}
+                          to={link.to}
+                          onClick={() => setIsNavDrawerOpen(false)}
+                          className={({ isActive }) =>
+                            `grid grid-cols-[38px_1fr] items-center gap-2.5 rounded-2xl px-3 py-2.5 transition-all ${
+                              isActive
+                                ? 'border border-white/10 bg-white/10 backdrop-blur-xl'
+                                : 'hover:bg-white/5'
+                            }`
+                          }
+                        >
+                          <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/5">
+                            <link.icon size={17} />
+                          </span>
+
+                          <span className="truncate text-sm font-semibold">
+                            {link.label}
+                          </span>
+                        </NavLink>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

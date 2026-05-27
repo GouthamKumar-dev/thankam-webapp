@@ -472,7 +472,7 @@ export function PublicLandingPage() {
                 </button>
                 <button
                   className="lp-btn-outline-white"
-                  onClick={() => scrollTo("lp-gallery")}
+                  onClick={() => navigate("/customer/gallery")}
                 >
                   View Gallery <i className="bi bi-arrow-right" />
                 </button>
@@ -637,10 +637,16 @@ export function PublicLandingPage() {
               </p>
             </div>
           ) : (
-            <div className="lp-container">
-              <div className="lp-gal-grid">
+            <div className="lp-container lp-gal-showcase">
+              <div className={`lp-gal-grid lp-gal-count-${Math.min(rawGallery.length, 4)}`}>
                 {rawGallery.map((g: any, i: number) => (
-                  <div key={g.id ?? i} className="lp-gal-item">
+                  <button
+                    key={g.id ?? i}
+                    type="button"
+                    className="lp-gal-item"
+                    onClick={() => navigate("/customer/gallery")}
+                    aria-label={`View gallery ${g.type === "VIDEO" ? "video" : "photo"}${g.title ? `: ${g.title}` : ""}`}
+                  >
                     {g.type === "VIDEO" ? (
                       <video
                         src={toMediaUrl(g.url)}
@@ -663,13 +669,23 @@ export function PublicLandingPage() {
                         loading="lazy"
                       />
                     )}
-                    {g.type !== "VIDEO" && (
-                      <div className="lp-gal-overlay">
-                        <i className="bi bi-zoom-in" />
-                      </div>
-                    )}
-                  </div>
+                    <span className="lp-gal-type">
+                      <i className={`bi bi-${g.type === "VIDEO" ? "play-circle-fill" : "image"}`} />
+                      {g.type === "VIDEO" ? "Video" : "Photo"}
+                    </span>
+                    <div className="lp-gal-overlay">
+                      <i className={`bi bi-${g.type === "VIDEO" ? "play-circle" : "zoom-in"}`} />
+                    </div>
+                  </button>
                 ))}
+              </div>
+              <div className="lp-gal-action">
+                <button
+                  className="lp-btn-primary"
+                  onClick={() => navigate("/customer/gallery")}
+                >
+                  View Full Gallery <i className="bi bi-arrow-right" />
+                </button>
               </div>
             </div>
           )}
