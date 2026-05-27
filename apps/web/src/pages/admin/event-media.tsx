@@ -112,7 +112,11 @@ function MediaModal({ src, onClose }: { src: string; onClose: () => void }) {
 /* ── Gallery Upload Dialog ───────────────────────────────────────── */
 function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const maxFiles = 10;
-  const maxFileSize = 50 * 1024 * 1024;
+  const configuredMaxFileSizeMb = Number(import.meta.env.VITE_UPLOAD_MAX_FILE_SIZE_MB ?? 50);
+  const maxFileSizeMb = Number.isFinite(configuredMaxFileSizeMb) && configuredMaxFileSizeMb > 0
+    ? configuredMaxFileSizeMb
+    : 50;
+  const maxFileSize = maxFileSizeMb * 1024 * 1024;
   const [files, setFiles]           = useState<File[]>([]);
   const [previews, setPreviews]     = useState<{ url: string; type: string }[]>([]);
   const [title, setTitle]           = useState('');
@@ -143,7 +147,7 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
       toast.error('Only image and video files can be uploaded');
     }
     if (acceptedFiles.length !== mediaFiles.length) {
-      toast.error('Each file must be 50 MB or smaller');
+      toast.error(`Each file must be ${maxFileSizeMb} MB or smaller`);
     }
     if (uniqueFiles.length > availableSlots) {
       toast.error(`A maximum of ${maxFiles} files can be uploaded at once`);
@@ -211,7 +215,7 @@ function GalleryUploadDialog({ onClose, onDone }: { onClose: () => void; onDone:
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-slate-700">Click to select photos or videos</p>
-                <p className="mt-0.5 text-xs text-slate-400">Up to 10 files per upload | 50 MB each</p>
+                <p className="mt-0.5 text-xs text-slate-400">Up to {maxFiles} files per upload | {maxFileSizeMb} MB each</p>
               </div>
             </button>
           ) : (

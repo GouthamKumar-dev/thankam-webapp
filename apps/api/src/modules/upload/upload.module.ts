@@ -14,6 +14,10 @@ import { UploadService } from './upload.service';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const uploadDir = configService.get<string>('UPLOAD_LOCAL_DIR') ?? 'uploads';
+        const configuredMaxFileSizeMb = Number(configService.get<string>('UPLOAD_MAX_FILE_SIZE_MB') ?? 50);
+        const maxFileSizeMb = Number.isFinite(configuredMaxFileSizeMb) && configuredMaxFileSizeMb > 0
+          ? configuredMaxFileSizeMb
+          : 50;
         const destination = resolveUploadDirectory(uploadDir);
 
         if (!existsSync(destination)) {
@@ -39,7 +43,7 @@ import { UploadService } from './upload.service';
             cb(null, true);
           },
           limits: {
-            fileSize: 1024 * 1024 * 50,
+            fileSize: 1024 * 1024 * maxFileSizeMb,
           },
         };
       },

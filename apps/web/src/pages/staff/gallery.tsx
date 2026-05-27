@@ -70,7 +70,7 @@ export function StaffGalleryPage() {
       setCategory('');
       refresh();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message ?? 'Upload failed');
+      toast.error(error?.response?.data?.message ?? error?.message ?? 'Upload failed');
     } finally {
       setUploading(false);
       setUploadProgress(0);

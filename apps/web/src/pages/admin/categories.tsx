@@ -104,7 +104,7 @@ export function CategoriesPage() {
       setCategoryForm(initialCategoryForm());
       refresh();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message ?? 'Unable to save category');
+      toast.error(error?.response?.data?.message ?? error?.message ?? 'Unable to save category');
     }
   };
 
@@ -147,7 +147,7 @@ export function CategoriesPage() {
       setItemForm(initialItemForm());
       refresh();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message ?? 'Unable to save item');
+      toast.error(error?.response?.data?.message ?? error?.message ?? 'Unable to save item');
     }
   };
 
@@ -834,5 +834,4 @@ function searchHierarchy(tree: CategoryNode[], query: string) {
   walk(tree);
   return { categories, items };
 }
-
 
