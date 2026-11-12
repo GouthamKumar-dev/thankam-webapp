@@ -168,6 +168,7 @@ model Quotation {
   templateStyle      TemplateStyle    @default(MODERN_MINIMAL)
   customerName       String
   customerPhone      String
+  customerEmail      String?
   customerAddress    String?
   eventDate          DateTime
   eventType          String

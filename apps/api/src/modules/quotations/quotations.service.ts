@@ -2164,72 +2164,128 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
 <html>
 <head>
   <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }
-    .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .header { background: #0f172a; padding: 28px 24px; text-align: center; }
-    .header h1 { color: #f8fafc; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
-    .header p { color: #f59e0b; margin: 6px 0 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-    .body { padding: 32px 24px; }
-    .greeting { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #0f172a; }
-    .text { font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
-    .details-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 28px; }
-    .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 13px; }
-    .row:last-child { border-bottom: none; }
-    .label { color: #64748b; font-weight: 500; }
-    .val { color: #0f172a; font-weight: 700; text-align: right; }
-    .val-highlight { color: #d97706; font-size: 15px; font-weight: 800; }
-    .btn-wrap { text-align: center; margin: 28px 0; }
-    .btn { display: inline-block; background: #ea580c; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-weight: 700; font-size: 14px; box-shadow: 0 2px 4px rgba(234, 88, 12, 0.2); }
-    .footer { background: #f1f5f9; padding: 20px 24px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.5; border-top: 1px solid #e2e8f0; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thankam Events</title>
 </head>
-<body>
-  <div class="card">
-    <div class="header">
-      <h1>THANKAM EVENTS</h1>
-      <p>Luxury Catering &amp; Banquet Services • Kollam</p>
-    </div>
-    <div class="body">
-      <div class="greeting">Dear ${customerName},</div>
-      <div class="text">${message}</div>
+<body style="margin: 0; padding: 24px 12px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center">
+        <!-- Master Card Container -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);">
+          
+          <!-- Brand Gold Bar -->
+          <tr>
+            <td style="background: linear-gradient(90deg, #F3CA52, #E0A926, #B8860B); height: 6px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
 
-      <div class="details-box">
-        <div class="row">
-          <span class="label">Quotation Ref:</span>
-          <span class="val">${quotation.quotationNumber}</span>
-        </div>
-        <div class="row">
-          <span class="label">Event Date:</span>
-          <span class="val">${eventDateStr}</span>
-        </div>
-        <div class="row">
-          <span class="label">Occasion / Venue:</span>
-          <span class="val">${quotation.eventType || 'Catering'} • ${quotation.venue || 'Kerala'}</span>
-        </div>
-        <div class="row">
-          <span class="label">Expected Guests:</span>
-          <span class="val">${quotation.guestCount} Pax</span>
-        </div>
-        <div class="row">
-          <span class="label">Commercial Amount:</span>
-          <span class="val val-highlight">${grandTotalStr}</span>
-        </div>
-      </div>
+          <!-- Header Section with Official Logo -->
+          <tr>
+            <td align="center" style="background-color: #0A1128; padding: 36px 24px 30px; text-align: center;">
+              <!-- Logo Container -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 16px;">
+                <tr>
+                  <td align="center" style="background-color: #ffffff; padding: 6px; border-radius: 18px; border: 2px solid #F3CA52; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
+                    <img src="https://thankamevents.in/assets/img/Thankam_Logo.png" alt="Thankam Events Logo" width="76" height="76" style="display: block; border-radius: 12px; object-fit: contain;" />
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">THANKAM EVENTS</h1>
+              <p style="margin: 6px 0 0; color: #F3CA52; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">PREMIER WEDDING, RECEPTION &amp; BANQUET CATERING</p>
+              <p style="margin: 4px 0 0; color: #94A3B8; font-size: 11px;">Central Kitchen, Kollam • Serving All 14 Districts of Kerala</p>
+            </td>
+          </tr>
 
-      <div class="btn-wrap">
-        <a href="${portalUrl}" class="btn">${buttonText}</a>
-      </div>
+          <!-- Main Body Content -->
+          <tr>
+            <td style="padding: 32px 28px 20px;">
+              <!-- Status Pill Badge -->
+              <div style="display: inline-block; background-color: #FEF3C7; border: 1px solid #FDE68A; color: #92400E; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 20px;">
+                ✦ ${title}
+              </div>
 
-      <div class="text" style="font-size: 12px; color: #94a3b8; text-align: center;">
-        📎 <strong>Attached:</strong> The official PDF document (${pdfFilename}) has been attached for your records and offline review.
-      </div>
-    </div>
-    <div class="footer">
-      Thankam Events Management, Kollam, Kerala<br>
-      Helpline: +91 97456 84766 / +91 92076 06150 • https://thankamevents.in
-    </div>
-  </div>
+              <div style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 10px;">
+                Dear ${customerName},
+              </div>
+
+              <div style="font-size: 14px; line-height: 1.65; color: #475569; margin-bottom: 26px;">
+                ${message}
+              </div>
+
+              <!-- Banquet Details Card -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; margin-bottom: 28px;">
+                <tr>
+                  <td style="padding: 16px 20px; background-color: #F1F5F9; border-bottom: 1px solid #E2E8F0;">
+                    <span style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1px;">Event &amp; Booking Specifications</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding: 7px 0; font-size: 13px; color: #64748B; font-weight: 500;">Reference Number:</td>
+                        <td align="right" style="padding: 7px 0; font-size: 13px; color: #0F172A; font-weight: 700; font-family: monospace;">${quotation.quotationNumber}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 7px 0; font-size: 13px; color: #64748B; font-weight: 500; border-top: 1px dashed #E2E8F0;">Event Date:</td>
+                        <td align="right" style="padding: 7px 0; font-size: 13px; color: #0F172A; font-weight: 700; border-top: 1px dashed #E2E8F0;">${eventDateStr}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 7px 0; font-size: 13px; color: #64748B; font-weight: 500; border-top: 1px dashed #E2E8F0;">Occasion / Venue:</td>
+                        <td align="right" style="padding: 7px 0; font-size: 13px; color: #0F172A; font-weight: 700; border-top: 1px dashed #E2E8F0;">${quotation.eventType || 'Catering'} • ${quotation.venue || 'Kerala'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 7px 0; font-size: 13px; color: #64748B; font-weight: 500; border-top: 1px dashed #E2E8F0;">Expected Guests:</td>
+                        <td align="right" style="padding: 7px 0; font-size: 13px; color: #0F172A; font-weight: 700; border-top: 1px dashed #E2E8F0;">${quotation.guestCount} Pax</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 9px 0 3px; font-size: 14px; color: #0F172A; font-weight: 800; border-top: 2px solid #E2E8F0;">Total Commercial Estimate:</td>
+                        <td align="right" style="padding: 9px 0 3px; font-size: 17px; color: #D97706; font-weight: 900; font-family: monospace; border-top: 2px solid #E2E8F0;">${grandTotalStr}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Interactive Portal Button -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${portalUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #F59E0B, #EA580C); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 800; padding: 15px 36px; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);">
+                      ${buttonText} &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Attached PDF Notice Callout -->
+              <div style="background-color: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 14px 18px; text-align: center; margin-top: 20px;">
+                <p style="margin: 0; font-size: 12.5px; color: #64748B; line-height: 1.5;">
+                  📎 <strong>Attached Official Document:</strong> <span style="font-family: monospace; font-weight: 700; color: #0F172A;">${pdfFilename}</span> has been attached to this email for your offline accounting and print records.
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Footer Information -->
+          <tr>
+            <td style="background-color: #0F172A; padding: 24px 28px; text-align: center; border-top: 1px solid #1E293B;">
+              <p style="margin: 0 0 8px; color: #F3CA52; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">THANKAM EVENTS • KOLLAM CENTRAL KITCHEN</p>
+              <p style="margin: 0 0 12px; color: #94A3B8; font-size: 11px; line-height: 1.6;">
+                Pure Cow Ghee • Fresh Banana Leaf Banquets • Live Counters • Authentic Travancore Feasts<br>
+                Helpline: +91 97456 84766 / +91 92076 06150 &bull; <a href="https://thankamevents.in" target="_blank" style="color: #F3CA52; text-decoration: none;">thankamevents.in</a>
+              </p>
+              <p style="margin: 0; color: #64748B; font-size: 10px;">
+                This is an official automated notification issued by Thankam Events Management.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
       `;
@@ -2239,6 +2295,19 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
         toName: customerName,
         subject,
         htmlContent,
+        variables: {
+          customer_name: customerName,
+          title,
+          message,
+          quote_no: quotation.quotationNumber,
+          event_date: eventDateStr,
+          venue: `${quotation.eventType || 'Catering'} • ${quotation.venue || 'Kerala'}`,
+          guest_count: `${quotation.guestCount} Pax`,
+          total_amount: grandTotalStr,
+          portal_url: portalUrl,
+          button_text: buttonText,
+          pdf_filename: pdfFilename,
+        },
         attachments: [
           {
             filename: pdfFilename,
