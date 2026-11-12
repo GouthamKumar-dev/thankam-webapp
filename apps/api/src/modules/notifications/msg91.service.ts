@@ -236,10 +236,19 @@ export class Msg91Service {
     }
 
     if (opts.attachments && opts.attachments.length > 0) {
-      payload.attachments = opts.attachments.map((att) => ({
-        file: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
-        file_name: att.filename,
-      }));
+      payload.attachments = opts.attachments.map((att) => {
+        const mime = att.contentType || 'application/pdf';
+        const b64 = Buffer.isBuffer(att.content)
+          ? att.content.toString('base64')
+          : String(att.content);
+        const dataUri = b64.startsWith('data:')
+          ? b64
+          : `data:${mime};base64,${b64}`;
+        return {
+          file: dataUri,
+          fileName: att.filename,
+        };
+      });
     }
 
     try {

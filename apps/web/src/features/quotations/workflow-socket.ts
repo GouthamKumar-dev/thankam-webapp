@@ -22,23 +22,20 @@ export type WorkflowEventPayload = {
 };
 
 function resolveWorkflowUrl() {
-  const fallbackApiBase =
-    typeof window !== 'undefined'
-      ? `${window.location.protocol}//${window.location.hostname}:4000/api`
-      : 'http://localhost:4000/api';
-  const apiBase = import.meta.env.VITE_API_URL ?? fallbackApiBase;
-
-  try {
-    const url = new URL(apiBase);
-    return `${url.protocol}//${url.host}/workflow`;
-  } catch {
-    return 'http://localhost:4000/workflow';
+  if (typeof window !== 'undefined') {
+    // If running in development on port 5173, connect to backend port 4000
+    if (window.location.port === '5173') {
+      return `${window.location.protocol}//${window.location.hostname}:4000/workflow`;
+    }
+    // On production (thankamevents.in), use the same origin
+    return `${window.location.origin}/workflow`;
   }
+  return 'http://localhost:4000/workflow';
 }
 
 export function createWorkflowSocket({ token }: WorkflowSocketOptions): Socket {
   return io(resolveWorkflowUrl(), {
     auth: { token },
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
   });
 }

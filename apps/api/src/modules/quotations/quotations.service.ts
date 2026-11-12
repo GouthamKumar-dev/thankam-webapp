@@ -375,6 +375,11 @@ export class QuotationsService {
       customerPhone: updated.customerPhone,
       requestStatus: updated.requestStatus ?? mappedRequestStatus,
     });
+
+    if (mappedRequestStatus === 'QUOTED') {
+      void this.notifyCustomerByEmail(updated.id, 'QUOTATION_UPDATED');
+    }
+
     return updated;
   }
 

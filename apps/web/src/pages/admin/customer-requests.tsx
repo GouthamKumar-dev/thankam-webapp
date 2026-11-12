@@ -16,6 +16,7 @@ import {
   Eye,
   FileCheck2,
   FileText,
+  Mail,
   MapPin,
   MessageCircle,
   PartyPopper,
@@ -578,6 +579,7 @@ export function CustomerRequestsPage() {
   const [company, setCompany] = useState<{ name: string; tagline: string; logoUrl?: string } | null>(null);
 
   /* quote fields */
+  const [notifyCustomerEmail, setNotifyCustomerEmail] = useState('');
   const [quoteMode, setQuoteMode] = useState<'INDIVIDUAL' | 'PER_PERSON'>('PER_PERSON');
   const [reQuoteMode, setReQuoteMode] = useState(false);
   const [reviseMode, setReviseMode] = useState(false);
@@ -686,6 +688,14 @@ export function CustomerRequestsPage() {
       const d = await quotationsService.getOne(id);
       setDetail(d);
       setSelectedRow((prev) => (prev?.id === id ? prev : (rows.find((r) => r.id === id) ?? null)));
+
+      const emailFromNotes =
+        d.notes?.match(/\[(?:Email|Customer Email|Mail):\s*([^\]\s]+)\]/i)?.[1] ||
+        d.notes?.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)?.[1] ||
+        d.customerAddress?.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)?.[1] ||
+        '';
+      setNotifyCustomerEmail(emailFromNotes);
+
       const guests = Number(d.guestCount ?? 0);
 
       const ppLine = (d.items ?? []).find((l: any) => isPerPersonLine(l));
@@ -881,6 +891,19 @@ export function CustomerRequestsPage() {
               })),
             ];
 
+      let finalNotes = (detail.notes || '').trim();
+      const targetEmail = notifyCustomerEmail.trim();
+      if (targetEmail) {
+        if (/\[(?:Email|Customer Email|Mail):/i.test(finalNotes)) {
+          finalNotes = finalNotes.replace(
+            /\[(?:Email|Customer Email|Mail):\s*[^\]\s]+\]/i,
+            `[Email: ${targetEmail}]`,
+          );
+        } else {
+          finalNotes = finalNotes ? `${finalNotes}\n[Email: ${targetEmail}]` : `[Email: ${targetEmail}]`;
+        }
+      }
+
       await quotationsService.update(detail.id, {
         customerName: detail.customerName,
         customerPhone: detail.customerPhone ?? '',
@@ -889,7 +912,7 @@ export function CustomerRequestsPage() {
         eventType: detail.eventType ?? '',
         venue: detail.venue ?? '',
         guestCount: guests,
-        notes: detail.notes ?? undefined,
+        notes: finalNotes || undefined,
         terms: detail.terms ?? undefined,
         gstPercent: gstEnabled ? parsePct(gstPct) : 0,
         discountAmount: parseCurrency(discountAmt),
@@ -903,9 +926,6 @@ export function CustomerRequestsPage() {
       setReQuoteMode(false);
       refresh();
       void openDetail(detail.id);
-
-      const pdfInput = buildPdfInput();
-      if (pdfInput) openQuotePdf(pdfInput);
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? 'Failed to save');
     } finally {
@@ -943,6 +963,19 @@ export function CustomerRequestsPage() {
               unitPrice: i.unitPrice,
             }));
 
+      let finalNotes = (detail.notes || '').trim();
+      const targetEmail = notifyCustomerEmail.trim();
+      if (targetEmail) {
+        if (/\[(?:Email|Customer Email|Mail):/i.test(finalNotes)) {
+          finalNotes = finalNotes.replace(
+            /\[(?:Email|Customer Email|Mail):\s*[^\]\s]+\]/i,
+            `[Email: ${targetEmail}]`,
+          );
+        } else {
+          finalNotes = finalNotes ? `${finalNotes}\n[Email: ${targetEmail}]` : `[Email: ${targetEmail}]`;
+        }
+      }
+
       await quotationsService.update(detail.id, {
         customerName: detail.customerName,
         customerPhone: detail.customerPhone ?? '',
@@ -951,7 +984,7 @@ export function CustomerRequestsPage() {
         eventType: detail.eventType ?? '',
         venue: detail.venue ?? '',
         guestCount: guests,
-        notes: detail.notes ?? undefined,
+        notes: finalNotes || undefined,
         terms: detail.terms ?? undefined,
         gstPercent: gstEnabled ? parsePct(gstPct) : 0,
         discountAmount: parseCurrency(discountAmt),
@@ -1056,7 +1089,19 @@ export function CustomerRequestsPage() {
   };
 
   const onDownloadAgreement = async () => {
-    if (!agHtml || !selectedRow) return;
+    if (!selectedRow) return;
+    try {
+      await quotationsService.downloadAgreementPdf(
+        selectedRow.id,
+        `Agreement-${selectedRow.quotationNumber}.pdf`,
+      );
+      toast.success('Official Agreement PDF downloaded');
+      return;
+    } catch (e) {
+      console.warn('Backend agreement PDF download fallback to client generation', e);
+    }
+
+    if (!agHtml) return;
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const el = document.createElement('div');
@@ -1986,6 +2031,28 @@ export function CustomerRequestsPage() {
             </div>
           )}
 
+          {/* Customer Notification Email */}
+          {detail && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5 text-xs shadow-2xs">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-blue-950">
+                  <Mail size={13} className="text-blue-600" />
+                  <span>Customer Notification Email</span>
+                </div>
+                <span className="text-[10px] text-blue-700 font-medium">Auto-delivers official PDF &amp; updates</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="email"
+                  placeholder="e.g. customer@gmail.com"
+                  value={notifyCustomerEmail}
+                  onChange={(e) => setNotifyCustomerEmail(e.target.value)}
+                  className="h-8 text-xs bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Workflow Status / Stepper Strip */}
           {detail && (
             <div>
@@ -2744,7 +2811,19 @@ export function CustomerRequestsPage() {
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
+                          if (detail?.id) {
+                            try {
+                              await quotationsService.downloadPdf(
+                                detail.id,
+                                `Quotation-${detail.quotationNumber}.pdf`,
+                              );
+                              toast.success('Official PDF proposal downloaded');
+                              return;
+                            } catch (e) {
+                              console.warn('Direct PDF download fallback to client generation', e);
+                            }
+                          }
                           const p = buildPdfInput();
                           if (p) openQuotePdf(p);
                         }}

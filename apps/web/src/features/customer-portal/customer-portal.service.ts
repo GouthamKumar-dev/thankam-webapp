@@ -183,4 +183,36 @@ export const customerPortalService = {
     );
     return data;
   },
+
+  async downloadMyPdf(accessToken: string, id: string, filename = 'Quotation.pdf') {
+    const response = await portalApiClient.get(`/portal/quotations/my/${id}/pdf`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+
+  async downloadMyAgreementPdf(accessToken: string, id: string, filename = 'Agreement.pdf') {
+    const response = await portalApiClient.get(`/portal/quotations/my/${id}/agreement-pdf`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
 };

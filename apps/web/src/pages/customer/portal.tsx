@@ -450,8 +450,10 @@ export function CustomerPortalPage() {
         const p = JSON.parse(raw);
         const name = p.name ?? "";
         const phone = p.phone ?? "";
+        const email = p.email ?? "";
         setProfileName(name);
         setProfilePhone(phone);
+        if (email) setAuthEmail(email);
         setForm((prev) => ({
           ...prev,
           customerName: prev.customerName || name,
@@ -833,6 +835,7 @@ export function CustomerPortalPage() {
             ...existing,
             name: customerName,
             phone: submitPhone,
+            ...(profileEmail ? { email: profileEmail } : {}),
           }),
         );
         setProfileName(customerName);
@@ -1915,6 +1918,27 @@ export function CustomerPortalPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Digital Proposal & Invoices Email */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <Mail size={13} className="text-[#B8860B]" />
+                        Email for Digital Proposal &amp; Invoices
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-semibold">Recommended</span>
+                    </div>
+                    <Input
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="e.g. yourname@gmail.com"
+                      className="h-10 text-xs rounded-xl mt-1"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      We&apos;ll email the official PDF proposal, agreement, and booking confirmations to this address.
+                    </p>
                   </div>
 
                   {/* Cooking & Catering Instructions */}
