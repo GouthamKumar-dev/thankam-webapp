@@ -2298,6 +2298,9 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
         variables: {
           customer_name: customerName,
           title,
+          TITLE: title,
+          subject,
+          Subject: subject,
           message,
           quote_no: quotation.quotationNumber,
           event_date: eventDateStr,
