@@ -475,15 +475,15 @@ export function AdminDashboardPage() {
       subtitle="Master catering calendar, event schedule reminders, and filterable revenue analytics."
     >
       <div className="space-y-6 pb-12">
-        {/* ── TOP ACTION BAR (Thankam UI Cleanliness) ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs">
+        {/* ── TOP ACTION BAR (Thankam UI Cleanliness & Mobile Responsiveness) ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center gap-2.5">
-            <span className="relative flex h-3 w-3">
+            <span className="relative flex h-3 w-3 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
             </span>
             <div>
-              <p className="text-xs font-bold text-slate-800">
+              <p className="text-xs sm:text-sm font-bold text-slate-800">
                 Live Kitchen &amp; Banquet Operations
               </p>
               <p className="text-[11px] text-slate-400">
@@ -492,12 +492,12 @@ export function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={loadData}
               title="Sync Live Records"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-2xs"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-2xs"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin text-amber-600' : 'text-slate-500'} />
               <span>Sync Data</span>
@@ -506,7 +506,7 @@ export function AdminDashboardPage() {
             <button
               type="button"
               onClick={() => navigate('/admin/quotations')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
             >
               <Plus size={15} strokeWidth={2.5} />
               <span>New Quotation</span>
@@ -514,87 +514,87 @@ export function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── ROW 1: 4 ESSENTIAL EXECUTIVE METRIC CARDS (Thankam Partner KPI Cards) ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* ── ROW 1: 4 ESSENTIAL EXECUTIVE METRIC CARDS (Real Database Metrics & Mobile Responsive) ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* 1. Confirmed Bookings Revenue */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Confirmed Revenue
               </span>
-              <span className="h-8 w-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
                 <CheckCircle2 size={16} />
               </span>
             </div>
-            <p className="mt-2.5 text-2xl font-black font-mono text-slate-900">
-              {formatInr(confirmedVal || 124130)}
+            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-slate-900 truncate">
+              {formatInr(confirmedVal)}
             </p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <p className="text-[11px] font-semibold text-emerald-700">
-                {confirmedCount || 2} agreements locked
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 truncate">
+                {confirmedCount} {confirmedCount === 1 ? 'agreement' : 'agreements'} locked
               </p>
             </div>
           </div>
 
           {/* 2. Quotation Pipeline */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Quotation Pipeline
               </span>
-              <span className="h-8 w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
                 <FileText size={16} />
               </span>
             </div>
-            <p className="mt-2.5 text-2xl font-black font-mono text-slate-900">
-              {formatInr(totalPipelineVal || 3514367)}
+            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-slate-900 truncate">
+              {formatInr(totalPipelineVal)}
             </p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-              <p className="text-[11px] font-semibold text-amber-700">
-                {quotations.length || 28} active proposals
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+              <p className="text-[10px] sm:text-[11px] font-semibold text-amber-700 truncate">
+                {quotations.length} {quotations.length === 1 ? 'active proposal' : 'active proposals'}
               </p>
             </div>
           </div>
 
           {/* 3. Upcoming Events This Month */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Events This Month
               </span>
-              <span className="h-8 w-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
+              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 shrink-0">
                 <CalendarDays size={16} />
               </span>
             </div>
-            <p className="mt-2.5 text-2xl font-black font-mono text-slate-900">
-              {thisMonthEventsCount || 5} Banquets
+            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-slate-900 truncate">
+              {thisMonthEventsCount} {thisMonthEventsCount === 1 ? 'Banquet' : 'Banquets'}
             </p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-500" />
-              <p className="text-[11px] font-semibold text-sky-700">
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-500 shrink-0" />
+              <p className="text-[10px] sm:text-[11px] font-semibold text-sky-700 truncate">
                 Scheduled in {MONTH_NAMES[today.getMonth()]}
               </p>
             </div>
           </div>
 
           {/* 4. Action Required / Pending Requests */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Action Required
               </span>
-              <span className="h-8 w-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
+              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shrink-0">
                 <Clock size={16} />
               </span>
             </div>
-            <p className="mt-2.5 text-2xl font-black font-mono text-orange-600">
-              {pendingInquiriesCount || 13} Requests
+            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-orange-600 truncate">
+              {pendingInquiriesCount} {pendingInquiriesCount === 1 ? 'Request' : 'Requests'}
             </p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
-              <p className="text-[11px] font-semibold text-orange-700">
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500 shrink-0" />
+              <p className="text-[10px] sm:text-[11px] font-semibold text-orange-700 truncate">
                 Inquiries awaiting quotes
               </p>
             </div>
@@ -604,28 +604,28 @@ export function AdminDashboardPage() {
         {/* ── ROW 2: THE BIG CATERING EVENT CALENDAR & REMINDERS HUB ── */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-6">
           {/* Calendar Header Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
-                <CalendarIcon size={20} />
+              <div className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700 shrink-0">
+                <CalendarIcon size={18} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                   <span>{MONTH_NAMES[calMonth]} {calYear}</span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] sm:text-xs font-semibold text-slate-600">
                     {calendarEvents.length} Bookings
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Track banquets, catering deliverables, and setup reminders across event dates
+                  Track banquets, catering deliverables, and setup reminders
                 </p>
               </div>
             </div>
 
-            {/* Navigation & Filter Controls (Thankam Style) */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Navigation & Filter Controls (Mobile and Tab Friendly) */}
+            <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
               {/* Filter Pills */}
-              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs">
+              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs overflow-x-auto max-w-full">
                 {(
                   [
                     { key: 'ALL', label: 'All' },
@@ -638,7 +638,7 @@ export function AdminDashboardPage() {
                     key={f.key}
                     type="button"
                     onClick={() => setCalFilter(f.key)}
-                    className={`rounded-lg px-2.5 py-1 font-bold text-[11px] transition-all ${
+                    className={`rounded-lg px-2 sm:px-2.5 py-1 font-bold text-[10px] sm:text-[11px] whitespace-nowrap transition-all ${
                       calFilter === f.key
                         ? 'bg-slate-900 text-white shadow-2xs'
                         : 'text-slate-600 hover:text-slate-900'
@@ -650,7 +650,7 @@ export function AdminDashboardPage() {
               </div>
 
               {/* Prev / Today / Next Controls */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={prevMonth}
@@ -662,7 +662,7 @@ export function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={goToToday}
-                  className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="h-8 px-2.5 sm:px-3 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Today
                 </button>
@@ -683,10 +683,11 @@ export function AdminDashboardPage() {
             {/* LEFT: FULL-SIZE MONTH CALENDAR GRID */}
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
               {/* Day of Week Headers */}
-              <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500 py-2.5">
+              <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 py-2 sm:py-2.5">
                 {WEEKDAY_NAMES.map((d, idx) => (
                   <div key={d} className={idx === 0 || idx === 6 ? 'text-amber-700' : ''}>
-                    {d}
+                    <span className="hidden sm:inline">{d}</span>
+                    <span className="sm:hidden">{d[0]}</span>
                   </div>
                 ))}
               </div>
@@ -702,7 +703,7 @@ export function AdminDashboardPage() {
                     <div
                       key={day.dateKey}
                       onClick={() => setSelectedDateKey(day.dateKey)}
-                      className={`min-h-[92px] sm:min-h-[105px] p-1.5 sm:p-2 cursor-pointer transition-all flex flex-col justify-between ${
+                      className={`min-h-[64px] sm:min-h-[92px] lg:min-h-[105px] p-1 sm:p-2 cursor-pointer transition-all flex flex-col justify-between ${
                         !day.isCurrentMonth
                           ? 'bg-slate-50/40 opacity-40'
                           : isSelected
@@ -713,7 +714,7 @@ export function AdminDashboardPage() {
                       {/* Top Row: Date Number & Badges */}
                       <div className="flex items-center justify-between">
                         <span
-                          className={`grid h-6 w-6 place-items-center rounded-lg text-xs font-bold font-mono ${
+                          className={`grid h-5 w-5 sm:h-6 sm:w-6 place-items-center rounded-lg text-[10px] sm:text-xs font-bold font-mono ${
                             day.isToday
                               ? 'bg-amber-500 text-slate-950 font-black shadow-2xs'
                               : isSelected
@@ -725,7 +726,7 @@ export function AdminDashboardPage() {
                         </span>
 
                         {totalItems > 0 && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-0.5 sm:gap-1">
                             {dayRems.length > 0 && (
                               <span className="h-1.5 w-1.5 rounded-full bg-purple-500" title={`${dayRems.length} Reminders`} />
                             )}
@@ -742,41 +743,60 @@ export function AdminDashboardPage() {
                         )}
                       </div>
 
-                      {/* Event Cards Strip (Truncated to 2 items max in cell) */}
-                      <div className="mt-1 space-y-1">
-                        {events.slice(0, 2).map((evt) => (
-                          <div
-                            key={evt.id}
-                            className={`truncate rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
-                              evt.type === 'CONFIRMED'
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                : evt.type === 'QUOTED'
-                                ? 'bg-amber-50 border-amber-200 text-amber-900'
-                                : 'bg-orange-50 border-orange-200 text-orange-900'
-                            }`}
-                            title={`${evt.customerName} - ${evt.eventType} (${evt.guestCount} guests)`}
-                          >
-                            <span className="font-bold">{evt.customerName}</span>
-                          </div>
-                        ))}
+                      {/* Event Cards Strip (Compact on Mobile, Full text on Tablet/Desktop) */}
+                      <div className="mt-1 space-y-0.5 sm:space-y-1">
+                        {/* On mobile: compact event dots/count */}
+                        <div className="flex sm:hidden flex-wrap items-center gap-1">
+                          {events.slice(0, 3).map((evt) => (
+                            <span
+                              key={evt.id}
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                evt.type === 'CONFIRMED'
+                                  ? 'bg-emerald-500'
+                                  : evt.type === 'QUOTED'
+                                  ? 'bg-amber-500'
+                                  : 'bg-orange-500'
+                              }`}
+                            />
+                          ))}
+                        </div>
 
-                        {/* Reminders Pill */}
-                        {dayRems.slice(0, 1).map((r) => (
-                          <div
-                            key={r.id}
-                            className="truncate rounded bg-purple-50 border border-purple-200 px-1.5 py-0.5 text-[9px] font-medium text-purple-800 flex items-center gap-1"
-                            title={r.title}
-                          >
-                            <span className="h-1 w-1 rounded-full bg-purple-500" />
-                            <span className="truncate">{r.title}</span>
-                          </div>
-                        ))}
+                        {/* On tablet/desktop: show rich truncated badges */}
+                        <div className="hidden sm:block space-y-1">
+                          {events.slice(0, 2).map((evt) => (
+                            <div
+                              key={evt.id}
+                              className={`truncate rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
+                                evt.type === 'CONFIRMED'
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                  : evt.type === 'QUOTED'
+                                  ? 'bg-amber-50 border-amber-200 text-amber-900'
+                                  : 'bg-orange-50 border-orange-200 text-orange-900'
+                              }`}
+                              title={`${evt.customerName} - ${evt.eventType} (${evt.guestCount} guests)`}
+                            >
+                              <span className="font-bold">{evt.customerName}</span>
+                            </div>
+                          ))}
 
-                        {totalItems > 2 && (
-                          <p className="text-[9px] text-slate-500 font-bold pl-0.5">
-                            +{totalItems - 2} more
-                          </p>
-                        )}
+                          {/* Reminders Pill */}
+                          {dayRems.slice(0, 1).map((r) => (
+                            <div
+                              key={r.id}
+                              className="truncate rounded bg-purple-50 border border-purple-200 px-1.5 py-0.5 text-[9px] font-medium text-purple-800 flex items-center gap-1"
+                              title={r.title}
+                            >
+                              <span className="h-1 w-1 rounded-full bg-purple-500" />
+                              <span className="truncate">{r.title}</span>
+                            </div>
+                          ))}
+
+                          {totalItems > 2 && (
+                            <p className="text-[9px] text-slate-500 font-bold pl-0.5">
+                              +{totalItems - 2} more
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -984,14 +1004,14 @@ export function AdminDashboardPage() {
 
         {/* ── ROW 3: REVENUE LINE GRAPH (MONTH & YEAR FILTERABLE) ── */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-          {/* Header & Filter Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          {/* Header & Filter Controls (Responsive for mobile & tab) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+              <div className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-xl bg-amber-50 border border-amber-200 text-amber-700 shrink-0">
                 <TrendingUp size={18} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
                   Revenue Trajectory &amp; Booking Volume
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -1001,13 +1021,13 @@ export function AdminDashboardPage() {
             </div>
 
             {/* Filter Selectors (Year, Month, Metric) */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {/* Metric Toggle */}
               <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs">
                 <button
                   type="button"
                   onClick={() => setGraphMetric('CONFIRMED')}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
+                  className={`rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-bold transition-all ${
                     graphMetric === 'CONFIRMED'
                       ? 'bg-slate-900 text-white shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -1018,7 +1038,7 @@ export function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setGraphMetric('ALL')}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
+                  className={`rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-bold transition-all ${
                     graphMetric === 'ALL'
                       ? 'bg-slate-900 text-white shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -1034,7 +1054,7 @@ export function AdminDashboardPage() {
                 onChange={(e) =>
                   setGraphMonth(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
                 }
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-500"
+                className="h-8 sm:h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 outline-none focus:border-amber-500"
               >
                 <option value="ALL">All 12 Months</option>
                 {MONTH_NAMES.map((m, idx) => (
@@ -1048,7 +1068,7 @@ export function AdminDashboardPage() {
               <select
                 value={graphYear}
                 onChange={(e) => setGraphYear(Number(e.target.value))}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-500"
+                className="h-8 sm:h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 outline-none focus:border-amber-500"
               >
                 {[2027, 2026, 2025, 2024].map((y) => (
                   <option key={y} value={y}>
@@ -1060,24 +1080,24 @@ export function AdminDashboardPage() {
           </div>
 
           {/* Metric Summary Badges */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-3.5 text-xs">
               <span className="text-slate-500 font-medium">Selected Period Revenue</span>
-              <p className="mt-1 text-lg font-black font-mono text-slate-900">
+              <p className="mt-1 text-base sm:text-lg font-black font-mono text-slate-900 truncate">
                 {formatInr(graphTotalRevenue)}
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-xs">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-3.5 text-xs">
               <span className="text-slate-500 font-medium">Event Bookings Count</span>
-              <p className="mt-1 text-lg font-black font-mono text-amber-800">
-                {graphTotalEvents} Banquets
+              <p className="mt-1 text-base sm:text-lg font-black font-mono text-amber-800">
+                {graphTotalEvents} {graphTotalEvents === 1 ? 'Banquet' : 'Banquets'}
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-xs col-span-2 sm:col-span-1">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-3.5 text-xs">
               <span className="text-slate-500 font-medium">Peak Performance Period</span>
-              <p className="mt-1 text-base font-black font-mono text-emerald-700 truncate">
+              <p className="mt-1 text-sm sm:text-base font-black font-mono text-emerald-700 truncate">
                 {graphPeak.value > 0 ? `${graphPeak.label} (${formatInr(graphPeak.value)})` : '—'}
               </p>
             </div>
