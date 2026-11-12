@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { msg91OtpService } from '@/services/msg91-otp.service';
 import { CategoryNode } from '@/features/categories/categories.service';
 import { QuotationPayload } from '@/features/quotations/quotations.service';
 
@@ -103,18 +104,38 @@ export const customerPortalService = {
       otp?: string;
       existingCustomer: boolean;
     }>('/portal/auth/request-otp', { phone });
+
+    // Trigger MSG91 Headless OTP sending via SMS/WhatsApp
+    try {
+      await msg91OtpService.sendOtp(phone);
+    } catch (err) {
+      console.warn('MSG91 sendOtp note:', err);
+    }
+
     return data;
   },
 
   async verifyOtp(phone: string, otp: string, name?: string, email?: string) {
+    // Obtain MSG91 verified token if available from widget
+    let msg91Token: string | null = null;
+    try {
+      msg91Token = await msg91OtpService.verifyOtp(otp);
+    } catch (err) {
+      console.warn('MSG91 verifyOtp note:', err);
+    }
+
     const { data } = await portalApiClient.post<{
       accessToken: string;
       phone: string;
       existingCustomer: boolean;
       customerName?: string | null;
       customerEmail?: string | null;
-    }>('/portal/auth/verify-otp', { phone, otp, name, email });
+    }>('/portal/auth/verify-otp', { phone, otp, name, email, msg91Token });
     return data;
+  },
+
+  async retryOtp(channel?: string | null) {
+    return msg91OtpService.retryOtp(channel);
   },
 
   async myQuotations(accessToken: string) {

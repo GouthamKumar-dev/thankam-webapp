@@ -52,6 +52,7 @@ export class QuotationsPublicController {
       dto.otp,
       dto.name,
       dto.email,
+      dto.msg91Token,
     );
   }
 

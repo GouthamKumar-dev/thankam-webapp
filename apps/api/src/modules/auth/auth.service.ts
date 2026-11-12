@@ -96,23 +96,73 @@ export class AuthService {
     };
   }
 
-  async logout(refreshToken: string) {
-    const activeTokens = await this.prisma.refreshToken.findMany({
-      where: {
-        revokedAt: null,
-      },
-    });
+  async logout(refreshToken?: string, userId?: string) {
+    if (userId) {
+      await this.prisma.refreshToken.updateMany({
+        where: {
+          userId,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+    }
 
-    for (const token of activeTokens) {
-      const matched = await bcrypt.compare(refreshToken, token.tokenHash);
-      if (matched) {
-        await this.prisma.refreshToken.update({
-          where: { id: token.id },
-          data: { revokedAt: new Date() },
-        });
-        break;
+    if (refreshToken) {
+      const activeTokens = await this.prisma.refreshToken.findMany({
+        where: {
+          revokedAt: null,
+        },
+      });
+
+      for (const token of activeTokens) {
+        const matched = await bcrypt.compare(refreshToken, token.tokenHash);
+        if (matched) {
+          await this.prisma.refreshToken.update({
+            where: { id: token.id },
+            data: { revokedAt: new Date() },
+          });
+        }
       }
     }
+  }
+
+  async logoutFromRequest(req: Request, dtoRefreshToken?: string) {
+    const refreshToken = this.extractRefreshToken(req, dtoRefreshToken);
+    let userId: string | undefined;
+
+    const authHeader = req.headers?.authorization;
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      const accessToken = authHeader.slice(7);
+      try {
+        const accessSecret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
+        const decoded = this.jwtService.verify<JwtUser>(accessToken, {
+          secret: accessSecret,
+        });
+        if (decoded?.sub) {
+          userId = decoded.sub;
+        }
+      } catch {
+        // Access token might be expired, which is normal on logout
+      }
+    }
+
+    if (!userId && refreshToken) {
+      try {
+        const refreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
+        const decoded = this.jwtService.verify<JwtUser>(refreshToken, {
+          secret: refreshSecret,
+        });
+        if (decoded?.sub) {
+          userId = decoded.sub;
+        }
+      } catch {
+        // Refresh token might be expired or unverified
+      }
+    }
+
+    await this.logout(refreshToken, userId);
   }
 
   async forgotPassword(email: string) {
@@ -278,6 +328,44 @@ export class AuthService {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60 * 24 * 7,
       path: '/api/auth',
+    });
+  }
+
+  clearRefreshCookie(res: Response) {
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      secure: isProd,
+      maxAge: 0,
+      expires: new Date(0),
+    };
+
+    res.cookie('refreshToken', '', {
+      ...cookieOptions,
+      path: '/api/auth',
+    });
+    res.clearCookie('refreshToken', {
+      ...cookieOptions,
+      path: '/api/auth',
+    });
+
+    res.cookie('refreshToken', '', {
+      ...cookieOptions,
+      path: '/',
+    });
+    res.clearCookie('refreshToken', {
+      ...cookieOptions,
+      path: '/',
+    });
+
+    res.cookie('refreshToken', '', {
+      ...cookieOptions,
+      path: '/api',
+    });
+    res.clearCookie('refreshToken', {
+      ...cookieOptions,
+      path: '/api',
     });
   }
 

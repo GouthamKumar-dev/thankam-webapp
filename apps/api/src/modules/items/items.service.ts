@@ -3,9 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { toSkipTake } from '../../common/dto/pagination.util';
+import { ItemQueryDto } from './dto/item-query.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 
@@ -33,7 +34,7 @@ export class ItemsService {
       data: {
         name: dto.name,
         description: dto.description,
-        basePrice: dto.basePrice,
+        basePrice: dto.basePrice ?? 0,
         unit: dto.unit,
         imageUrl: dto.imageUrl,
         categoryId: dto.categoryId,
@@ -44,19 +45,44 @@ export class ItemsService {
     });
   }
 
-  async findAll(query: PaginationQueryDto) {
+  async findAll(query: ItemQueryDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 50;
     const { skip, take } = toSkipTake(page, limit);
+
+    const term = (query.search ?? query.q ?? '').trim();
+    const category = (query.category ?? '').trim();
+    const categoryId = query.categoryId?.trim();
+
+    const where: Prisma.ItemWhereInput = {
+      isActive: true,
+    };
+
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { category: { name: { contains: term, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    } else if (category && category !== 'All Categories') {
+      where.category = {
+        name: { equals: category, mode: 'insensitive' },
+      };
+    }
 
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.item.findMany({
+        where,
         skip,
         take,
         include: { category: true },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ name: 'asc' }, { createdAt: 'desc' }],
       }),
-      this.prisma.item.count(),
+      this.prisma.item.count({ where }),
     ]);
 
     return {

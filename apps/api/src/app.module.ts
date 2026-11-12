@@ -12,7 +12,6 @@ import { MenusModule } from './modules/menus/menus.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { WebsiteReviewModule } from './modules/website-review/website-review.module';
-import { EventMediaModule } from './modules/event-media/event-media.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -35,7 +34,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     QuotationsModule,
     GalleryModule,
     WebsiteReviewModule,
-    EventMediaModule,
     SettingsModule,
     UploadModule,
     DashboardModule,

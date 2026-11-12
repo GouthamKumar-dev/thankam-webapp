@@ -1,12 +1,43 @@
-﻿import { apiClient } from '@/services/api-client';
+import { apiClient } from '@/services/api-client';
 import { PaginatedResponse } from '@/types/api';
 
 export type UserRow = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: 'ADMIN' | 'STAFF';
   isActive: boolean;
+  createdAt?: string;
+};
+
+export type CustomerSummary = {
+  id: string;
+  name: string;
+  phone: string;
+  address: string | null;
+  totalQuotations: number;
+  totalBookings: number;
+  lifetimeValue: number;
+  lastEventDate: string | null;
+  lastEventType: string | null;
+  lastVenue: string | null;
+  firstContactAt: string;
+  lastActivityAt: string;
+  latestStatus: string;
+  quotations: Array<{
+    id: string;
+    quotationNumber: string;
+    eventDate: string;
+    eventType: string;
+    venue: string;
+    guestCount: number;
+    grandTotal: string;
+    status: string;
+    requestStatus: string | null;
+    agreementStatus: string;
+    createdAt: string;
+  }>;
 };
 
 export type UserPayload = {
@@ -23,6 +54,11 @@ export const usersService = {
     const { data } = await apiClient.get<PaginatedResponse<UserRow>>('/users', {
       params: { page, limit },
     });
+    return data;
+  },
+
+  async listCustomers() {
+    const { data } = await apiClient.get<CustomerSummary[]>('/users/customers');
     return data;
   },
 

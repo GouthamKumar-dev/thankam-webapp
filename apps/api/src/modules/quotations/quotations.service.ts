@@ -43,7 +43,7 @@ export class QuotationsService {
     const normalized = await this.normalizeItems(dto.items, dto.menuId);
     const totals = this.calculateTotals(normalized, dto);
 
-    return this.prisma.quotation.create({
+    const created = await this.prisma.quotation.create({
       data: {
         quotationNumber,
         customerName: dto.customerName,
@@ -81,6 +81,15 @@ export class QuotationsService {
         menu: true,
       },
     });
+
+    this.workflowGateway.emitRequestCreated({
+      quotationId: created.id,
+      quotationNumber: created.quotationNumber,
+      customerPhone: created.customerPhone,
+      requestStatus: created.requestStatus,
+    });
+
+    return created;
   }
 
   async createPublicRequest(dto: CreateQuotationDto, customerPhone: string) {
@@ -260,12 +269,15 @@ export class QuotationsService {
       discountAmount: dto.discountAmount ?? Number(existing.discountAmount),
       extraChargesAmount:
         dto.extraChargesAmount ?? Number(existing.extraChargesAmount),
-      gstPercent: dto.gstPercent ?? Number(existing.gstPercent),
+      gstPercent:
+        dto.gstPercent !== undefined
+          ? Number(dto.gstPercent)
+          : Number(existing.gstPercent),
     });
 
     await this.prisma.quotationItem.deleteMany({ where: { quotationId: id } });
 
-    return this.prisma.quotation.update({
+    const updated = await this.prisma.quotation.update({
       where: { id },
       data: {
         customerName: dto.customerName,
@@ -302,6 +314,15 @@ export class QuotationsService {
         menu: true,
       },
     });
+
+    this.workflowGateway.emitRequestUpdated({
+      quotationId: updated.id,
+      quotationNumber: updated.quotationNumber,
+      customerPhone: updated.customerPhone,
+      requestStatus: updated.requestStatus,
+    });
+
+    return updated;
   }
 
   async setStatus(id: string, status: QuotationStatus) {
@@ -1161,12 +1182,25 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     }
 
     await this.ensureNoAdminCustomerCredentialConflict(normalizedPhone);
-
     const existingCustomer = await this.isKnownPortalCustomer(normalizedPhone);
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const codeHash = await this.hashOtp(code);
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Dispatch OTP via MSG91 Widget Platform
+    const msg91Result = await this.msg91.sendWidgetOtp(normalizedPhone);
+
+    let codeHash: string;
+    let fallbackDevCode: string | undefined;
+
+    if (msg91Result.success && msg91Result.reqId) {
+      codeHash = `msg91:${msg91Result.reqId}`;
+      this.logger.log(`MSG91 OTP requested for ${normalizedPhone}, reqId=${msg91Result.reqId}`);
+    } else {
+      const code = String(Math.floor(1000 + Math.random() * 9000));
+      fallbackDevCode = code;
+      codeHash = await this.hashOtp(code);
+      this.logger.warn(`MSG91 offline or fallback. Local code generated for ${normalizedPhone}: ${code}`);
+    }
 
     await this.prisma.customerPortalOtp.create({
       data: {
@@ -1176,17 +1210,32 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       },
     });
 
-    await this.msg91.sendOtp(normalizedPhone, code);
-
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`Customer OTP for ${normalizedPhone}: ${code}`);
-    }
-
     return {
       message: 'OTP sent successfully',
       existingCustomer,
-      ...(process.env.NODE_ENV !== 'production' ? { otp: code } : {}),
+      ...(fallbackDevCode && process.env.NODE_ENV !== 'production' ? { otp: fallbackDevCode } : {}),
     };
+  }
+
+  async resendCustomerOtp(phone: string, channel?: string) {
+    const normalizedPhone = this.normalizePhone(phone);
+    const latestOtp = await this.prisma.customerPortalOtp.findFirst({
+      where: {
+        phone: normalizedPhone,
+        verifiedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (latestOtp && latestOtp.codeHash.startsWith('msg91:')) {
+      const reqId = latestOtp.codeHash.replace('msg91:', '');
+      const retryRes = await this.msg91.retryWidgetOtp(reqId, channel);
+      if (retryRes.success) {
+        return { message: 'OTP resent successfully via MSG91' };
+      }
+    }
+
+    return this.requestCustomerOtp(phone);
   }
 
   async verifyCustomerOtp(
@@ -1194,6 +1243,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     otp: string,
     name?: string,
     email?: string,
+    msg91Token?: string,
   ) {
     const normalizedPhone = this.normalizePhone(phone);
     if (!/^\d{10}$/.test(normalizedPhone)) {
@@ -1207,31 +1257,61 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       throw new BadRequestException('Name is required for new customer');
     }
 
-    const latestOtp = await this.prisma.customerPortalOtp.findFirst({
-      where: {
-        phone: normalizedPhone,
-        verifiedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!latestOtp || latestOtp.expiresAt <= new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
+    let isVerified = false;
+    if (msg91Token) {
+      const msg91Valid = await this.msg91.verifyWidgetAccessToken(msg91Token);
+      if (msg91Valid) {
+        isVerified = true;
+      }
     }
 
-    const matched = await this.compareOtp(otp, latestOtp.codeHash);
-    if (!matched) {
+    if (!isVerified) {
+      const latestOtp = await this.prisma.customerPortalOtp.findFirst({
+        where: {
+          phone: normalizedPhone,
+          verifiedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!latestOtp || latestOtp.expiresAt <= new Date()) {
+        throw new UnauthorizedException('OTP expired or invalid');
+      }
+
+      if (latestOtp.codeHash.startsWith('msg91:')) {
+        const reqId = latestOtp.codeHash.replace('msg91:', '');
+        const msg91Matched = await this.msg91.verifyWidgetOtp(reqId, otp);
+        if (!msg91Matched) {
+          await this.prisma.customerPortalOtp.update({
+            where: { id: latestOtp.id },
+            data: { attempts: { increment: 1 } },
+          });
+          throw new UnauthorizedException('Invalid OTP');
+        }
+      } else {
+        const matched = await this.compareOtp(otp, latestOtp.codeHash);
+        if (!matched) {
+          await this.prisma.customerPortalOtp.update({
+            where: { id: latestOtp.id },
+            data: { attempts: { increment: 1 } },
+          });
+          throw new UnauthorizedException('OTP expired or invalid');
+        }
+      }
+
       await this.prisma.customerPortalOtp.update({
         where: { id: latestOtp.id },
-        data: { attempts: { increment: 1 } },
+        data: { verifiedAt: new Date() },
       });
-      throw new UnauthorizedException('OTP expired or invalid');
+    } else {
+      await this.prisma.customerPortalOtp.updateMany({
+        where: {
+          phone: normalizedPhone,
+          verifiedAt: null,
+        },
+        data: { verifiedAt: new Date() },
+      });
     }
-
-    await this.prisma.customerPortalOtp.update({
-      where: { id: latestOtp.id },
-      data: { verifiedAt: new Date() },
-    });
 
     const secret =
       this.configService.get<string>('CUSTOMER_PORTAL_JWT_SECRET') ??
@@ -1613,11 +1693,18 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const quotation = await this.findOne(id);
 
     await this.prisma.quotation.update({
       where: { id },
       data: { isDeleted: true },
+    });
+
+    this.workflowGateway.emitRequestUpdated({
+      quotationId: quotation.id,
+      quotationNumber: quotation.quotationNumber,
+      customerPhone: quotation.customerPhone,
+      requestStatus: 'DELETED',
     });
 
     return { message: 'Quotation deleted' };
@@ -1680,10 +1767,14 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     const subTotal = items.reduce((sum, item) => sum + item.amount, 0);
     const discountAmount = dto.discountAmount ?? 0;
     const extraChargesAmount = dto.extraChargesAmount ?? 0;
-    const gstPercent = dto.gstPercent ?? Number(process.env.GST_PERCENT_DEFAULT ?? 18);
+    const rawGst =
+      dto.gstPercent !== undefined
+        ? Number(dto.gstPercent)
+        : Number(process.env.GST_PERCENT_DEFAULT ?? 5);
+    const gstPercent = Math.max(Number.isFinite(rawGst) ? rawGst : 0, 0);
 
     const taxable = Math.max(subTotal - discountAmount + extraChargesAmount, 0);
-    const gstAmount = (taxable * gstPercent) / 100;
+    const gstAmount = gstPercent > 0 ? (taxable * gstPercent) / 100 : 0;
     const grandTotal = taxable + gstAmount;
 
     return {

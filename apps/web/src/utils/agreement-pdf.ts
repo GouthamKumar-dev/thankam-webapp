@@ -1,3 +1,9 @@
+import {
+  isEventServiceItem,
+  getServiceDepartmentGroup,
+  formatServiceLineTitle,
+} from '@/features/quotations/event-services.catalog';
+
 export type AgreementItem = {
   name: string;
   category?: string;
@@ -143,43 +149,103 @@ export function generateAgreementHtml(q: AgreementInput): string {
   const coPhone = q.companyPhone   ?? '+91 9745684766';
   const coEmail = q.companyEmail   ?? 'info@thankamevents.in';
 
-  // Group items by category
-  const groups: Record<string, AgreementItem[]> = {};
-  for (const it of q.items) {
-    const cat = it.category ?? 'General';
-    (groups[cat] = groups[cat] ?? []).push(it);
-  }
+  // Split items into Food vs Event Services & Rentals
+  const foodItems: AgreementItem[] = [];
+  const serviceItems: AgreementItem[] = [];
 
   const isPP = Boolean(q.isPerPerson && q.perPersonRate);
+
+  for (const it of q.items) {
+    if (isPP) {
+      if (isEventServiceItem(it) || Number(it.amount || 0) > 0 || Number(it.unitPrice || 0) > 0) {
+        serviceItems.push(it);
+      } else {
+        foodItems.push(it);
+      }
+    } else {
+      if (isEventServiceItem(it)) {
+        serviceItems.push(it);
+      } else {
+        foodItems.push(it);
+      }
+    }
+  }
+
+  // Group food items by category
+  const foodGroups: Record<string, AgreementItem[]> = {};
+  for (const it of foodItems) {
+    const cat = it.category ?? 'Dishes';
+    (foodGroups[cat] = foodGroups[cat] ?? []).push(it);
+  }
+
+  // Group service items by department (Decor, Production, Rentals, Staff)
+  const serviceGroups: Record<string, { icon: string; lines: AgreementItem[] }> = {};
+  for (const it of serviceItems) {
+    const meta = getServiceDepartmentGroup(it.name, it.category);
+    if (!serviceGroups[meta.group]) {
+      serviceGroups[meta.group] = { icon: meta.icon, lines: [] };
+    }
+    serviceGroups[meta.group].lines.push(it);
+  }
 
   const thumb = (url?: string | null) => url
     ? `<img src="${url}" style="width:34px;height:34px;object-fit:cover;border-radius:5px;border:1px solid #EDE8DF;display:block" alt=""/>`
     : `<div style="width:34px;height:34px;background:#f5f0e8;border-radius:5px;border:1px solid #EDE8DF"></div>`;
 
-  // Per Person: 3-col (img + sl + name); Per Item: 7-col with pricing
-  const itemRowsHtml = isPP
-    ? Object.entries(groups).map(([cat, lines], gi) => `
+  // Food table rows
+  const foodRowsHtml = isPP
+    ? Object.entries(foodGroups).map(([cat, lines], gi) => `
         <tr class="cat-row"><td colspan="3">${gi + 1}. ${cat.toUpperCase()}</td></tr>
-        ${lines.map((l, li) => `
+        ${lines.map((l, li) => {
+          const { title, subtitle } = formatServiceLineTitle(l.name);
+          return `
           <tr>
             <td class="img-cell">${thumb(l.imageUrl)}</td>
             <td class="sl">${li + 1}</td>
-            <td>${l.name}</td>
-          </tr>`).join('')}
+            <td>
+              <div style="font-weight:600;color:#1A202C">${title}</div>
+              ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+            </td>
+          </tr>`;
+        }).join('')}
       `).join('')
-    : Object.entries(groups).map(([cat, lines], gi) => `
-        <tr class="cat-row"><td colspan="7">${gi + 1}. ${cat.toUpperCase()}</td></tr>
-        ${lines.map((l, li) => `
+    : Object.entries(foodGroups).map(([cat, lines], gi) => `
+        <tr class="cat-row"><td colspan="5">${gi + 1}. ${cat.toUpperCase()}</td></tr>
+        ${lines.map((l, li) => {
+          const { title, subtitle } = formatServiceLineTitle(l.name);
+          return `
           <tr>
             <td class="img-cell">${thumb(l.imageUrl)}</td>
             <td class="sl">${li + 1}</td>
-            <td>${l.name}</td>
-            <td class="center">${l.quantity}</td>
-            <td class="center">${l.unit ?? 'plate'}</td>
+            <td>
+              <div style="font-weight:600;color:#1A202C">${title}</div>
+              ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+            </td>
             <td class="right">${l.unitPrice ? inr(l.unitPrice) : '—'}</td>
             <td class="right">${l.amount ? inr(l.amount) : '—'}</td>
-          </tr>`).join('')}
+          </tr>`;
+        }).join('')}
       `).join('');
+
+  // Service table rows
+  const serviceRowsHtml = Object.entries(serviceGroups).map(([groupName, { icon, lines }]) => `
+    <tr class="cat-row" style="background:#FAF8F5;color:#8B6F20;font-weight:700">
+      <td colspan="4"><span style="margin-right:6px">${icon}</span> ${groupName.toUpperCase()}</td>
+    </tr>
+    ${lines.map((l, li) => {
+      const { title, subtitle } = formatServiceLineTitle(l.name);
+      return `
+      <tr>
+        <td class="sl" style="width:36px">${li + 1}</td>
+        <td>
+          <div style="font-weight:600;color:#1A202C">${title}</div>
+          ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+        </td>
+        <td class="right" style="width:100px">${l.unitPrice ? inr(l.unitPrice) : '—'}</td>
+        <td class="right" style="width:110px;font-weight:700;color:#1A202C">${l.amount ? inr(l.amount) : inr(l.quantity * (l.unitPrice ?? 0))}</td>
+      </tr>`;
+    }).join('')}
+  `).join('');
 
   const ppHtml = isPP
     ? `<div class="pp-box no-break">
@@ -188,12 +254,15 @@ export function generateAgreementHtml(q: AgreementInput): string {
        </div>`
     : '';
 
+  const hasGst = Number(q.gstAmount ?? 0) > 0 && Number(q.gstPercent ?? 0) > 0;
   const totals = [
     q.subTotal           ? `<div class="t-row"><span>Sub Total</span><span>${inr(q.subTotal)}</span></div>` : '',
     q.discountAmount     ? `<div class="t-row disc"><span>Discount (–)</span><span>${inr(q.discountAmount)}</span></div>` : '',
     q.extraChargesAmount ? `<div class="t-row"><span>Extra Charges (+)</span><span>${inr(q.extraChargesAmount)}</span></div>` : '',
-    q.gstAmount          ? `<div class="t-row"><span>GST (${q.gstPercent ?? 18}%)</span><span>${inr(q.gstAmount)}</span></div>` : '',
-    `<div class="t-row grand"><span>Total Contract Value</span><span>${inr(q.grandTotal)}</span></div>`,
+    hasGst
+      ? `<div class="t-row"><span>GST (${q.gstPercent}%)</span><span>${inr(q.gstAmount)}</span></div>`
+      : `<div class="t-row" style="color:#718096"><span>GST</span><span style="font-size:11px;font-weight:600">Not Applicable (0%)</span></div>`,
+    `<div class="t-row grand"><span>Total Contract Amount</span><span>${inr(q.grandTotal)}</span></div>`,
   ].join('');
 
   const isAccepted = (q.agreementStatus ?? '').toUpperCase() === 'ACCEPTED';
@@ -229,6 +298,7 @@ export function generateAgreementHtml(q: AgreementInput): string {
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Agreement — ${q.quotationNumber}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -241,6 +311,15 @@ body{font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#f0f2f5;font-s
 /* ── Document wrapper ── */
 .doc{max-width:820px;margin:0 auto;background:#fff;padding:48px 52px}
 @media screen{.doc{box-shadow:0 4px 32px rgba(0,0,0,.10);min-height:100vh}}
+@media screen and (max-width:680px){
+  body{background:#fff;padding:0}
+  .doc{padding:24px 16px;box-shadow:none}
+  .doc-header{flex-direction:column;gap:12px;align-items:flex-start}
+  .doc-meta{text-align:left}
+  .cover-grid, .party-grid, .summary-grid, .sig-grid{grid-template-columns:1fr!important}
+  .table-responsive{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:480px}
+}
 
 /* ── Print ── */
 @media print{
@@ -418,7 +497,7 @@ td{padding:8px 10px;border-bottom:1px solid #f5f0e8;vertical-align:middle;font-s
 </div>
 
 <div class="total-box">
-  <div><div class="lbl">Total Contract Value</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">Inclusive of all charges &amp; taxes</div></div>
+  <div><div class="lbl">Total Amount</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">Inclusive of all charges &amp; taxes</div></div>
   <div class="amt">${inr(q.grandTotal)}</div>
 </div>
 
@@ -438,17 +517,35 @@ td{padding:8px 10px;border-bottom:1px solid #f5f0e8;vertical-align:middle;font-s
 ${statusBanner}
 
 <!-- ══ SECTION 2: SERVICE SCHEDULE ══ -->
-<div class="sec-title" style="margin-top:28px">Schedule A — ${isPP ? 'Included Services' : 'Itemized Services'}</div>
+${foodItems.length > 0 || isPP ? `
+<div class="sec-title" style="margin-top:28px">Schedule A — Food Menu</div>
 <table>
   <thead>
     ${isPP
-      ? `<tr><th style="width:46px"></th><th class="sl">#</th><th>Included Item / Service</th></tr>`
-      : `<tr><th style="width:46px"></th><th class="sl">#</th><th>Item / Service</th><th class="center" style="width:52px">Qty</th><th class="center" style="width:52px">Unit</th><th class="right" style="width:90px">Rate (₹)</th><th class="right" style="width:90px">Amount (₹)</th></tr>`}
+      ? `<tr><th style="width:46px"></th><th class="sl">#</th><th>Dishes Included</th></tr>`
+      : `<tr><th style="width:46px"></th><th class="sl">#</th><th>Dish / Item</th><th class="right" style="width:100px">Rate (₹)</th><th class="right" style="width:100px">Total (₹)</th></tr>`}
   </thead>
-  <tbody>${itemRowsHtml}</tbody>
+  <tbody>${foodRowsHtml}</tbody>
 </table>
 
 ${ppHtml}
+` : ''}
+
+${serviceItems.length > 0 ? `
+<div class="sec-title" style="margin-top:24px">Schedule B — Decor, Production &amp; Event Rentals</div>
+<table>
+  <thead>
+    <tr>
+      <th class="sl" style="width:36px">#</th>
+      <th>Service / Production Item</th>
+      <th class="right" style="width:100px">Rate (₹)</th>
+      <th class="right" style="width:110px">Total (₹)</th>
+    </tr>
+  </thead>
+  <tbody>${serviceRowsHtml}</tbody>
+</table>
+` : ''}
+
 <div class="totals-wrap no-break">${totals}</div>
 
 <div class="summary-grid no-break">
@@ -489,7 +586,7 @@ ${ppHtml}
     <div class="acceptance-row"><strong>Client:</strong> ${q.customerName}${q.customerPhone ? ' · ' + q.customerPhone : ''}</div>
     <div class="acceptance-row"><strong>Event:</strong> ${q.eventType ?? '—'} on ${fmt(q.eventDate)}</div>
     <div class="acceptance-row"><strong>Venue:</strong> ${q.venue ?? '—'} · ${q.guestCount ?? '—'} guests</div>
-    <div class="acceptance-row"><strong>Total Contract Value:</strong> <span style="font-weight:800;color:#B8860B">${inr(q.grandTotal)}</span></div>
+    <div class="acceptance-row"><strong>Total Amount:</strong> <span style="font-weight:800;color:#B8860B">${inr(q.grandTotal)}</span></div>
     <div class="acceptance-row"><strong>Agreement Prepared:</strong> ${fmt(new Date().toISOString())}</div>
   </div>` : `
   <div class="acceptance-box no-break ${isAccepted ? 'done' : ''}">
@@ -497,7 +594,7 @@ ${ppHtml}
     <div class="acceptance-row"><strong>Quotation Number:</strong> ${q.quotationNumber}</div>
     <div class="acceptance-row"><strong>Client Name:</strong> ${q.customerName}</div>
     <div class="acceptance-row"><strong>Event Date:</strong> ${fmt(q.eventDate)}</div>
-    <div class="acceptance-row"><strong>Total Contract Value:</strong> ${inr(q.grandTotal)}</div>
+    <div class="acceptance-row"><strong>Total Amount:</strong> ${inr(q.grandTotal)}</div>
     ${isAccepted
       ? `<div class="acceptance-row"><strong>Accepted On:</strong> ${fmtFull(q.agreementAcceptedAt)}</div>`
       : `<div class="acceptance-row"><strong>Status:</strong> Awaiting client acceptance via portal</div>`}

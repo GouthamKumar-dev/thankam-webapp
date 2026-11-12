@@ -1,12 +1,22 @@
-﻿import { apiClient } from '@/services/api-client';
+import { apiClient } from '@/services/api-client';
 
 export type MenuRow = {
   id: string;
   name: string;
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
   menuItems: Array<{
     id: string;
-    item: { id: string; name: string; basePrice: string; unit?: string };
+    sortOrder?: number;
+    item: {
+      id: string;
+      name: string;
+      basePrice: string;
+      unit?: string;
+      imageUrl?: string;
+      description?: string;
+    };
   }>;
 };
 

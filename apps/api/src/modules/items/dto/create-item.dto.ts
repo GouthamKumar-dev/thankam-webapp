@@ -16,10 +16,11 @@ export class CreateItemDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  basePrice!: number;
+  basePrice?: number;
 
   @IsOptional()
   @IsString()

@@ -3,10 +3,11 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  Crown,
   Film,
   Image as ImageIcon,
   PlayCircle,
-  Sparkles,
+  UtensilsCrossed,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -87,15 +88,15 @@ export function CustomerGalleryPage() {
   }, [selected, visibleItems]);
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#0F1B3C]">
-      <header className="bg-[#0F1B3C] px-4 py-4 text-white shadow-xl md:px-6">
+    <div className="min-h-screen bg-[#FAF9F6] text-slate-900">
+      <header className="bg-[#080C14] border-b border-[#D4AF37]/30 px-4 py-4 text-white shadow-xl md:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               aria-label="Back to customer portal"
               onClick={() => navigate('/customer/portal')}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white/75 transition-all hover:border-amber-400/40 hover:text-amber-300"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-amber-500/20 bg-white/5 text-slate-300 transition-all hover:border-[#D4AF37] hover:text-[#F3CA52]"
             >
               <ArrowLeft size={17} />
             </button>
@@ -103,51 +104,48 @@ export function CustomerGalleryPage() {
               type="button"
               onClick={() => navigate('/')}
               aria-label="Go to home page"
-              className="flex min-w-0 items-center gap-3 rounded-xl p-1 text-left transition-colors hover:bg-white/10"
+              className="flex min-w-0 items-center gap-3 rounded-xl p-1 text-left transition-colors hover:bg-white/5"
             >
-              {company?.logoUrl ? (
-                <img
-                  src={toMediaUrl(company.logoUrl)}
-                  alt={company.name}
-                  className="h-11 w-11 shrink-0 rounded-xl object-contain"
-                />
-              ) : (
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/10">
-                  <Sparkles size={17} className="text-amber-400" />
+              <div className="h-11 w-11 shrink-0 rounded-xl p-[1.5px] bg-gradient-to-tr from-amber-600 via-[#F3CA52] to-amber-500 shadow-sm flex items-center justify-center overflow-hidden">
+                <div className="w-full h-full rounded-[10px] bg-white p-0.5 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={company?.logoUrl ? toMediaUrl(company.logoUrl) : '/assets/img/Thankam_Logo.png'}
+                    alt={company?.name ?? 'Thankam Events'}
+                    className="h-full w-full object-contain"
+                  />
                 </div>
-              )}
+              </div>
               <div className="min-w-0">
-                <p className="truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                <p className="truncate text-[10px] font-bold uppercase tracking-[0.18em] text-[#F3CA52]">
                   {company?.name ?? 'Thankam Events'}
                 </p>
-                <h1 className="text-lg font-black leading-tight">Gallery</h1>
+                <h1 className="text-lg font-black leading-tight text-white font-serif">Event Gallery</h1>
               </div>
             </button>
           </div>
           <button
             type="button"
             onClick={() => navigate('/customer/portal')}
-            className="hidden h-10 items-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-[#0F1B3C] transition-all hover:bg-amber-300 sm:inline-flex"
+            className="hidden h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] hover:brightness-110 px-4 text-xs font-bold text-slate-950 shadow-md transition-all sm:inline-flex"
           >
-            <Sparkles size={14} />
-            Plan Event
+            <UtensilsCrossed size={14} />
+            Plan Feast &amp; Event
           </button>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-6">
-        <section className="overflow-hidden rounded-[2rem] bg-[#0F1B3C] px-6 py-8 text-white shadow-[0_20px_45px_-25px_rgba(15,27,60,0.8)] md:px-10 md:py-10">
+        <section className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0c121e] to-[#080C14] border border-amber-500/30 px-6 py-8 text-white shadow-2xl md:px-10 md:py-10">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="max-w-xl">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-amber-300">
-                Our Moments
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-[#F3CA52]">
+                Our Celebrations
               </p>
-              <h2 className="text-3xl font-black tracking-tight md:text-4xl">
-                Event photos and videos
+              <h2 className="text-3xl font-black tracking-tight font-serif text-white md:text-4xl">
+                Event Photography &amp; Video Reels
               </h2>
-              <p className="mt-3 text-sm leading-6 text-white/65">
-                Explore celebrations crafted by {company?.name ?? 'Thankam Events'}.
-                Open any moment to view it in full.
+              <p className="mt-2 text-xs leading-relaxed text-slate-300">
+                Explore magnificent banquets, royal stage decor, and authentic traditional Kerala Sadhyas crafted by {company?.name ?? 'Thankam Events'}.
               </p>
             </div>
             <div className="flex gap-3 text-center">
@@ -173,7 +171,7 @@ export function CustomerGalleryPage() {
           </div>
         </section>
 
-        <div className="sticky top-0 z-20 mt-6 border-b border-[#EDE8DF]/70 bg-[#FFFDF7]/95 py-3 backdrop-blur-sm">
+        <div className="sticky top-0 z-20 mt-6 border-b border-amber-900/10 bg-[#FAF9F6]/95 py-3 backdrop-blur-sm">
           <div className="flex gap-2 overflow-x-auto">
             {FILTERS.map(({ value, label, icon: Icon }) => {
               const active = filter === value;
@@ -187,15 +185,15 @@ export function CustomerGalleryPage() {
                     setFilter(value);
                     setSelected(null);
                   }}
-                  className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-bold transition-all ${
+                  className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border px-4 text-xs font-bold transition-all ${
                     active
-                      ? 'border-[#0F1B3C] bg-[#0F1B3C] text-white'
-                      : 'border-[#EDE8DF] bg-white text-slate-600 hover:border-amber-300 hover:text-[#B8860B]'
+                      ? 'border-[#080C14] bg-[#080C14] text-[#F3CA52] shadow-md'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-[#D4AF37] hover:text-[#B8860B]'
                   }`}
                 >
-                  <Icon size={15} />
-                  {label}
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] ${active ? 'bg-white/15' : 'bg-[#FDF3D0] text-[#B8860B]'}`}>
+                  <Icon size={14} />
+                  <span>{label}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] ${active ? 'bg-amber-500/20 text-[#F3CA52]' : 'bg-slate-100 text-slate-600'}`}>
                     {count}
                   </span>
                 </button>
@@ -262,9 +260,9 @@ export function CustomerGalleryPage() {
                     loading="lazy"
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1B3C]/75 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#080C14]/80 via-transparent to-transparent" />
                 {item.type === 'VIDEO' ? (
-                  <span className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#0F1B3C] shadow-lg transition-transform group-hover:scale-110">
+                  <span className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-950 shadow-xl transition-transform group-hover:scale-110">
                     <PlayCircle size={25} />
                   </span>
                 ) : null}
@@ -338,7 +336,7 @@ function EmptyGallery({
       <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[#FDF3D0] text-[#B8860B]">
         {icon}
       </div>
-      <p className="font-bold text-[#0F1B3C]">{title}</p>
+      <p className="font-bold text-slate-900">{title}</p>
       <p className="mt-1 text-sm text-slate-500">{description}</p>
     </div>
   );
@@ -359,7 +357,7 @@ function GalleryViewer({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-[#080E20]/95 px-3 py-5 backdrop-blur-sm md:px-16"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 px-3 py-5 backdrop-blur-md md:px-16"
       role="dialog"
       aria-modal="true"
       aria-label={item.title ?? 'Gallery media viewer'}

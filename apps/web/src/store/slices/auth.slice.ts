@@ -15,13 +15,38 @@ export const loginThunk = createAsyncThunk(
   authService.login,
 );
 
+const ADMIN_SESSION_KEY = 'has_admin_session';
+
 export const logoutThunk = createAsyncThunk('auth/logout', authService.logout);
+
 export const initializeAuthThunk = createAsyncThunk(
   'auth/initialize',
   async () => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      // Do not attempt admin/staff refresh on customer portal routes
+      if (pathname.startsWith('/customer')) {
+        return null;
+      }
+      const hasSession = localStorage.getItem(ADMIN_SESSION_KEY) === '1';
+      const isStaffRoute =
+        pathname.startsWith('/admin') ||
+        pathname.startsWith('/staff') ||
+        pathname === '/login';
+      if (!hasSession && !isStaffRoute) {
+        return null;
+      }
+    }
     try {
-      return await authService.refreshSession();
+      const res = await authService.refreshSession();
+      if (res && typeof window !== 'undefined') {
+        localStorage.setItem(ADMIN_SESSION_KEY, '1');
+      }
+      return res;
     } catch {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+      }
       return null;
     }
   },
@@ -43,6 +68,9 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.user = null;
       state.isAuthenticated = false;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+      }
     },
   },
   extraReducers: (builder) => {
@@ -56,6 +84,9 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.initialized = true;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(ADMIN_SESSION_KEY, '1');
+        }
       })
       .addCase(loginThunk.rejected, (state) => {
         state.loading = false;
@@ -66,12 +97,18 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.initialized = true;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+        }
       })
       .addCase(logoutThunk.rejected, (state) => {
         state.accessToken = null;
         state.user = null;
         state.isAuthenticated = false;
         state.initialized = true;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+        }
       })
       .addCase(initializeAuthThunk.pending, (state) => {
         state.loading = true;

@@ -98,6 +98,12 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:request.created', eventPayload);
+    this.server
+      .to(this.customerRoom(customerPhone))
+      .emit('workflow:request.created', eventPayload);
+    this.server
+      .to(this.quotationRoom(payload.quotationId))
+      .emit('workflow:request.created', eventPayload);
   }
 
   emitRequestUpdated(payload: {
@@ -113,6 +119,12 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:request.updated', eventPayload);
+    this.server
+      .to(this.customerRoom(customerPhone))
+      .emit('workflow:request.updated', eventPayload);
+    this.server
+      .to(this.quotationRoom(payload.quotationId))
+      .emit('workflow:request.updated', eventPayload);
   }
 
   emitRequestStatusUpdated(payload: {
@@ -127,14 +139,13 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       customerPhone,
       updatedAt: new Date().toISOString(),
     };
-    // Notify customer + quotation room
+    // Notify customer + quotation room + admin
     this.server
       .to(this.customerRoom(customerPhone))
       .emit('workflow:request.status', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:request.status', eventPayload);
-    // Also notify admin so they see customer responses (accept / decline / interested)
     this.server.to('admin').emit('workflow:request.status', eventPayload);
   }
 
@@ -150,6 +161,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       customerPhone,
       updatedAt: new Date().toISOString(),
     };
+    this.server.to('admin').emit('workflow:quotation.status', eventPayload);
     this.server
       .to(this.customerRoom(customerPhone))
       .emit('workflow:quotation.status', eventPayload);
@@ -169,6 +181,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       customerPhone,
       updatedAt: new Date().toISOString(),
     };
+    this.server.to('admin').emit('workflow:agreement.initiated', eventPayload);
     this.server
       .to(this.customerRoom(customerPhone))
       .emit('workflow:agreement.initiated', eventPayload);
@@ -204,6 +217,12 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:agreement.feedback', eventPayload);
+    this.server
+      .to(this.customerRoom(customerPhone))
+      .emit('workflow:agreement.feedback', eventPayload);
+    this.server
+      .to(this.quotationRoom(payload.quotationId))
+      .emit('workflow:agreement.feedback', eventPayload);
   }
 
   emitCustomerInterested(payload: {
@@ -219,6 +238,12 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:customer.interested', eventPayload);
+    this.server
+      .to(this.customerRoom(customerPhone))
+      .emit('workflow:customer.interested', eventPayload);
+    this.server
+      .to(this.quotationRoom(payload.quotationId))
+      .emit('workflow:customer.interested', eventPayload);
   }
 
   private customerRoom(phone: string) {

@@ -61,6 +61,123 @@ export class UsersService {
     };
   }
 
+  async getCustomers() {
+    const quotations = await this.prisma.quotation.findMany({
+      where: { isDeleted: false },
+      select: {
+        id: true,
+        quotationNumber: true,
+        customerName: true,
+        customerPhone: true,
+        customerAddress: true,
+        eventDate: true,
+        eventType: true,
+        venue: true,
+        guestCount: true,
+        grandTotal: true,
+        status: true,
+        requestStatus: true,
+        agreementStatus: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const customerMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        phone: string;
+        address: string | null;
+        totalQuotations: number;
+        totalBookings: number;
+        lifetimeValue: number;
+        lastEventDate: Date | null;
+        lastEventType: string | null;
+        lastVenue: string | null;
+        firstContactAt: Date;
+        lastActivityAt: Date;
+        latestStatus: string;
+        quotations: Array<{
+          id: string;
+          quotationNumber: string;
+          eventDate: Date;
+          eventType: string;
+          venue: string;
+          guestCount: number;
+          grandTotal: any;
+          status: string;
+          requestStatus: string | null;
+          agreementStatus: string;
+          createdAt: Date;
+        }>;
+      }
+    >();
+
+    for (const q of quotations) {
+      const rawPhone = q.customerPhone ? q.customerPhone.trim() : '';
+      const digits = rawPhone.replace(/\D/g, '');
+      const key =
+        digits.length >= 10
+          ? digits.slice(-10)
+          : rawPhone || q.customerName.trim().toLowerCase();
+
+      if (!customerMap.has(key)) {
+        customerMap.set(key, {
+          id: key,
+          name: q.customerName,
+          phone: q.customerPhone,
+          address: q.customerAddress || null,
+          totalQuotations: 0,
+          totalBookings: 0,
+          lifetimeValue: 0,
+          lastEventDate: q.eventDate,
+          lastEventType: q.eventType,
+          lastVenue: q.venue,
+          firstContactAt: q.createdAt,
+          lastActivityAt: q.createdAt,
+          latestStatus:
+            q.agreementStatus === 'ACCEPTED'
+              ? 'Agreement Accepted'
+              : q.status === 'FINALIZED'
+                ? 'Confirmed'
+                : q.status,
+          quotations: [],
+        });
+      }
+
+      const c = customerMap.get(key)!;
+      c.totalQuotations += 1;
+      const numTotal = Number(q.grandTotal || 0);
+      c.quotations.push({
+        id: q.id,
+        quotationNumber: q.quotationNumber,
+        eventDate: q.eventDate,
+        eventType: q.eventType,
+        venue: q.venue,
+        guestCount: q.guestCount,
+        grandTotal: q.grandTotal,
+        status: q.status,
+        requestStatus: q.requestStatus,
+        agreementStatus: q.agreementStatus,
+        createdAt: q.createdAt,
+      });
+
+      if (q.status === 'FINALIZED' || q.agreementStatus === 'ACCEPTED') {
+        c.totalBookings += 1;
+        c.lifetimeValue += numTotal;
+      }
+
+      if (!c.address && q.customerAddress) {
+        c.address = q.customerAddress;
+      }
+    }
+
+    return Array.from(customerMap.values());
+  }
+
   async findOne(id: string) {
     const user = await this.findById(id);
     if (!user) {

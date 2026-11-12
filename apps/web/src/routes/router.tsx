@@ -23,8 +23,6 @@ import { CustomerTrackPage } from '@/pages/customer/track';
 import { CustomerAgreementPage } from '@/pages/customer/agreement';
 import { CustomerGalleryPage } from '@/pages/customer/gallery';
 import { PublicLandingPage } from '@/pages/public/landing';
-import { EventSelfiePage } from '@/pages/public/event-selfie';
-import { EventReviewPage } from '@/pages/public/event-review';
 
 export const router = createBrowserRouter([
   { path: '/', element: <PublicLandingPage /> },
@@ -42,8 +40,8 @@ export const router = createBrowserRouter([
   { path: '/customer/gallery', element: <CustomerGalleryPage /> },
 
   /* Public event pages */
-  { path: '/event/selfie', element: <EventSelfiePage /> },
-  { path: '/event/review', element: <EventReviewPage /> },
+  { path: '/event/selfie', element: <Navigate to="/" replace /> },
+  { path: '/event/review', element: <Navigate to="/" replace /> },
 
   /* Admin */
   {
@@ -63,9 +61,9 @@ export const router = createBrowserRouter([
           { path: 'event-media', element: <Navigate to="/admin/event-media/gallery" replace /> },
           { path: 'event-media/gallery', element: <EventMediaPage section="gallery" /> },
           { path: 'event-media/testimonials', element: <EventMediaPage section="testimonials" /> },
-          { path: 'event-media/selfies', element: <EventMediaPage section="selfies" /> },
-          { path: 'event-media/reviews', element: <EventMediaPage section="reviews" /> },
-          { path: 'event-media/staff-uploads', element: <EventMediaPage section="staff" /> },
+          { path: 'event-media/selfies', element: <Navigate to="/admin/event-media/gallery" replace /> },
+          { path: 'event-media/reviews', element: <Navigate to="/admin/event-media/gallery" replace /> },
+          { path: 'event-media/staff-uploads', element: <Navigate to="/admin/event-media/gallery" replace /> },
           { path: 'notifications', element: <AdminNotificationsPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'settings', element: <SettingsPage /> },

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MRT_ColumnDef } from 'material-react-table';
 import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { PageShell } from '@/layouts/page-shell';
@@ -59,8 +59,6 @@ export function ItemsPage() {
     () => [
       { accessorKey: 'name', header: 'Item' },
       { accessorFn: (r) => r.category.name, header: 'Category' },
-      { accessorKey: 'unit', header: 'Unit' },
-      { accessorKey: 'basePrice', header: 'Base Price' },
       {
         id: 'actions',
         header: 'Actions',
@@ -191,27 +189,6 @@ export function ItemsPage() {
               ))}
             </SelectInput>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm font-semibold">Base Price</label>
-              <Input
-                type="number"
-                value={form.basePrice}
-                onChange={(e) => setForm((s) => ({ ...s, basePrice: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold">Unit</label>
-              <SelectInput
-                value={form.unit}
-                onChange={(e) => setForm((s) => ({ ...s, unit: e.target.value }))}
-              >
-                {UNIT_OPTIONS.map((u) => (
-                  <option key={u} value={u}>{u.charAt(0).toUpperCase() + u.slice(1)}</option>
-                ))}
-              </SelectInput>
-            </div>
-          </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">Description</label>
             <Textarea
@@ -239,27 +216,6 @@ export function ItemsPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold">Item Name</label>
             <Input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm font-semibold">Base Price</label>
-              <Input
-                type="number"
-                value={form.basePrice}
-                onChange={(e) => setForm((s) => ({ ...s, basePrice: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold">Unit</label>
-              <SelectInput
-                value={form.unit}
-                onChange={(e) => setForm((s) => ({ ...s, unit: e.target.value }))}
-              >
-                {UNIT_OPTIONS.map((u) => (
-                  <option key={u} value={u}>{u.charAt(0).toUpperCase() + u.slice(1)}</option>
-                ))}
-              </SelectInput>
-            </div>
           </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">Description</label>

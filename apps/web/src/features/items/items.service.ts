@@ -1,4 +1,4 @@
-﻿import { apiClient } from '@/services/api-client';
+import { apiClient } from '@/services/api-client';
 import { PaginatedResponse } from '@/types/api';
 
 export type ItemRow = {
@@ -21,11 +21,18 @@ export type ItemPayload = {
 };
 
 export const itemsService = {
-  async list(page = 1, limit = 20) {
+  async list(page = 1, limit = 50, search?: string, category?: string) {
     const { data } = await apiClient.get<PaginatedResponse<ItemRow>>('/items', {
-      params: { page, limit },
+      params: { page, limit, search: search || undefined, category: category || undefined },
     });
     return data;
+  },
+
+  async search(query: string, category?: string, limit = 50) {
+    const { data } = await apiClient.get<PaginatedResponse<ItemRow>>('/items', {
+      params: { search: query, category: category || undefined, limit },
+    });
+    return data.data;
   },
 
   async create(payload: ItemPayload) {

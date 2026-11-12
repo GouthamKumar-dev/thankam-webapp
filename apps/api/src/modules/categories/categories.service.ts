@@ -68,7 +68,18 @@ export class CategoriesService {
   }
 
   async findPublicTree() {
+    const EXCLUDED_NON_FOOD_CATEGORIES = [
+      'Stage Decoration',
+      'Seating & Furniture',
+      'Audio & Visual',
+      'Hospitality & Service',
+      'Photography & Media',
+    ];
+
     const categories = await this.prisma.category.findMany({
+      where: {
+        name: { notIn: EXCLUDED_NON_FOOD_CATEGORIES },
+      },
       include: {
         items: {
           where: { isActive: true },
@@ -80,6 +91,7 @@ export class CategoriesService {
 
     const byParent = new Map<string | null, typeof categories>();
     for (const category of categories) {
+      if (EXCLUDED_NON_FOOD_CATEGORIES.includes(category.name)) continue;
       const key = category.parentId ?? null;
       if (!byParent.has(key)) {
         byParent.set(key, []);
@@ -89,10 +101,12 @@ export class CategoriesService {
 
     const build = (parentId: string | null): any[] => {
       const nodes = byParent.get(parentId) ?? [];
-      return nodes.map((node) => ({
-        ...node,
-        children: build(node.id),
-      }));
+      return nodes
+        .filter((node) => !EXCLUDED_NON_FOOD_CATEGORIES.includes(node.name))
+        .map((node) => ({
+          ...node,
+          children: build(node.id),
+        }));
     };
 
     return build(null);

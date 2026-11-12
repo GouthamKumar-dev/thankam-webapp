@@ -18,4 +18,8 @@ export class VerifyCustomerOtpDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsString()
+  msg91Token?: string;
 }

@@ -1,4 +1,4 @@
-﻿import { apiClient } from '@/services/api-client';
+import { apiClient } from '@/services/api-client';
 import { LoginSchema } from '@/validations/auth';
 import { SafeUser } from '@/types/auth';
 
@@ -18,7 +18,11 @@ export const authService = {
   },
 
   async logout() {
-    await apiClient.post('/auth/logout', {});
+    await apiClient.post(
+      '/auth/logout',
+      {},
+      { headers: { 'x-skip-auth-refresh': '1' } },
+    );
   },
 
   async forgotPassword(email: string) {

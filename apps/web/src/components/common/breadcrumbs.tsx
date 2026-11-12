@@ -2,6 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 
 export function Breadcrumbs() {
   const location = useLocation();
+  if (location.pathname === '/admin/dashboard' || location.pathname === '/admin') {
+    return null;
+  }
   const parts = location.pathname.split('/').filter(Boolean);
 
   return (

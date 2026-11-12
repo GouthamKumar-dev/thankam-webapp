@@ -9,9 +9,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-primary text-primary-foreground shadow-[0_10px_25px_rgba(13,148,136,0.3)] hover:brightness-110',
-  outline: 'border border-border bg-white/95 hover:bg-white',
-  ghost: 'hover:bg-muted',
+    'bg-slate-900 text-white shadow-xs hover:bg-black hover:ring-1 hover:ring-[#B8860B] active:scale-[0.99] transition-all',
+  outline: 'border border-border bg-white/95 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300',
+  ghost: 'hover:bg-muted text-slate-700 hover:text-slate-900',
   danger: 'bg-red-600 text-white hover:bg-red-700',
 };
 

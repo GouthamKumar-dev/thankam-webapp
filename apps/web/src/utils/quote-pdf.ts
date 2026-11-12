@@ -1,3 +1,9 @@
+import {
+  isEventServiceItem,
+  getServiceDepartmentGroup,
+  formatServiceLineTitle,
+} from '@/features/quotations/event-services.catalog';
+
 export type PdfLine = {
   name: string;
   category?: string;
@@ -61,76 +67,159 @@ function safeUnit(u?: string | null) {
 export function openQuotePdf(q: PdfQuoteInput) {
   const isPP = Boolean(q.isPerPerson && q.perPersonRate && q.perPersonGuests);
 
-  // Group lines by category
-  const groups: Record<string, PdfLine[]> = {};
+  // Split lines into Food dishes vs Event Services & Rentals
+  const foodLines: PdfLine[] = [];
+  const serviceLines: PdfLine[] = [];
+
   for (const l of q.lines) {
-    const cat = l.category || 'Items';
-    (groups[cat] = groups[cat] ?? []).push(l);
+    if (isPP) {
+      if (isEventServiceItem(l) || Number(l.amount || 0) > 0 || Number(l.unitPrice || 0) > 0) {
+        serviceLines.push(l);
+      } else {
+        foodLines.push(l);
+      }
+    } else {
+      if (isEventServiceItem(l)) {
+        serviceLines.push(l);
+      } else {
+        foodLines.push(l);
+      }
+    }
   }
 
-  /* ── Items table ─────────────────────────────────────────── */
-  let tableHtml: string;
+  // Group food lines by category
+  const foodGroups: Record<string, PdfLine[]> = {};
+  for (const l of foodLines) {
+    const cat = l.category || 'Dishes';
+    (foodGroups[cat] = foodGroups[cat] ?? []).push(l);
+  }
+
+  // Group service lines by department (Decor, Production, Rentals, Staff)
+  const serviceGroups: Record<string, { icon: string; lines: PdfLine[] }> = {};
+  for (const l of serviceLines) {
+    const meta = getServiceDepartmentGroup(l.name, l.category);
+    if (!serviceGroups[meta.group]) {
+      serviceGroups[meta.group] = { icon: meta.icon, lines: [] };
+    }
+    serviceGroups[meta.group].lines.push(l);
+  }
 
   const thumb = (url?: string | null) => url
     ? `<img src="${url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid #EDE8DF;display:block" alt=""/>`
     : `<div style="width:36px;height:36px;background:#f5f0e8;border-radius:6px;border:1px solid #EDE8DF"></div>`;
 
-  if (isPP) {
-    // Per Person: items are just a list — no qty, unit or price columns
-    const rows = Object.entries(groups).map(([cat, lines]) => `
-      <tr><td colspan="3" class="cat-row">${cat}</td></tr>
-      ${lines.map((l, i) => `
+  let tableHtml = '';
+
+  /* ── 1. Food Menu Section ── */
+  if (foodLines.length > 0 || isPP) {
+    if (isPP) {
+      const rows = Object.entries(foodGroups).map(([cat, lines]) => `
+        <tr><td colspan="3" class="cat-row">${cat}</td></tr>
+        ${lines.map((l, i) => {
+          const { title, subtitle } = formatServiceLineTitle(l.name);
+          return `
+          <tr>
+            <td style="width:44px;padding:6px 8px">${thumb(l.imageUrl)}</td>
+            <td class="right" style="width:32px;color:#aaa;font-size:11px">${i + 1}</td>
+            <td>
+              <div style="font-weight:600;color:#1A202C">${title}</div>
+              ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+            </td>
+          </tr>`;
+        }).join('')}
+      `).join('');
+
+      tableHtml += `
+        <div class="sec-title" style="margin-bottom:8px">1. Food Menu</div>
+        <table>
+          <thead><tr><th style="width:44px"></th><th style="width:32px">#</th><th>Dishes Included</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <div class="pp-banner" style="margin-top:10px;margin-bottom:18px">
+          <div class="pp-label">Rate / Person</div>
+          <div class="pp-calc">
+            ${q.perPersonGuests} guests
+            &nbsp;×&nbsp;
+            <strong>${inrFull(q.perPersonRate!)}</strong>
+            &nbsp;=&nbsp;
+            <span class="pp-total">${inrFull((q.perPersonRate ?? 0) * (q.perPersonGuests ?? 0))}</span>
+          </div>
+        </div>`;
+    } else {
+      const rows = Object.entries(foodGroups).map(([cat, lines]) => `
+        <tr><td colspan="4" class="cat-row">${cat}</td></tr>
+        ${lines.map(l => {
+          const { title, subtitle } = formatServiceLineTitle(l.name);
+          return `
+          <tr>
+            <td style="width:44px;padding:6px 8px">${thumb(l.imageUrl)}</td>
+            <td>
+              <div style="font-weight:600;color:#1A202C">${title}</div>
+              ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+            </td>
+            <td class="right">${inr(l.unitPrice ?? undefined)}</td>
+            <td class="right">${inr(l.amount ?? undefined)}</td>
+          </tr>`;
+        }).join('')}
+      `).join('');
+
+      tableHtml += `
+        <div class="sec-title" style="margin-bottom:8px">1. Food Menu</div>
+        <table>
+          <thead><tr><th style="width:44px"></th><th>Item</th><th class="right">Rate</th><th class="right">Total</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+  }
+
+  /* ── 2. Event Decor, Production & Rentals Section ── */
+  if (serviceLines.length > 0) {
+    const sRows = Object.entries(serviceGroups).map(([groupName, { icon, lines }]) => `
+      <tr>
+        <td colspan="4" class="cat-row" style="background:#FAF8F5;color:#8B6F20;font-weight:700;letter-spacing:0.04em">
+          <span style="font-size:13px;margin-right:6px">${icon}</span> ${groupName.toUpperCase()}
+        </td>
+      </tr>
+      ${lines.map((l, i) => {
+        const { title, subtitle } = formatServiceLineTitle(l.name);
+        return `
         <tr>
-          <td style="width:44px;padding:6px 8px">${thumb(l.imageUrl)}</td>
           <td class="right" style="width:32px;color:#aaa;font-size:11px">${i + 1}</td>
-          <td>${l.name}</td>
-        </tr>`).join('')}
+          <td>
+            <div style="font-weight:600;color:#1A202C">${title}</div>
+            ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+          </td>
+          <td class="right" style="width:110px">${inr(l.unitPrice ?? undefined)}</td>
+          <td class="right" style="width:110px;font-weight:700;color:#1A202C">${inr(l.amount ?? (l.quantity * (l.unitPrice ?? 0)))}</td>
+        </tr>`;
+      }).join('')}
     `).join('');
 
-    tableHtml = `
+    tableHtml += `
+      <div class="sec-title" style="margin-top:24px;margin-bottom:8px">2. Decor, Production &amp; Event Rentals</div>
       <table>
-        <thead><tr><th style="width:44px"></th><th style="width:32px">#</th><th>Included Item</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-
-      <div class="pp-banner">
-        <div class="pp-label">Per Person Pricing</div>
-        <div class="pp-calc">
-          ${q.perPersonGuests} guests
-          &nbsp;×&nbsp;
-          <strong>${inrFull(q.perPersonRate!)}</strong>
-          &nbsp;=&nbsp;
-          <span class="pp-total">${inrFull((q.perPersonRate ?? 0) * (q.perPersonGuests ?? 0))}</span>
-        </div>
-      </div>`;
-  } else {
-    // Per Item: show full price columns
-    const rows = Object.entries(groups).map(([cat, lines]) => `
-      <tr><td colspan="6" class="cat-row">${cat}</td></tr>
-      ${lines.map(l => `
-        <tr>
-          <td style="width:44px;padding:6px 8px">${thumb(l.imageUrl)}</td>
-          <td>${l.name}</td>
-          <td class="right">${l.quantity}</td>
-          <td>${safeUnit(l.unit)}</td>
-          <td class="right">${inr(l.unitPrice ?? undefined)}</td>
-          <td class="right">${inr(l.amount ?? undefined)}</td>
-        </tr>`).join('')}
-    `).join('');
-
-    tableHtml = `
-      <table>
-        <thead><tr><th style="width:44px"></th><th>Item</th><th class="right">Qty</th><th>Unit</th><th class="right">Unit Price</th><th class="right">Amount</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <thead>
+          <tr>
+            <th class="right" style="width:32px">#</th>
+            <th>Service / Production Item</th>
+            <th class="right" style="width:110px">Rate</th>
+            <th class="right" style="width:110px">Total</th>
+          </tr>
+        </thead>
+        <tbody>${sRows}</tbody>
       </table>`;
   }
 
   /* ── Totals ──────────────────────────────────────────────── */
+  const hasGst = Number(q.gstAmount ?? 0) > 0 && Number(q.gstPercent ?? 0) > 0;
   const totalsRows = [
     q.subTotal           ? `<div class="t-row"><span>Sub Total</span><span>${inr(q.subTotal)}</span></div>` : '',
     q.discountAmount     ? `<div class="t-row"><span>Discount</span><span class="neg">− ${inr(q.discountAmount)}</span></div>` : '',
     q.extraChargesAmount ? `<div class="t-row"><span>Extra Charges</span><span>+ ${inr(q.extraChargesAmount)}</span></div>` : '',
-    q.gstAmount          ? `<div class="t-row"><span>GST (${q.gstPercent ?? 18}%)</span><span>${inr(q.gstAmount)}</span></div>` : '',
+    hasGst
+      ? `<div class="t-row"><span>GST (${q.gstPercent}%)</span><span>${inr(q.gstAmount)}</span></div>`
+      : `<div class="t-row" style="color:#718096"><span>GST</span><span style="font-size:11px;font-weight:600">Not Applicable (0%)</span></div>`,
     `<div class="t-row grand"><span>Grand Total</span><span class="gold">${inr(q.grandTotal)}</span></div>`,
   ].join('');
 
@@ -143,6 +232,7 @@ export function openQuotePdf(q: PdfQuoteInput) {
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Quotation ${q.quotationNumber}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -150,6 +240,13 @@ export function openQuotePdf(q: PdfQuoteInput) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#fff;padding:44px;font-size:13px;line-height:1.5}
+@media screen and (max-width:680px){
+  body{padding:16px 12px}
+  .header{flex-direction:column;gap:12px;align-items:flex-start}
+  .q-meta{text-align:left}
+  .info-grid{grid-template-columns:1fr}
+  table{min-width:480px;display:block;overflow-x:auto}
+}
 .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #B8860B;margin-bottom:24px}
 .co-name{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;color:#0F1B3C;letter-spacing:-0.3px}
 .co-tag{font-size:11px;color:#999;margin-top:3px}
