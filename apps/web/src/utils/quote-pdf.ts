@@ -1,3 +1,4 @@
+import html2pdf from 'html2pdf.js';
 import {
   isEventServiceItem,
   getServiceDepartmentGroup,
@@ -64,7 +65,7 @@ function safeUnit(u?: string | null) {
   return ALLOWED_UNITS.includes(r) ? r : 'plate';
 }
 
-export function openQuotePdf(q: PdfQuoteInput) {
+export function generateQuoteHtml(q: PdfQuoteInput): string {
   const isPP = Boolean(q.isPerPerson && q.perPersonRate && q.perPersonGuests);
 
   // Split lines into Food dishes vs Event Services & Rentals
@@ -339,19 +340,48 @@ ${q.rejectionHistory && q.rejectionHistory.length > 0 ? `
   This is a computer-generated quotation.
   ${q.rejectionHistory && q.rejectionHistory.length > 0 ? `<br/><span style="color:#e53e3e">This is Quote Attempt #${q.rejectionHistory.length + 1}</span>` : ''}
 </div>
-<script>
-(function(){
-  function doPrint(){ setTimeout(function(){ window.print(); }, 250); }
-  if(document.readyState==='complete'){ doPrint(); }
-  else { window.addEventListener('load', doPrint); }
-})();
-</script>
 </body>
 </html>`;
 
-  const win = window.open('', '_blank', 'width=960,height=720');
-  if (!win) { alert('Allow pop-ups to preview/download the PDF.'); return; }
-  win.document.write(html);
-  win.document.close();
-  win.focus();
+  return html;
+}
+
+export async function downloadQuotePdf(q: PdfQuoteInput): Promise<void> {
+  const html = generateQuoteHtml(q);
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '794px';
+  container.style.background = '#ffffff';
+  document.body.appendChild(container);
+
+  try {
+    const opt = {
+      margin: 8,
+      filename: `Quotation-${q.quotationNumber}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    };
+    await html2pdf().set(opt).from(container).save();
+  } catch (err) {
+    console.error('Direct PDF generation fallback to popup window', err);
+    const win = window.open('', '_blank', 'width=960,height=720');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+    }
+  } finally {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }
+}
+
+export function openQuotePdf(q: PdfQuoteInput) {
+  void downloadQuotePdf(q);
 }

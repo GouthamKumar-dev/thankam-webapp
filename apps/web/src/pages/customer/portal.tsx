@@ -760,6 +760,24 @@ export function CustomerPortalPage() {
     }
 
     let finalNotes = form.notes.trim();
+
+    // Attach Customer Email from Login/Profile if provided
+    let profileEmail = authEmail.trim();
+    if (!profileEmail) {
+      try {
+        const raw = localStorage.getItem(CUSTOMER_PORTAL_PROFILE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.email) profileEmail = String(parsed.email).trim();
+        }
+      } catch {
+        /* empty */
+      }
+    }
+    if (profileEmail && !finalNotes.includes(profileEmail)) {
+      finalNotes = finalNotes ? `${finalNotes}\n[Email: ${profileEmail}]` : `[Email: ${profileEmail}]`;
+    }
+
     if (hasAlternateContact && (form.alternateName?.trim() || form.alternatePhone?.trim())) {
       const altParts: string[] = [];
       if (form.alternateName?.trim()) altParts.push(`Alternate Contact: ${form.alternateName.trim()}`);

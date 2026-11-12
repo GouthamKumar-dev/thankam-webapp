@@ -275,6 +275,7 @@ function TaxInvoiceModal({
   quoteMode: 'INDIVIDUAL' | 'PER_PERSON';
 }) {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   if (!isOpen) return null;
 
   const guests = Number(detail.guestCount || 1);
@@ -295,12 +296,29 @@ function TaxInvoiceModal({
   const totalTax = cgstVal + sgstVal;
   const grandTotal = Math.round(subtotal + totalTax);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const invoiceNo = detail.quotationNumber?.replace('QUO-', 'INV-') || 'INV-76';
   const invoiceDate = new Date().toLocaleDateString('en-GB');
+
+  const handleDownloadPdf = async () => {
+    if (!invoiceRef.current) return;
+    try {
+      setDownloadingPdf(true);
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt = {
+        margin: 6,
+        filename: `${invoiceNo}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      };
+      await html2pdf().set(opt).from(invoiceRef.current).save();
+    } catch (e) {
+      console.error('Invoice PDF export failed', e);
+      window.print();
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
@@ -322,10 +340,17 @@ function TaxInvoiceModal({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 text-white font-bold text-xs rounded-xl shadow-2xs transition-all"
+              type="button"
+              onClick={() => void handleDownloadPdf()}
+              disabled={downloadingPdf}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 text-white font-bold text-xs rounded-xl shadow-2xs transition-all disabled:opacity-50"
             >
-              <Printer size={14} /> Print / Save PDF
+              {downloadingPdf ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <Download size={14} />
+              )}
+              <span>{downloadingPdf ? 'Generating PDF...' : 'Download Invoice PDF'}</span>
             </button>
             <button
               onClick={onClose}
@@ -1030,17 +1055,33 @@ export function CustomerRequestsPage() {
     }
   };
 
-  const onDownloadAgreement = () => {
+  const onDownloadAgreement = async () => {
     if (!agHtml || !selectedRow) return;
-    const url = URL.createObjectURL(new Blob([agHtml], { type: 'text/html' }));
-    const a = Object.assign(document.createElement('a'), {
-      href: url,
-      download: `${selectedRow.quotationNumber}-agreement.html`,
-    });
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const el = document.createElement('div');
+      el.innerHTML = agHtml;
+      const opt = {
+        margin: 6,
+        filename: `Agreement-${selectedRow.quotationNumber}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      };
+      await html2pdf().set(opt).from(el).save();
+    } catch (err) {
+      console.error('Failed to export agreement PDF', err);
+      // Fallback
+      const url = URL.createObjectURL(new Blob([agHtml], { type: 'text/html' }));
+      const a = Object.assign(document.createElement('a'), {
+        href: url,
+        download: `${selectedRow.quotationNumber}-agreement.html`,
+      });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
   };
 
   /* catalog derived */
@@ -2782,18 +2823,10 @@ export function CustomerRequestsPage() {
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => agIframeRef.current?.contentWindow?.print()}
-                  className="hidden h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:inline-flex"
+                  onClick={() => void onDownloadAgreement()}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105"
                 >
-                  <Printer size={13} /> Print
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onDownloadAgreement}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  <Download size={13} /> Download
+                  <Download size={13} /> Download Agreement PDF
                 </button>
 
                 {agSent ? (

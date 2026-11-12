@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { CategoriesService } from '../categories/categories.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { RejectAgreementDto } from './dto/reject-agreement.dto';
@@ -69,6 +70,38 @@ export class QuotationsPublicController {
     @Param('id') id: string,
   ) {
     return this.quotationsService.getMyPortalQuotationById(phone, id);
+  }
+
+  @Get('quotations/my/:id/pdf')
+  @UseGuards(CustomerPortalAuthGuard)
+  async downloadMyQuotationPdf(
+    @CurrentCustomerPhone() phone: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } = await this.quotationsService.generatePortalPdfStream(phone, id, 'QUOTATION');
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Get('quotations/my/:id/agreement-pdf')
+  @UseGuards(CustomerPortalAuthGuard)
+  async downloadMyQuotationAgreementPdf(
+    @CurrentCustomerPhone() phone: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } = await this.quotationsService.generatePortalPdfStream(phone, id, 'AGREEMENT');
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Patch('quotations/my/:id')

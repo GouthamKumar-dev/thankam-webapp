@@ -515,19 +515,19 @@ export function AdminDashboardPage() {
         </div>
 
         {/* ── ROW 1: 4 ESSENTIAL EXECUTIVE METRIC CARDS (Real Database Metrics & Mobile Responsive) ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* 1. Confirmed Bookings Revenue */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Confirmed Revenue
               </span>
-              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
-                <CheckCircle2 size={16} />
+              <span className="h-6 w-6 sm:h-8 sm:w-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle2 size={14} className="sm:w-4 sm:h-4" />
               </span>
             </div>
-            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-slate-900 truncate">
-              {formatInr(confirmedVal)}
+            <p className="mt-2 text-sm sm:text-lg lg:text-2xl font-black font-mono text-slate-900 tracking-tight truncate">
+              {formatInr(confirmedVal, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </p>
             <div className="mt-1 flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
@@ -538,17 +538,17 @@ export function AdminDashboardPage() {
           </div>
 
           {/* 2. Quotation Pipeline */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Quotation Pipeline
               </span>
-              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
-                <FileText size={16} />
+              <span className="h-6 w-6 sm:h-8 sm:w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                <FileText size={14} className="sm:w-4 sm:h-4" />
               </span>
             </div>
-            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-slate-900 truncate">
-              {formatInr(totalPipelineVal)}
+            <p className="mt-2 text-sm sm:text-lg lg:text-2xl font-black font-mono text-slate-900 tracking-tight truncate">
+              {formatInr(totalPipelineVal, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </p>
             <div className="mt-1 flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
@@ -559,16 +559,16 @@ export function AdminDashboardPage() {
           </div>
 
           {/* 3. Upcoming Events This Month */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Events This Month
               </span>
-              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 shrink-0">
-                <CalendarDays size={16} />
+              <span className="h-6 w-6 sm:h-8 sm:w-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 shrink-0">
+                <CalendarDays size={14} className="sm:w-4 sm:h-4" />
               </span>
             </div>
-            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-slate-900 truncate">
+            <p className="mt-2 text-sm sm:text-lg lg:text-2xl font-black font-mono text-slate-900 tracking-tight truncate">
               {thisMonthEventsCount} {thisMonthEventsCount === 1 ? 'Banquet' : 'Banquets'}
             </p>
             <div className="mt-1 flex items-center gap-1.5">
@@ -580,16 +580,16 @@ export function AdminDashboardPage() {
           </div>
 
           {/* 4. Action Required / Pending Requests */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Action Required
               </span>
-              <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shrink-0">
-                <Clock size={16} />
+              <span className="h-6 w-6 sm:h-8 sm:w-8 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shrink-0">
+                <Clock size={14} className="sm:w-4 sm:h-4" />
               </span>
             </div>
-            <p className="mt-2 text-base sm:text-xl lg:text-2xl font-black font-mono text-orange-600 truncate">
+            <p className="mt-2 text-sm sm:text-lg lg:text-2xl font-black font-mono text-orange-600 tracking-tight truncate">
               {pendingInquiriesCount} {pendingInquiriesCount === 1 ? 'Request' : 'Requests'}
             </p>
             <div className="mt-1 flex items-center gap-1.5">

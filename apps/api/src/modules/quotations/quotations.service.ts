@@ -18,6 +18,8 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { toSkipTake } from '../../common/dto/pagination.util';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Msg91Service } from '../notifications/msg91.service';
+import { EmailNotificationService } from '../notifications/email.service';
+import { QuotationPdfService } from './quotation-pdf.service';
 import {
   CreateQuotationDto,
   QuotationLineDto,
@@ -36,6 +38,8 @@ export class QuotationsService {
     private readonly configService: ConfigService,
     private readonly workflowGateway: QuotationsWorkflowGateway,
     private readonly msg91: Msg91Service,
+    private readonly emailService: EmailNotificationService,
+    private readonly pdfService: QuotationPdfService,
   ) {}
 
   async create(dto: CreateQuotationDto, createdById: string) {
@@ -322,6 +326,8 @@ export class QuotationsService {
       requestStatus: updated.requestStatus,
     });
 
+    void this.notifyCustomerByEmail(updated.id, 'QUOTATION_UPDATED');
+
     return updated;
   }
 
@@ -338,6 +344,11 @@ export class QuotationsService {
       customerPhone: updated.customerPhone,
       status: updated.status,
     });
+
+    if (status === QuotationStatus.FINALIZED) {
+      void this.notifyCustomerByEmail(updated.id, 'QUOTATION_UPDATED');
+    }
+
     return updated;
   }
 
@@ -1167,6 +1178,8 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       customerPhone: updated.customerPhone,
     });
 
+    void this.notifyCustomerByEmail(updated.id, 'AGREEMENT_INITIATED');
+
     return {
       message: 'Agreement initiated successfully',
       quotationId: updated.id,
@@ -1639,6 +1652,8 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       status: 'ACCEPTED',
     });
 
+    void this.notifyCustomerByEmail(updated.id, 'AGREEMENT_ACCEPTED');
+
     return {
       message: 'Agreement accepted successfully',
       agreementStatus: AgreementStatus.ACCEPTED,
@@ -2043,5 +2058,197 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     };
 
     return map[style] ?? map.CLEAN_SIMPLE;
+  }
+
+  // ─── PDF Stream Exporters ───────────────────────────────────────────────────
+
+  async generatePdfStream(id: string, type: 'QUOTATION' | 'AGREEMENT') {
+    const quotation = await this.findOne(id);
+    const company = await this.getCompanyBranding();
+
+    if (type === 'AGREEMENT') {
+      const buffer = await this.pdfService.generateAgreementPdf(quotation, company);
+      return { buffer, filename: `Agreement-${quotation.quotationNumber}.pdf` };
+    }
+    const buffer = await this.pdfService.generateQuotationPdf(quotation, company);
+    return { buffer, filename: `Quotation-${quotation.quotationNumber}.pdf` };
+  }
+
+  async generatePortalPdfStream(phone: string, id: string, type: 'QUOTATION' | 'AGREEMENT') {
+    const quotation = await this.getMyPortalQuotationById(phone, id);
+    const company = await this.getCompanyBranding();
+
+    if (type === 'AGREEMENT') {
+      const buffer = await this.pdfService.generateAgreementPdf(quotation, company);
+      return { buffer, filename: `Agreement-${quotation.quotationNumber}.pdf` };
+    }
+    const buffer = await this.pdfService.generateQuotationPdf(quotation, company);
+    return { buffer, filename: `Quotation-${quotation.quotationNumber}.pdf` };
+  }
+
+  // ─── Customer Email Notifications ───────────────────────────────────────────
+
+  private extractCustomerEmail(notes?: string | null, address?: string | null): string | null {
+    const text = `${notes || ''} ${address || ''}`;
+    const tagMatch = text.match(/\[(?:Email|Customer Email|Mail):\s*([^\]\s]+)\]/i);
+    if (tagMatch && tagMatch[1]) return tagMatch[1].trim();
+
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+    const rawMatch = text.match(emailRegex);
+    return rawMatch ? rawMatch[1].trim() : null;
+  }
+
+  async notifyCustomerByEmail(
+    quotationId: string,
+    eventType: 'QUOTATION_UPDATED' | 'AGREEMENT_INITIATED' | 'AGREEMENT_ACCEPTED' | 'QUOTATION_CREATED',
+  ) {
+    try {
+      const quotation = await this.prisma.quotation.findUnique({
+        where: { id: quotationId },
+        include: { items: true, menu: true },
+      });
+      if (!quotation) return;
+
+      const customerEmail = this.extractCustomerEmail(quotation.notes, quotation.customerAddress);
+      if (!customerEmail) {
+        this.logger.log(`No email found for quotation ${quotation.quotationNumber}, skipping email notification.`);
+        return;
+      }
+
+      const company = await this.getCompanyBranding();
+      const customerName = quotation.customerName || 'Valued Customer';
+      const eventDateStr = quotation.eventDate
+        ? new Date(quotation.eventDate).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'To Be Confirmed';
+
+      const grandTotalStr = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+      }).format(Number(quotation.grandTotal || 0));
+
+      let subject = `Quotation #${quotation.quotationNumber} — Thankam Events`;
+      let title = 'Quotation Update';
+      let message = 'Your catering proposal has been updated. Please find the attached official PDF for details.';
+      let portalUrl = 'https://thankamevents.in/customer/track';
+      let buttonText = 'Review Proposal Online';
+      let pdfBuffer: Buffer;
+      let pdfFilename = `Quotation-${quotation.quotationNumber}.pdf`;
+
+      if (eventType === 'AGREEMENT_INITIATED') {
+        subject = `Catering Service Agreement #${quotation.quotationNumber} — Action Required`;
+        title = 'Catering Service Agreement Ready';
+        message = 'Thank you for choosing Thankam Events! Your banquet catering agreement is now ready for your digital review and formal acceptance.';
+        portalUrl = 'https://thankamevents.in/customer/agreement';
+        buttonText = 'Review & Accept Agreement';
+        pdfBuffer = await this.pdfService.generateAgreementPdf(quotation, company);
+        pdfFilename = `Agreement-${quotation.quotationNumber}.pdf`;
+      } else if (eventType === 'AGREEMENT_ACCEPTED') {
+        subject = `Confirmed: Catering Agreement Locked #${quotation.quotationNumber} — Thankam Events`;
+        title = 'Booking Confirmed & Agreement Locked';
+        message = 'We have received your acceptance of the catering agreement. Your event booking is officially locked in our catering calendar.';
+        portalUrl = 'https://thankamevents.in/customer/agreement';
+        buttonText = 'View Locked Agreement';
+        pdfBuffer = await this.pdfService.generateAgreementPdf(quotation, company);
+        pdfFilename = `Signed-Agreement-${quotation.quotationNumber}.pdf`;
+      } else {
+        pdfBuffer = await this.pdfService.generateQuotationPdf(quotation, company);
+      }
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }
+    .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .header { background: #0f172a; padding: 28px 24px; text-align: center; }
+    .header h1 { color: #f8fafc; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+    .header p { color: #f59e0b; margin: 6px 0 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .body { padding: 32px 24px; }
+    .greeting { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #0f172a; }
+    .text { font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
+    .details-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 28px; }
+    .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 13px; }
+    .row:last-child { border-bottom: none; }
+    .label { color: #64748b; font-weight: 500; }
+    .val { color: #0f172a; font-weight: 700; text-align: right; }
+    .val-highlight { color: #d97706; font-size: 15px; font-weight: 800; }
+    .btn-wrap { text-align: center; margin: 28px 0; }
+    .btn { display: inline-block; background: #ea580c; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-weight: 700; font-size: 14px; box-shadow: 0 2px 4px rgba(234, 88, 12, 0.2); }
+    .footer { background: #f1f5f9; padding: 20px 24px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.5; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>THANKAM EVENTS</h1>
+      <p>Luxury Catering &amp; Banquet Services • Kollam</p>
+    </div>
+    <div class="body">
+      <div class="greeting">Dear ${customerName},</div>
+      <div class="text">${message}</div>
+
+      <div class="details-box">
+        <div class="row">
+          <span class="label">Quotation Ref:</span>
+          <span class="val">${quotation.quotationNumber}</span>
+        </div>
+        <div class="row">
+          <span class="label">Event Date:</span>
+          <span class="val">${eventDateStr}</span>
+        </div>
+        <div class="row">
+          <span class="label">Occasion / Venue:</span>
+          <span class="val">${quotation.eventType || 'Catering'} • ${quotation.venue || 'Kerala'}</span>
+        </div>
+        <div class="row">
+          <span class="label">Expected Guests:</span>
+          <span class="val">${quotation.guestCount} Pax</span>
+        </div>
+        <div class="row">
+          <span class="label">Commercial Amount:</span>
+          <span class="val val-highlight">${grandTotalStr}</span>
+        </div>
+      </div>
+
+      <div class="btn-wrap">
+        <a href="${portalUrl}" class="btn">${buttonText}</a>
+      </div>
+
+      <div class="text" style="font-size: 12px; color: #94a3b8; text-align: center;">
+        📎 <strong>Attached:</strong> The official PDF document (${pdfFilename}) has been attached for your records and offline review.
+      </div>
+    </div>
+    <div class="footer">
+      Thankam Events Management, Kollam, Kerala<br>
+      Helpline: +91 97456 84766 / +91 92076 06150 • https://thankamevents.in
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      await this.emailService.send({
+        toEmail: customerEmail,
+        toName: customerName,
+        subject,
+        htmlContent,
+        attachments: [
+          {
+            filename: pdfFilename,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+    } catch (err) {
+      this.logger.error(`Error notifying customer by email for quotation ${quotationId}:`, err);
+    }
   }
 }

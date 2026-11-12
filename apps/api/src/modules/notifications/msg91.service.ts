@@ -5,17 +5,24 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-interface Msg91EmailRecipient {
+export interface Msg91EmailRecipient {
   name: string;
   email: string;
 }
 
-interface SendEmailOptions {
+export interface SendEmailAttachment {
+  filename: string;
+  content: Buffer | string;
+  contentType?: string;
+}
+
+export interface SendEmailOptions {
   to: Msg91EmailRecipient;
   subject: string;
   html?: string;
   templateId?: string;
   variables?: Record<string, any>;
+  attachments?: SendEmailAttachment[];
 }
 
 @Injectable()
@@ -226,6 +233,13 @@ export class Msg91Service {
         type: 'text/html',
         data: opts.html,
       };
+    }
+
+    if (opts.attachments && opts.attachments.length > 0) {
+      payload.attachments = opts.attachments.map((att) => ({
+        file: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
+        file_name: att.filename,
+      }));
     }
 
     try {

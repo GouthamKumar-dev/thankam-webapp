@@ -30,7 +30,7 @@ import { customerPortalService } from '@/features/customer-portal/customer-porta
 import { createWorkflowSocket } from '@/features/quotations/workflow-socket';
 import { formatInr } from '@/utils/currency';
 import { isVegDish } from '@/utils/dietary';
-import { generateAgreementHtml } from '@/utils/agreement-pdf';
+import { generateAgreementHtml, downloadAgreementPdf, AgreementInput } from '@/utils/agreement-pdf';
 import { toMediaUrl } from '@/utils/media-url';
 import {
   isEventServiceItem,
@@ -385,8 +385,8 @@ export function CustomerAgreementPage() {
     };
   }, [token]);
 
-  /* Build HTML */
-  const buildAgreementHtml = (detail: any): string => {
+  /* Build Agreement Data Input */
+  const buildAgreementInput = (detail: any): AgreementInput => {
     const ppLine = (detail.items ?? []).find(
       (l: any) =>
         l.unit === 'person' ||
@@ -395,7 +395,7 @@ export function CustomerAgreementPage() {
     );
     const isPP = Boolean(ppLine && Number(ppLine.unitPrice || 0) > 0);
 
-    return generateAgreementHtml({
+    return {
       quotationNumber: detail.quotationNumber,
       createdAt: detail.createdAt,
       customerName: detail.customerName,
@@ -434,7 +434,12 @@ export function CustomerAgreementPage() {
       companyPhone: '+91 9207606150',
       companyEmail: 'info@thankamevents.in',
       companyAddress: 'Kollam, Kerala',
-    });
+    };
+  };
+
+  /* Build HTML */
+  const buildAgreementHtml = (detail: any): string => {
+    return generateAgreementHtml(buildAgreementInput(detail));
   };
 
   /* View (inline preview) */
@@ -509,21 +514,9 @@ export function CustomerAgreementPage() {
         detail = await customerPortalService.myQuotationById(token, selected.id);
         setSelectedDetail(detail);
       }
-      const html = buildAgreementHtml(detail);
-      const printWin = window.open('', '_blank');
-      if (!printWin) {
-        toast.error('Pop-up blocked. Please allow pop-ups to print/download agreement.');
-        return;
-      }
-      printWin.document.open();
-      printWin.document.write(html);
-      printWin.document.close();
-      setTimeout(() => {
-        try {
-          printWin.focus();
-          printWin.print();
-        } catch {}
-      }, 500);
+      toast.info('Generating official Agreement PDF...');
+      await downloadAgreementPdf(buildAgreementInput(detail));
+      toast.success('Agreement PDF downloaded successfully!');
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? 'Download failed');
     }
@@ -1318,11 +1311,11 @@ export function CustomerAgreementPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => iframeRef.current?.contentWindow?.print()}
+                onClick={onDownload}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs"
               >
                 <Download size={13} className="text-[#B8860B]" />
-                <span className="hidden sm:inline">Print / Save</span>
+                <span className="hidden sm:inline">Download PDF</span>
               </button>
               <button
                 type="button"

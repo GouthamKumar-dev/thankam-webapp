@@ -2964,37 +2964,28 @@ export function QuotationsPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  const win = window.open('', '_blank', 'width=1000,height=750');
-                  if (!win) {
-                    toast.error('Allow pop-ups to print');
-                    return;
+                type="button"
+                onClick={async () => {
+                  if (!agHtml || !selectedRow) return;
+                  try {
+                    const html2pdf = (await import('html2pdf.js')).default;
+                    const el = document.createElement('div');
+                    el.innerHTML = agHtml;
+                    const opt = {
+                      margin: 6,
+                      filename: `Agreement-${selectedRow.quotationNumber}.pdf`,
+                      image: { type: 'jpeg' as const, quality: 0.98 },
+                      html2canvas: { scale: 2, useCORS: true },
+                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+                    };
+                    await html2pdf().set(opt).from(el).save();
+                  } catch (err) {
+                    console.error('Failed to export agreement PDF', err);
                   }
-                  win.document.write(agHtml);
-                  win.document.close();
-                  win.focus();
-                  setTimeout(() => win.print(), 400);
-                }}
-                className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                <Printer size={13} /> Print / Save PDF
-              </button>
-              <button
-                onClick={() => {
-                  const blob = new Blob([agHtml], { type: 'text/html' });
-                  const url = URL.createObjectURL(blob);
-                  const a = Object.assign(document.createElement('a'), {
-                    href: url,
-                    download: `${selectedRow?.quotationNumber}-agreement.html`,
-                  });
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
-                  setTimeout(() => URL.revokeObjectURL(url), 60000);
                 }}
                 className="inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105"
               >
-                <Download size={13} /> Download
+                <Download size={13} /> Download Agreement PDF
               </button>
             </div>
           </div>
@@ -3186,10 +3177,8 @@ function TaxInvoiceModal({
 }) {
   const isPP = mode === 'PER_PERSON';
   const foodRate = num(ppRate);
-
-  const handlePrint = () => {
-    window.print();
-  };
+  const invoiceRef = useRef<HTMLDivElement>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const invoiceNo = quotationNumber.startsWith('Q-')
     ? quotationNumber.replace('Q-', 'INV-')
@@ -3199,6 +3188,27 @@ function TaxInvoiceModal({
     ? new Date(eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : '—';
   const invoiceDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const handleDownloadPdf = async () => {
+    if (!invoiceRef.current) return;
+    try {
+      setDownloadingPdf(true);
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt = {
+        margin: 6,
+        filename: `${invoiceNo}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      };
+      await html2pdf().set(opt).from(invoiceRef.current).save();
+    } catch (e) {
+      console.error('Invoice PDF export failed', e);
+      window.print();
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static print:z-auto print:overflow-visible">
@@ -3214,11 +3224,16 @@ function TaxInvoiceModal({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#F3CA52] px-4 py-2 text-xs font-bold text-[#080C14] hover:bg-amber-300 transition-colors shadow-2xs"
+              onClick={() => void handleDownloadPdf()}
+              disabled={downloadingPdf}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#F3CA52] px-4 py-2 text-xs font-bold text-[#080C14] hover:bg-amber-300 transition-colors shadow-2xs disabled:opacity-50"
             >
-              <Printer size={14} />
-              <span>Print Invoice / Save PDF</span>
+              {downloadingPdf ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
+              ) : (
+                <Download size={14} />
+              )}
+              <span>{downloadingPdf ? 'Generating PDF...' : 'Download Invoice PDF'}</span>
             </button>
             <button
               type="button"
@@ -3232,7 +3247,7 @@ function TaxInvoiceModal({
 
         {/* Invoice Printable Sheet */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100 flex justify-center print:p-0 print:bg-white print:overflow-visible">
-          <div className="w-full max-w-3xl bg-white p-6 sm:p-10 shadow-sm border border-slate-300 font-sans text-slate-900 rounded-lg print:border-none print:shadow-none print:p-0 print:max-w-none space-y-5">
+          <div ref={invoiceRef} className="w-full max-w-3xl bg-white p-6 sm:p-10 shadow-sm border border-slate-300 font-sans text-slate-900 rounded-lg print:border-none print:shadow-none print:p-0 print:max-w-none space-y-5">
             {/* 1. Header with Company Logo & GST Details */}
             <div className="border-b-2 border-slate-900 pb-4">
               <div className="flex items-start justify-between gap-4">

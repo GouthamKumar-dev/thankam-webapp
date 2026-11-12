@@ -7,11 +7,12 @@ import { QuotationsPublicController } from './quotations-public.controller';
 import { QuotationsWorkflowGateway } from './quotations-workflow.gateway';
 import { CustomerPortalAuthGuard } from './guards/customer-portal-auth.guard';
 import { QuotationsService } from './quotations.service';
+import { QuotationPdfService } from './quotation-pdf.service';
 
 @Module({
   imports: [CategoriesModule, JwtModule.register({}), NotificationsModule],
   controllers: [QuotationsController, QuotationsPublicController],
-  providers: [QuotationsService, CustomerPortalAuthGuard, QuotationsWorkflowGateway],
-  exports: [QuotationsService],
+  providers: [QuotationsService, QuotationPdfService, CustomerPortalAuthGuard, QuotationsWorkflowGateway],
+  exports: [QuotationsService, QuotationPdfService],
 })
 export class QuotationsModule {}

@@ -1,3 +1,4 @@
+import html2pdf from 'html2pdf.js';
 import {
   isEventServiceItem,
   getServiceDepartmentGroup,
@@ -647,4 +648,40 @@ ${serviceItems.length > 0 ? `
 </div><!-- /.doc -->
 </body>
 </html>`;
+}
+
+export async function downloadAgreementPdf(q: AgreementInput): Promise<void> {
+  const html = generateAgreementHtml(q);
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '794px';
+  container.style.background = '#ffffff';
+  document.body.appendChild(container);
+
+  try {
+    const opt = {
+      margin: 8,
+      filename: `Agreement-${q.quotationNumber}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    };
+    await html2pdf().set(opt).from(container).save();
+  } catch (err) {
+    console.error('Direct Agreement PDF generation fallback to popup window', err);
+    const win = window.open('', '_blank', 'width=960,height=720');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+    }
+  } finally {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }
 }

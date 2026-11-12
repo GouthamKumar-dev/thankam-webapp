@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { QuotationStatus, Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -93,6 +95,28 @@ export class QuotationsController {
   @Get(':id/pdf-data')
   pdfData(@Param('id') id: string) {
     return this.quotationsService.getPdfData(id);
+  }
+
+  @Get(':id/pdf')
+  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    const { buffer, filename } = await this.quotationsService.generatePdfStream(id, 'QUOTATION');
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Get(':id/agreement-pdf')
+  async downloadAgreementPdf(@Param('id') id: string, @Res() res: Response) {
+    const { buffer, filename } = await this.quotationsService.generatePdfStream(id, 'AGREEMENT');
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Get(':id/print-html')
