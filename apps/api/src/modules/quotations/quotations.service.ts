@@ -2000,7 +2000,21 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     phone: string,
     email?: string,
   ) {
-    // Allow admin/staff phone numbers to access customer portal for testing & inquiries
+    const phoneConflict = await this.prisma.user.findFirst({
+      where: {
+        phone: {
+          not: null,
+          endsWith: phone,
+        },
+      },
+      select: { id: true, name: true, role: true },
+    });
+    if (phoneConflict) {
+      throw new BadRequestException(
+        'This phone number is registered as an official Admin/Staff account. Please log in via the Admin Portal or use a customer mobile number.',
+      );
+    }
+
     const trimmedEmail = email?.trim();
     if (!trimmedEmail) return;
 
@@ -2014,7 +2028,9 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       select: { id: true },
     });
     if (emailConflict) {
-      this.logger.log(`Customer email ${trimmedEmail} matches an existing staff account.`);
+      throw new BadRequestException(
+        'This email address is registered as an official Admin/Staff account. Please use a customer email address.',
+      );
     }
   }
 

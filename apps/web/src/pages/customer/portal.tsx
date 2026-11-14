@@ -20,6 +20,7 @@ import {
   Phone,
   Search,
   SendHorizontal,
+  ShieldAlert,
   ShieldCheck,
   ShoppingCart,
   Smartphone,
@@ -313,6 +314,7 @@ export function CustomerPortalPage() {
   const [authRedirectTarget, setAuthRedirectTarget] = useState<"quotation" | "agreement" | "cart">("quotation");
   const [authLoading, setAuthLoading] = useState(false);
   const [authPhone, setAuthPhone] = useState("");
+  const [adminPhoneAlert, setAdminPhoneAlert] = useState(false);
   const [authOtp, setAuthOtp] = useState("");
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
@@ -888,6 +890,7 @@ export function CustomerPortalPage() {
       return;
     }
     try {
+      setAdminPhoneAlert(false);
       setAuthLoading(true);
       const res = await customerPortalService.requestOtp(sanitizedPhone);
       setAuthOtpRequested(true);
@@ -899,7 +902,11 @@ export function CustomerPortalPage() {
       if (res.otp) toast.success(`Dev OTP: ${res.otp}`);
       else toast.success("OTP sent to your mobile");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? "Failed to send OTP");
+      const msg = err?.response?.data?.message || err?.message || "Failed to send OTP";
+      if (/Admin\/Staff/i.test(msg) || /admin/i.test(msg)) {
+        setAdminPhoneAlert(true);
+      }
+      toast.error(msg);
     } finally {
       setAuthLoading(false);
     }
@@ -2058,7 +2065,10 @@ export function CustomerPortalPage() {
                   <input
                     type="tel"
                     value={authPhone}
-                    onChange={(e) => setAuthPhone(sanitizePhoneInput(e.target.value))}
+                    onChange={(e) => {
+                      setAuthPhone(sanitizePhoneInput(e.target.value));
+                      if (adminPhoneAlert) setAdminPhoneAlert(false);
+                    }}
                     placeholder="Enter 10-digit number"
                     maxLength={10}
                     autoFocus
@@ -2067,7 +2077,10 @@ export function CustomerPortalPage() {
                   {authPhone.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setAuthPhone("")}
+                      onClick={() => {
+                        setAuthPhone("");
+                        setAdminPhoneAlert(false);
+                      }}
                       className="px-3 text-slate-400 hover:text-slate-600"
                     >
                       <X size={14} />
@@ -2075,6 +2088,26 @@ export function CustomerPortalPage() {
                   )}
                 </div>
               </div>
+
+              {adminPhoneAlert && (
+                <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-3.5 text-xs text-amber-950 shadow-sm animate-in fade-in duration-200">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldAlert size={17} className="text-amber-700 shrink-0 mt-0.5" />
+                    <div className="space-y-1.5 flex-1">
+                      <p className="font-bold text-amber-950">Staff / Admin Account Detected</p>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        This phone number is registered to Thankam Events administration. To manage events, log in through the management dashboard. For customer bookings, please use a customer mobile number.
+                      </p>
+                      <a
+                        href="/admin"
+                        className="inline-flex items-center gap-1 font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline text-[11px] pt-1"
+                      >
+                        Go to Admin Portal →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-3 text-xs text-amber-900">
                 <Sparkles size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
