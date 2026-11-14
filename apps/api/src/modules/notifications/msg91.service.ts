@@ -210,90 +210,13 @@ export class Msg91Service {
 
   // ─── Transactional Email ─────────────────────────────────────────────────────
 
-  private cachedTemplateId: string | null = null;
+  private cachedTemplateId: string | null = 'thankam_notifications';
 
-  async resolveTemplateId(requestedTemplateId?: string): Promise<string | undefined> {
+  async resolveTemplateId(requestedTemplateId?: string): Promise<string> {
     if (requestedTemplateId) return requestedTemplateId;
-    if (this.cachedTemplateId) return this.cachedTemplateId;
-
     const envTemplate = this.configService.get<string>('MSG91_EMAIL_TEMPLATE_ID');
-    if (envTemplate) {
-      this.cachedTemplateId = envTemplate;
-      return envTemplate;
-    }
-
-    const authKey = this.configService.get<string>('MSG91_AUTH_KEY');
-    if (!authKey) return undefined;
-
-    try {
-      // 1. Check existing templates in the MSG91 account
-      const listRes = await fetch(
-        'https://control.msg91.com/api/v5/email/templates?per_page=20',
-        {
-          headers: { authkey: authKey, Accept: 'application/json' },
-        },
-      );
-      const listRaw = await listRes.text();
-      let listData: any = {};
-      try {
-        listData = JSON.parse(listRaw);
-      } catch {
-        /* non-json */
-      }
-
-      const templates = listData?.data || (Array.isArray(listData) ? listData : []);
-      if (Array.isArray(templates) && templates.length > 0) {
-        const matched =
-          templates.find(
-            (t: any) =>
-              t.slug === 'thankam_notifications' ||
-              (t.name && /thankam/i.test(t.name)),
-          ) ?? templates[0];
-        const resolved = matched.slug || String(matched.id);
-        this.logger.log(`[MSG91] Auto-discovered email template: ${resolved}`);
-        this.cachedTemplateId = resolved;
-        return resolved;
-      }
-
-      // 2. If no templates exist, auto-create the default notification template
-      this.logger.log(
-        '[MSG91] No email template found, registering default "thankam_notifications" template...',
-      );
-      const createRes = await fetch(
-        'https://control.msg91.com/api/v5/email/templates',
-        {
-          method: 'POST',
-          headers: {
-            authkey: authKey,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            name: 'Thankam Events Notifications',
-            slug: 'thankam_notifications',
-            subject: '{{subject}}',
-            body: '{{{body}}}',
-          }),
-        },
-      );
-
-      const createRaw = await createRes.text();
-      this.logger.log(`[MSG91] Template creation response: ${createRaw}`);
-      let createData: any = {};
-      try {
-        createData = JSON.parse(createRaw);
-      } catch {
-        /* non-json */
-      }
-
-      const createdSlug =
-        createData?.data?.slug || createData?.slug || 'thankam_notifications';
-      this.cachedTemplateId = createdSlug;
-      return createdSlug;
-    } catch (err) {
-      this.logger.warn(`[MSG91] Auto template resolution note: ${err}`);
-      return undefined;
-    }
+    if (envTemplate) return envTemplate;
+    return this.cachedTemplateId || 'thankam_notifications';
   }
 
   async sendEmail(opts: SendEmailOptions): Promise<void> {
@@ -317,8 +240,9 @@ export class Msg91Service {
     const configuredDomain = this.configService.get<string>('MSG91_DOMAIN');
     const domain =
       configuredDomain ||
-      (fromEmail.includes('@') ? fromEmail.split('@')[1] : undefined);
-    const templateId = await this.resolveTemplateId(opts.templateId);
+      (fromEmail.includes('@') ? fromEmail.split('@')[1] : 'thankamevents.in');
+    const templateId =
+      (await this.resolveTemplateId(opts.templateId)) || 'thankam_notifications';
 
     const payload: Record<string, any> = {
       recipients: [
@@ -335,11 +259,9 @@ export class Msg91Service {
           },
         },
       ],
-      sender: { name: fromName, email: fromEmail },
       from: { name: fromName, email: fromEmail },
       domain,
-      subject: opts.subject,
-      ...(templateId ? { template_id: templateId } : {}),
+      template_id: templateId,
     };
 
     if (opts.html && !templateId) {
