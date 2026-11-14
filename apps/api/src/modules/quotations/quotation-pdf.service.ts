@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import PDFDocument from 'pdfkit';
+import type * as PDFKitTypes from 'pdfkit';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PDFDocument: typeof PDFKitTypes = require('pdfkit');
 
 function fmtInr(n?: number | null | string): string {
   const val = Number(n || 0);
@@ -42,9 +45,9 @@ export class QuotationPdfService {
       });
 
       const chunks: Buffer[] = [];
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      doc.on('error', (err: any) => reject(err));
 
       const primaryColor = '#0F1B3C';
       const goldColor = '#B8860B';
@@ -301,9 +304,9 @@ export class QuotationPdfService {
       });
 
       const chunks: Buffer[] = [];
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      doc.on('error', (err: any) => reject(err));
 
       const primaryColor = '#0F1B3C';
       const goldColor = '#B8860B';
