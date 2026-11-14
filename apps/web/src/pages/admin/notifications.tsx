@@ -16,7 +16,6 @@ import {
   MessageSquare,
   Search,
   ShieldCheck,
-  Sparkles,
   Trash2,
   Volume2,
   VolumeX,
@@ -277,7 +276,7 @@ export function AdminNotificationsPage() {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Unread Updates</span>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Sparkles size={14} />
+              <BellRing size={14} />
             </div>
           </div>
           <p className="mt-2 text-2xl font-black text-emerald-700">{metrics.unread}</p>

@@ -18,7 +18,6 @@ import {
   X,
   MessageCircle,
   Clock,
-  Sparkles,
   CheckCircle2,
   Calendar,
   ChefHat,
@@ -631,7 +630,7 @@ export function PublicLandingPage() {
                 {/* Header with Switcher Tabs */}
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
                   <div className="flex items-center gap-1.5">
-                    <Sparkles size={14} className="text-[#B8860B]" />
+                    <ChefHat size={14} className="text-[#B8860B]" />
                     <span className="text-[11px] font-black uppercase tracking-wider text-slate-900">
                       Popular Feast Styles
                     </span>

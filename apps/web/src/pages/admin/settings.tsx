@@ -23,7 +23,6 @@ import {
   Shield,
   ShieldCheck,
   Sliders,
-  Sparkles,
   Upload,
   UserRound,
   X,
@@ -543,7 +542,7 @@ export function SettingsPage() {
             <div className="sticky top-6 rounded-2xl border border-[#D4AF37]/40 bg-gradient-to-br from-[#080C14] to-[#121927] p-5 text-white shadow-md space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5">
-                  <Sparkles size={13} /> Live Header Preview
+                  <Eye size={13} /> Live Header Preview
                 </span>
                 <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-slate-300">
                   Invoice / Quote

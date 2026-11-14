@@ -22,7 +22,6 @@ import {
   Plus,
   Receipt,
   RefreshCw,
-  Sparkles,
   Star,
   Trash2,
   TrendingUp,

@@ -15,7 +15,6 @@ import {
   List,
   Plus,
   Search,
-  Sparkles,
   Trash2,
   Utensils,
   X,
@@ -196,7 +195,7 @@ export function MenusPage() {
                     : 'bg-gradient-to-br from-[#101622] to-[#1c2638] text-[#F3CA52] border-[#D4AF37]/30',
                 )}
               >
-                {isSadya ? <Sparkles size={16} /> : <Utensils size={16} />}
+                {isSadya ? <ChefHat size={16} /> : <Utensils size={16} />}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -440,7 +439,7 @@ export function MenusPage() {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Sadya Feasts</span>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Sparkles size={14} />
+              <ChefHat size={14} />
             </div>
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">{metrics.sadyaMenus}</p>
@@ -749,7 +748,7 @@ function MenuCard({
                   : 'bg-[#080C14] text-[#F3CA52] border-[#D4AF37]/30',
               )}
             >
-              {isSadya ? <Sparkles size={15} /> : <Utensils size={15} />}
+              {isSadya ? <ChefHat size={15} /> : <Utensils size={15} />}
             </div>
             <div>
               <h3 className="font-bold text-slate-900 text-sm group-hover:text-[#B8860B] transition-colors leading-tight">
@@ -791,7 +790,7 @@ function MenuCard({
         {matchedDishNames.length > 0 && (
           <div className="mt-2.5 rounded-lg bg-amber-50/80 p-2 border border-amber-200/60">
             <p className="text-[10px] font-bold text-[#B8860B] uppercase tracking-wider flex items-center gap-1">
-              <Sparkles size={11} /> Contains matched dish:
+              <Check size={11} /> Contains matched dish:
             </p>
             <p className="text-xs text-amber-900 font-medium truncate mt-0.5">
               {matchedDishNames.join(', ')}
@@ -1239,7 +1238,7 @@ function MenuComposer({
                     : 'bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/80 shadow-2xs',
                 )}
               >
-                <Sparkles size={15} className={activeSection === 'Sadya' ? 'text-[#F3CA52]' : 'text-slate-400'} />
+                <ChefHat size={15} className={activeSection === 'Sadya' ? 'text-[#F3CA52]' : 'text-slate-400'} />
                 <span>Sadya</span>
                 <span
                   className={cn(
@@ -1761,7 +1760,7 @@ function MenuInspectModal({
                   : 'bg-gradient-to-br from-[#121927] to-[#1e2a40] text-[#F3CA52] border-[#D4AF37]/40',
               )}
             >
-              {isSadya ? <Sparkles size={20} /> : <Utensils size={20} />}
+              {isSadya ? <ChefHat size={20} /> : <Utensils size={20} />}
             </div>
             <div>
               <div className="flex items-center gap-2">

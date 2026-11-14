@@ -11,7 +11,8 @@ import {
   Menu,
   LogOut,
   Settings,
-  Sparkles,
+  Eye,
+  User,
   Users,
   X,
 } from 'lucide-react';
@@ -43,7 +44,7 @@ const adminLinks = [
   { label: 'Quotations', to: '/admin/quotations', icon: FileText },
   { label: 'Customer Requests', to: '/admin/customer-requests', icon: Gauge },
   { label: 'Gallery', to: '/admin/gallery', icon: Image },
-  { label: 'Website Review', to: '/admin/website-review', icon: Sparkles },
+  { label: 'Website Review', to: '/admin/website-review', icon: Eye },
   { label: 'Notifications', to: '/admin/notifications', icon: Bell },
   { label: 'Users', to: '/admin/users', icon: Users },
   { label: 'Settings', to: '/admin/settings', icon: Settings },
@@ -382,7 +383,7 @@ export function DashboardLayout() {
                   <Menu size={17} />
                 </Button>
                 <div className="rounded-xl border border-teal-100 bg-teal-50 p-2 text-primary">
-                  <Sparkles size={18} />
+                  <User size={18} />
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signed in as</p>

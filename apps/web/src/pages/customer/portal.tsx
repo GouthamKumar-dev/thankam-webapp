@@ -24,7 +24,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   Smartphone,
-  Sparkles,
   Star,
   Trash2,
   TriangleAlert,
@@ -1410,7 +1409,7 @@ export function CustomerPortalPage() {
 
                           {/* Catering Menu inclusion badge (Replaces price) */}
                           <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
-                            <Sparkles size={11} className="text-[#B8860B]" />
+                            <Check size={11} className="text-[#B8860B]" />
                             <span>Included in Custom Banquet Selection</span>
                           </div>
 
@@ -1601,7 +1600,7 @@ export function CustomerPortalPage() {
                   {selectedItems.length} {selectedItems.length === 1 ? "Dish" : "Dishes"} Selected
                 </p>
                 <p className="text-xs font-bold text-white flex items-center gap-1">
-                  <Sparkles size={12} className="text-[#F3CA52]" />
+                  <CheckCircle2 size={12} className="text-[#F3CA52]" />
                   <span>Ready for Quotation Request</span>
                 </p>
               </div>
@@ -2110,7 +2109,7 @@ export function CustomerPortalPage() {
               )}
 
               <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-3 text-xs text-amber-900">
-                <Sparkles size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
+                <ShieldCheck size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
                 <p className="leading-relaxed text-[11px] text-amber-800">
                   Instant OTP login. View custom quotes, download signed catering agreements, and track preparations in real time.
                 </p>
@@ -2478,7 +2477,7 @@ export function CustomerPortalPage() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 text-[11px] text-amber-800 font-medium">
-                          <Sparkles size={12} className="text-[#B8860B] shrink-0" />
+                          <Clock size={12} className="text-[#B8860B] shrink-0" />
                           <span>Price will be quoted by admin</span>
                         </div>
                       )}

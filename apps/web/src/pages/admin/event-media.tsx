@@ -12,7 +12,6 @@ import {
   Quote,
   RefreshCw,
   Search,
-  Sparkles,
   Star,
   Trash2,
   Upload,
@@ -645,7 +644,7 @@ function TestimonialModal({
           <div className="flex items-center justify-between rounded-xl border border-amber-900/30 bg-[#080C14] px-4 py-3">
             <div>
               <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sparkles size={13} className="text-[#F3CA52]" />
+                <Star size={13} className="text-[#F3CA52]" />
                 <span>Feature on Public Landing Page</span>
               </p>
               <p className="text-[11px] text-slate-400">
@@ -978,7 +977,7 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-emerald-400">On Landing Page</span>
                 <span className="h-8 w-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Sparkles size={16} />
+                  <Eye size={16} />
                 </span>
               </div>
               <p className="mt-3 font-serif text-2xl font-black text-emerald-400">{testimonialsFeaturedCount}</p>

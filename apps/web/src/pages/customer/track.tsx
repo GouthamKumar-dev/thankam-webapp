@@ -21,7 +21,6 @@ import {
   Share2,
   ShieldCheck,
   ShoppingCart,
-  Sparkles,
   ThumbsDown,
   ThumbsUp,
   User,
@@ -1070,7 +1069,7 @@ export function CustomerTrackPage() {
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-2">
-                      <Sparkles size={16} className="text-[#D4AF37]" />
+                      <PartyPopper size={16} className="text-[#D4AF37]" />
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                         Decor, Production &amp; Event Rentals
                       </h3>

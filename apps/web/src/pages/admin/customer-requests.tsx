@@ -27,7 +27,6 @@ import {
   RefreshCw,
   Search,
   Send,
-  Sparkles,
   Trash2,
   User,
   Users,
@@ -2455,7 +2454,7 @@ export function CustomerRequestsPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <div className="grid h-7 w-7 place-items-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs">
-                          <Sparkles size={14} />
+                          <PartyPopper size={14} />
                         </div>
                         <div>
                           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">

@@ -27,7 +27,6 @@ import {
   RefreshCw,
   Search,
   Send,
-  Sparkles,
   Trash2,
   TrendingUp,
   User,
@@ -2519,7 +2518,7 @@ export function QuotationsPage() {
                         }}
                         className="inline-flex items-center gap-1 rounded-xl border border-[#D4AF37]/50 bg-amber-50/60 px-3 py-1.5 text-xs font-bold text-[#B8860B] hover:bg-amber-100 transition-colors shadow-2xs"
                       >
-                        <Sparkles size={12} />
+                        <PartyPopper size={12} />
                         <span>Catalog</span>
                       </button>
 

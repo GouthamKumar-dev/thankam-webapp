@@ -11,7 +11,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Sparkles,
   Trash2,
   UtensilsCrossed,
   X,
