@@ -180,6 +180,14 @@ export const quotationsService = {
     window.URL.revokeObjectURL(url);
   },
 
+  async sendEmail(id: string, email?: string) {
+    const { data } = await apiClient.post<{ success: boolean; method: string; error?: string }>(
+      `/quotations/${id}/send-email`,
+      { email },
+    );
+    return data;
+  },
+
   async downloadAgreementPdf(id: string, filename = 'Agreement.pdf') {
     const response = await apiClient.get(`/quotations/${id}/agreement-pdf`, {
       responseType: 'blob',

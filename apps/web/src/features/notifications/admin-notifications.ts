@@ -10,6 +10,26 @@ export type AdminNotificationItem = {
   read?: boolean;
 };
 
+export function deduplicateNotifications(items: AdminNotificationItem[]): AdminNotificationItem[] {
+  const result: AdminNotificationItem[] = [];
+  for (const item of items) {
+    const isDup = result.some((existing) => {
+      const sameTitle = existing.title === item.title;
+      const sameQuote =
+        (item.quotationNumber && existing.quotationNumber === item.quotationNumber) ||
+        (item.quotationId && existing.quotationId === item.quotationId);
+      const timeDiff = Math.abs(
+        new Date(existing.createdAt).getTime() - new Date(item.createdAt).getTime(),
+      );
+      return sameTitle && (sameQuote || !item.quotationNumber) && timeDiff < 45000;
+    });
+    if (!isDup) {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
 export function readAdminNotifications() {
   if (typeof window === 'undefined') return [] as AdminNotificationItem[];
   const raw = localStorage.getItem(ADMIN_NOTIFICATIONS_KEY);
@@ -17,7 +37,7 @@ export function readAdminNotifications() {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [] as AdminNotificationItem[];
-    return parsed
+    const mapped = parsed
       .filter((item) => item && typeof item.id === 'string')
       .map((item) => ({
         id: String(item.id),
@@ -34,8 +54,8 @@ export function readAdminNotifications() {
             ? item.quotationNumber
             : undefined,
         read: Boolean(item.read),
-      }))
-      .slice(0, 100);
+      }));
+    return deduplicateNotifications(mapped).slice(0, 100);
   } catch {
     return [] as AdminNotificationItem[];
   }
@@ -43,5 +63,6 @@ export function readAdminNotifications() {
 
 export function writeAdminNotifications(items: AdminNotificationItem[]) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ADMIN_NOTIFICATIONS_KEY, JSON.stringify(items.slice(0, 100)));
+  const deduped = deduplicateNotifications(items);
+  localStorage.setItem(ADMIN_NOTIFICATIONS_KEY, JSON.stringify(deduped.slice(0, 100)));
 }

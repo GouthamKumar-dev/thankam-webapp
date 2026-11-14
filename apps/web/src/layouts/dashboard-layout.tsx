@@ -230,6 +230,7 @@ export function DashboardLayout() {
     if (!accessToken) return;
     setSocketStatus('connecting');
     const socket = createWorkflowSocket({ token: accessToken });
+    const lastPushedMap = new Map<string, number>();
 
     const pushNotification = (
       title: string,
@@ -237,9 +238,18 @@ export function DashboardLayout() {
       quotationId?: string,
       quotationNumber?: string,
     ) => {
+      const dedupKey = `${title}:${quotationId || quotationNumber || ''}`;
+      const now = Date.now();
+      const lastTime = lastPushedMap.get(dedupKey) || 0;
+      if (now - lastTime < 15000) {
+        // Suppress duplicate notification
+        return;
+      }
+      lastPushedMap.set(dedupKey, now);
+
       setNotificationItems((prev) => [
         {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
           title,
           subtitle,
           quotationId,

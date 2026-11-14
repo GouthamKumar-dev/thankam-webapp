@@ -298,9 +298,14 @@ export class Msg91Service {
 
   async sendEmail(opts: SendEmailOptions): Promise<void> {
     const authKey = this.configService.get<string>('MSG91_AUTH_KEY');
-    const fromEmail = this.configService.get<string>('MSG91_FROM_EMAIL');
+    const fromEmail =
+      this.configService.get<string>('MSG91_FROM_EMAIL') ??
+      this.configService.get<string>('SMTP_FROM_EMAIL') ??
+      'info@thankamevents.in';
     const fromName =
-      this.configService.get<string>('MSG91_FROM_NAME') ?? 'Thankam Events';
+      this.configService.get<string>('MSG91_FROM_NAME') ??
+      this.configService.get<string>('SMTP_FROM_NAME') ??
+      'Thankam Events';
 
     if (!authKey || !fromEmail) {
       this.logger.warn('MSG91 email credentials not configured');
@@ -309,7 +314,10 @@ export class Msg91Service {
       );
     }
 
-    const domain = fromEmail.includes('@') ? fromEmail.split('@')[1] : undefined;
+    const configuredDomain = this.configService.get<string>('MSG91_DOMAIN');
+    const domain =
+      configuredDomain ||
+      (fromEmail.includes('@') ? fromEmail.split('@')[1] : undefined);
     const templateId = await this.resolveTemplateId(opts.templateId);
 
     const payload: Record<string, any> = {

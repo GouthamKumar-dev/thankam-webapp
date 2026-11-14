@@ -91,12 +91,15 @@ export class QuotationsService {
       },
     });
 
-    this.workflowGateway.emitRequestCreated({
-      quotationId: created.id,
-      quotationNumber: created.quotationNumber,
-      customerPhone: created.customerPhone,
-      requestStatus: created.requestStatus,
-    });
+    // Only emit for non-portal creations; public portal requests emit once fully configured in createPublicRequest
+    if (created.source !== 'CUSTOMER_PORTAL') {
+      this.workflowGateway.emitRequestCreated({
+        quotationId: created.id,
+        quotationNumber: created.quotationNumber,
+        customerPhone: created.customerPhone,
+        requestStatus: created.requestStatus,
+      });
+    }
 
     return created;
   }
@@ -158,6 +161,8 @@ export class QuotationsService {
       customerPhone: result.customerPhone,
       requestStatus: result.requestStatus,
     });
+    // Immediately send confirmation email to customer if email is available
+    void this.notifyCustomerByEmail(result.id, 'QUOTATION_CREATED');
     return result;
   }
 
@@ -2230,10 +2235,20 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       let pdfBuffer: Buffer;
       let pdfFilename = `Quotation-${quotation.quotationNumber}.pdf`;
 
-      if (eventType === 'AGREEMENT_INITIATED') {
+      if (eventType === 'QUOTATION_CREATED') {
+        subject = `Inquiry Received #${quotation.quotationNumber} — Thankam Events`;
+        title = 'Quotation Request Received';
+        message =
+          'Thank you for choosing Thankam Events! We have received your catering proposal request. Our event managers are reviewing your menu requirements and preparing your itemized banquet proposal.';
+        portalUrl = 'https://thankamevents.in/customer/track';
+        buttonText = 'Track Your Inquiry Online';
+        pdfBuffer = await this.pdfService.generateQuotationPdf(quotation, company);
+        pdfFilename = `Inquiry-${quotation.quotationNumber}.pdf`;
+      } else if (eventType === 'AGREEMENT_INITIATED') {
         subject = `Catering Service Agreement #${quotation.quotationNumber} — Action Required`;
         title = 'Catering Service Agreement Ready';
-        message = 'Thank you for choosing Thankam Events! Your banquet catering agreement is now ready for your digital review and formal acceptance.';
+        message =
+          'Thank you for choosing Thankam Events! Your banquet catering agreement is now ready for your digital review and formal acceptance.';
         portalUrl = 'https://thankamevents.in/customer/agreement';
         buttonText = 'Review & Accept Agreement';
         pdfBuffer = await this.pdfService.generateAgreementPdf(quotation, company);
@@ -2241,13 +2256,21 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       } else if (eventType === 'AGREEMENT_ACCEPTED') {
         subject = `Confirmed: Catering Agreement Locked #${quotation.quotationNumber} — Thankam Events`;
         title = 'Booking Confirmed & Agreement Locked';
-        message = 'We have received your acceptance of the catering agreement. Your event booking is officially locked in our catering calendar.';
+        message =
+          'We have received your acceptance of the catering agreement. Your event booking is officially locked in our catering calendar.';
         portalUrl = 'https://thankamevents.in/customer/agreement';
         buttonText = 'View Locked Agreement';
         pdfBuffer = await this.pdfService.generateAgreementPdf(quotation, company);
         pdfFilename = `Signed-Agreement-${quotation.quotationNumber}.pdf`;
       } else {
+        subject = `Catering Proposal Ready #${quotation.quotationNumber} — Thankam Events`;
+        title = 'Your Catering Proposal is Ready';
+        message =
+          'Our event managers have prepared your detailed catering quotation. Please find the attached official proposal PDF and review the pricing breakdown online.';
+        portalUrl = 'https://thankamevents.in/customer/track';
+        buttonText = 'Review Proposal Online';
         pdfBuffer = await this.pdfService.generateQuotationPdf(quotation, company);
+        pdfFilename = `Quotation-${quotation.quotationNumber}.pdf`;
       }
 
       const htmlContent = `
@@ -2420,8 +2443,34 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
           `[Email Dispatch Success] Quotation ${quotation.quotationNumber} dispatched to ${customerEmail} via ${sendResult.method}`,
         );
       }
+      return sendResult;
     } catch (err) {
       this.logger.error(`Error notifying customer by email for quotation ${quotationId}:`, err);
+      return {
+        success: false,
+        method: 'ERROR',
+        error: err instanceof Error ? err.message : String(err),
+      };
     }
+  }
+
+  async manuallySendQuotationEmail(id: string, overrideEmail?: string) {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: { id },
+    });
+    if (!quotation) {
+      throw new NotFoundException('Quotation not found');
+    }
+
+    if (overrideEmail && overrideEmail.trim()) {
+      const cleanEmail = overrideEmail.trim().toLowerCase();
+      await this.prisma.quotation.update({
+        where: { id },
+        data: { customerEmail: cleanEmail },
+      });
+    }
+
+    const result = await this.notifyCustomerByEmail(id, 'QUOTATION_UPDATED');
+    return result;
   }
 }

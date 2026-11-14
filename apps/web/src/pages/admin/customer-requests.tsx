@@ -579,6 +579,7 @@ export function CustomerRequestsPage() {
 
   /* quote fields */
   const [notifyCustomerEmail, setNotifyCustomerEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [quoteMode, setQuoteMode] = useState<'INDIVIDUAL' | 'PER_PERSON'>('PER_PERSON');
   const [reQuoteMode, setReQuoteMode] = useState(false);
   const [reviseMode, setReviseMode] = useState(false);
@@ -932,6 +933,28 @@ export function CustomerRequestsPage() {
       toast.error(e?.response?.data?.message ?? 'Failed to save');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onManualSendEmail = async () => {
+    if (!detail) return;
+    const emailToSend = notifyCustomerEmail.trim();
+    if (!emailToSend) {
+      toast.error('Please enter a customer email address first');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const res = await quotationsService.sendEmail(detail.id, emailToSend);
+      if (res.success) {
+        toast.success(`Proposal email sent to ${emailToSend} via ${res.method || 'MSG91'}`);
+      } else {
+        toast.error(`Email dispatch failed: ${res.error || 'Check email configuration'}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to send email');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -2074,6 +2097,15 @@ export function CustomerRequestsPage() {
                   onChange={(e) => setNotifyCustomerEmail(e.target.value)}
                   className="h-8 text-xs bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => void onManualSendEmail()}
+                  disabled={sendingEmail || !notifyCustomerEmail.trim()}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-blue-300 bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-900 font-semibold text-xs transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+                >
+                  <Send size={12} />
+                  <span>{sendingEmail ? 'Sending...' : 'Send Email Now'}</span>
+                </button>
               </div>
             </div>
           )}

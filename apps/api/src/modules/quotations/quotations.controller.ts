@@ -135,6 +135,15 @@ export class QuotationsController {
     return this.quotationsService.initiateAgreement(id);
   }
 
+  @Post(':id/send-email')
+  @Roles(Role.ADMIN)
+  sendEmail(
+    @Param('id') id: string,
+    @Body() body: { email?: string },
+  ) {
+    return this.quotationsService.manuallySendQuotationEmail(id, body?.email);
+  }
+
   @Delete(':id')
   @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {

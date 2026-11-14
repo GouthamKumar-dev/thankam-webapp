@@ -60,6 +60,7 @@ import { toUiRequestStatus } from "@/utils/request-status";
 type CustomerForm = {
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   customerAddress: string;
   alternateName?: string;
   alternatePhone?: string;
@@ -353,6 +354,7 @@ export function CustomerPortalPage() {
   const [form, setForm] = useState<CustomerForm>({
     customerName: "",
     customerPhone: "",
+    customerEmail: "",
     customerAddress: "",
     alternateName: "",
     alternatePhone: "",
@@ -435,6 +437,7 @@ export function CustomerPortalPage() {
           setForm({
             customerName: q.customerName ?? "",
             customerPhone: q.customerPhone ?? "",
+            customerEmail: q.customerEmail ?? "",
             customerAddress: q.customerAddress ?? "",
             eventDate: q.eventDate ? q.eventDate.split("T")[0] : "",
             eventType: q.eventType ?? "",
@@ -501,6 +504,7 @@ export function CustomerPortalPage() {
           ...prev,
           customerName: prev.customerName || name,
           customerPhone: prev.customerPhone || phone,
+          customerEmail: prev.customerEmail || email,
         }));
       } catch {
         /* empty */
@@ -806,8 +810,8 @@ export function CustomerPortalPage() {
 
     let finalNotes = form.notes.trim();
 
-    // Attach Customer Email from Login/Profile if provided
-    let profileEmail = authEmail.trim();
+    // Attach Customer Email from Form, Login, or Saved Profile if provided
+    let profileEmail = (form.customerEmail || authEmail || "").trim();
     if (!profileEmail) {
       try {
         const raw = localStorage.getItem(CUSTOMER_PORTAL_PROFILE_KEY);
@@ -1889,6 +1893,22 @@ export function CustomerPortalPage() {
                           <p className="text-[10px] text-rose-500 font-bold mt-1">{fieldErrors.customerPhone}</p>
                         )}
                       </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-slate-700">Email Address (for Quotation PDF)</label>
+                        <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Recommended</span>
+                      </div>
+                      <Input
+                        type="email"
+                        value={form.customerEmail || ""}
+                        onChange={(e) =>
+                          setForm((s) => ({ ...s, customerEmail: e.target.value }))
+                        }
+                        placeholder="e.g. name@example.com (receives proposal & updates)"
+                        className="h-10 text-xs rounded-xl mt-1"
+                      />
                     </div>
 
                     {/* Checkboxes: Alternate Contact & Address */}
