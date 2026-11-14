@@ -35,6 +35,7 @@ export class Msg91Service {
 
   async sendWidgetOtp(
     phone: string,
+    channel: string = '12',
   ): Promise<{ success: boolean; reqId?: string; error?: string }> {
     const authKey = this.configService.get<string>('MSG91_AUTH_KEY');
     const widgetId =
@@ -77,7 +78,17 @@ export class Msg91Service {
       this.logger.log(`MSG91 widget sendOtp response for ${identifier}: ${raw}`);
 
       if (res.ok && data.type === 'success' && data.message) {
-        return { success: true, reqId: String(data.message) };
+        const reqId = String(data.message);
+
+        // If WhatsApp was requested (channel '12'), trigger WhatsApp delivery immediately
+        if (channel === '12') {
+          const retryRes = await this.retryWidgetOtp(reqId, '12');
+          this.logger.log(
+            `MSG91 widget immediate WhatsApp dispatch for ${identifier} (reqId: ${reqId}): ${JSON.stringify(retryRes)}`,
+          );
+        }
+
+        return { success: true, reqId };
       }
 
       const errMsg = data.message ?? `HTTP ${res.status}: ${raw}`;
@@ -298,11 +309,11 @@ export class Msg91Service {
         {
           method: 'POST',
           headers: {
+            authkey: authKey,
             'Content-Type': 'application/json',
             Accept: 'application/json',
           },
           body: JSON.stringify({
-            authkey: authKey,
             'access-token': accessToken,
           }),
         },
@@ -321,7 +332,8 @@ export class Msg91Service {
         res.ok &&
         (data.type === 'success' ||
           data.status === 'success' ||
-          data.message === 'Token verified successfully')
+          data.message === 'Token verified successfully' ||
+          Boolean(data.message && /^\d+$/.test(String(data.message))))
       );
     } catch (error) {
       this.logger.error(

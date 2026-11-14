@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Injectable,
   Logger,
@@ -1193,7 +1194,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     };
   }
 
-  async requestCustomerOtp(phone: string) {
+  async requestCustomerOtp(phone: string, requestedChannel: string = '12') {
     const normalizedPhone = this.normalizePhone(phone);
     if (!/^\d{10}$/.test(normalizedPhone)) {
       throw new BadRequestException('Valid phone number is required');
@@ -1203,17 +1204,24 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     const existingCustomer = await this.isKnownPortalCustomer(normalizedPhone);
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const channel = requestedChannel === '11' || requestedChannel === 'SMS' ? '11' : '12';
 
     // Dispatch OTP via MSG91 Widget Platform
-    const msg91Result = await this.msg91.sendWidgetOtp(normalizedPhone);
+    const msg91Result = await this.msg91.sendWidgetOtp(normalizedPhone, channel);
 
     let codeHash: string;
     let fallbackDevCode: string | undefined;
 
     if (msg91Result.success && msg91Result.reqId) {
       codeHash = `msg91:${msg91Result.reqId}`;
-      this.logger.log(`MSG91 OTP requested for ${normalizedPhone}, reqId=${msg91Result.reqId}`);
+      this.logger.log(`MSG91 OTP requested for ${normalizedPhone} via channel ${channel}, reqId=${msg91Result.reqId}`);
     } else {
+      if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_OTP_DEV_FALLBACK) {
+        this.logger.error(`MSG91 OTP dispatch failed for ${normalizedPhone}: ${msg91Result.error}`);
+        throw new BadGatewayException(
+          msg91Result.error || 'Failed to dispatch OTP from SMS/WhatsApp gateway. Please try WhatsApp or retry shortly.',
+        );
+      }
       const code = String(Math.floor(1000 + Math.random() * 9000));
       fallbackDevCode = code;
       codeHash = await this.hashOtp(code);
@@ -1229,14 +1237,16 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     });
 
     return {
-      message: 'OTP sent successfully',
+      message: channel === '12' ? 'OTP sent via WhatsApp' : 'OTP sent via SMS',
+      channel,
       existingCustomer,
       ...(fallbackDevCode && process.env.NODE_ENV !== 'production' ? { otp: fallbackDevCode } : {}),
     };
   }
 
-  async resendCustomerOtp(phone: string, channel?: string) {
+  async resendCustomerOtp(phone: string, requestedChannel?: string) {
     const normalizedPhone = this.normalizePhone(phone);
+    const channel = requestedChannel === '11' || requestedChannel === 'SMS' ? '11' : '12';
     const latestOtp = await this.prisma.customerPortalOtp.findFirst({
       where: {
         phone: normalizedPhone,
@@ -1249,11 +1259,14 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       const reqId = latestOtp.codeHash.replace('msg91:', '');
       const retryRes = await this.msg91.retryWidgetOtp(reqId, channel);
       if (retryRes.success) {
-        return { message: 'OTP resent successfully via MSG91' };
+        return {
+          message: channel === '12' ? 'OTP resent via WhatsApp' : 'OTP resent via SMS',
+          channel,
+        };
       }
     }
 
-    return this.requestCustomerOtp(phone);
+    return this.requestCustomerOtp(phone, channel);
   }
 
   async verifyCustomerOtp(

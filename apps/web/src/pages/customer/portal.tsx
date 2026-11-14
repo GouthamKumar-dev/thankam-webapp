@@ -314,6 +314,7 @@ export function CustomerPortalPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authPhone, setAuthPhone] = useState("");
   const [adminPhoneAlert, setAdminPhoneAlert] = useState(false);
+  const [authChannel, setAuthChannel] = useState<'12' | '11'>('12');
   const [authOtp, setAuthOtp] = useState("");
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
@@ -882,7 +883,7 @@ export function CustomerPortalPage() {
   }, [resendCooldown]);
 
   /* OTP Handlers */
-  const onRequestAuthOtp = async () => {
+  const onRequestAuthOtp = async (preferredChannel: '11' | '12' = authChannel) => {
     const sanitizedPhone = sanitizePhoneInput(authPhone);
     if (!sanitizedPhone || !/^\d{10}$/.test(sanitizedPhone)) {
       toast.error("Enter a valid 10-digit phone number");
@@ -891,7 +892,8 @@ export function CustomerPortalPage() {
     try {
       setAdminPhoneAlert(false);
       setAuthLoading(true);
-      const res = await customerPortalService.requestOtp(sanitizedPhone);
+      setAuthChannel(preferredChannel);
+      const res = await customerPortalService.requestOtp(sanitizedPhone, preferredChannel);
       setAuthOtpRequested(true);
       setAuthExistingCustomer(res.existingCustomer);
       setAuthPhone(sanitizedPhone);
@@ -899,7 +901,7 @@ export function CustomerPortalPage() {
       setResendCooldown(30);
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
       if (res.otp) toast.success(`Dev OTP: ${res.otp}`);
-      else toast.success("OTP sent to your mobile");
+      else toast.success(preferredChannel === '12' ? 'Verification code sent via WhatsApp' : 'Verification code sent via SMS');
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "Failed to send OTP";
       if (/Admin\/Staff/i.test(msg) || /admin/i.test(msg)) {
@@ -911,14 +913,15 @@ export function CustomerPortalPage() {
     }
   };
 
-  const onResendOtp = async (channel: '11' | '12' = '11') => {
+  const onResendOtp = async (channel: '11' | '12' = '12') => {
     const sanitizedPhone = sanitizePhoneInput(authPhone);
     if (!sanitizedPhone) return;
     try {
       setAuthLoading(true);
+      setAuthChannel(channel);
       await customerPortalService.retryOtp(sanitizedPhone, channel);
       setResendCooldown(30);
-      toast.success(channel === '12' ? 'OTP sent via WhatsApp' : 'OTP resent to your mobile');
+      toast.success(channel === '12' ? 'OTP sent via WhatsApp' : 'OTP resent via SMS');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to resend OTP');
     } finally {
@@ -2108,6 +2111,45 @@ export function CustomerPortalPage() {
                 </div>
               )}
 
+              {/* Channel Selector Pills */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Deliver Verification Code Via
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthChannel('12')}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold border transition-all cursor-pointer",
+                      authChannel === '12'
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-400 ring-2 ring-emerald-400/20 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+                    )}
+                  >
+                    <MessageSquare size={14} className={authChannel === '12' ? "text-emerald-600" : "text-slate-400"} />
+                    <span>WhatsApp</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-emerald-600 text-white">
+                      Instant
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAuthChannel('11')}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold border transition-all cursor-pointer",
+                      authChannel === '11'
+                        ? "bg-amber-50 text-[#B8860B] border-[#D4AF37] ring-2 ring-[#D4AF37]/20 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+                    )}
+                  >
+                    <Smartphone size={14} className={authChannel === '11' ? "text-[#B8860B]" : "text-slate-400"} />
+                    <span>SMS</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-3 text-xs text-amber-900">
                 <ShieldCheck size={16} className="text-[#B8860B] shrink-0 mt-0.5" />
                 <p className="leading-relaxed text-[11px] text-amber-800">
@@ -2117,23 +2159,35 @@ export function CustomerPortalPage() {
 
               <button
                 type="button"
-                onClick={() => void onRequestAuthOtp()}
+                onClick={() => void onRequestAuthOtp(authChannel)}
                 disabled={authLoading || authPhone.length !== 10}
                 className={cn(
                   "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
                   authPhone.length === 10 && !authLoading
-                    ? "bg-[#080C14] text-[#F3CA52] border border-[#D4AF37] hover:bg-black shadow-md active:scale-98 cursor-pointer"
+                    ? authChannel === '12'
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-98 cursor-pointer"
+                      : "bg-[#080C14] text-[#F3CA52] border border-[#D4AF37] hover:bg-black shadow-md active:scale-98 cursor-pointer"
                     : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed",
                 )}
               >
                 {authLoading ? (
                   <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#F3CA52] border-t-transparent" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     <span>Sending Code...</span>
                   </>
                 ) : (
                   <>
-                    <span>Continue with OTP</span>
+                    {authChannel === '12' ? (
+                      <>
+                        <MessageSquare size={14} />
+                        <span>Get OTP via WhatsApp</span>
+                      </>
+                    ) : (
+                      <>
+                        <Smartphone size={14} />
+                        <span>Get OTP via SMS</span>
+                      </>
+                    )}
                     <ArrowRight size={14} />
                   </>
                 )}
@@ -2145,14 +2199,17 @@ export function CustomerPortalPage() {
               {/* Target Phone Pill with Change Option */}
               <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-[#B8860B]">
-                    <Smartphone size={14} />
+                  <div className={cn(
+                    "grid h-8 w-8 place-items-center rounded-xl",
+                    authChannel === '12' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-[#B8860B]"
+                  )}>
+                    {authChannel === '12' ? <MessageSquare size={16} /> : <Smartphone size={16} />}
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-none">
-                      OTP Sent To
+                      OTP Sent via {authChannel === '12' ? 'WhatsApp' : 'SMS'} To
                     </p>
-                    <p className="text-xs font-black text-slate-800 mt-0.5 leading-none">
+                    <p className="text-xs font-black text-slate-800 mt-1 leading-none">
                       +91 {authPhone}
                     </p>
                   </div>
@@ -2163,7 +2220,7 @@ export function CustomerPortalPage() {
                     setAuthOtpRequested(false);
                     setAuthOtp("");
                   }}
-                  className="text-xs font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline"
+                  className="text-xs font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline cursor-pointer"
                 >
                   Change
                 </button>
@@ -2200,35 +2257,52 @@ export function CustomerPortalPage() {
                   })}
                 </div>
 
-                {/* Resend Option */}
-                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs px-1">
-                  <span className="text-slate-400 text-[11px]">Didn&apos;t receive the OTP?</span>
-                  {resendCooldown > 0 ? (
-                    <span className="text-[11px] font-semibold text-slate-400">
-                      Resend in <span className="font-mono text-slate-600 font-bold">{resendCooldown}s</span>
-                    </span>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void onResendOtp('11')}
-                        disabled={authLoading}
-                        className="text-[11px] font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline transition"
-                      >
-                        Resend SMS
-                      </button>
-                      <span className="text-slate-300">•</span>
+                {/* Instant Alternate Channel / Resend Option */}
+                <div className="mt-3 rounded-xl bg-slate-50 border border-slate-200/70 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[11px] text-slate-500 font-medium">Didn&apos;t receive the code?</span>
+                    {authChannel === '11' ? (
+                      /* If sent via SMS, offer INSTANT switch to WhatsApp without waiting! */
                       <button
                         type="button"
                         onClick={() => void onResendOtp('12')}
                         disabled={authLoading}
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-emerald-700 transition cursor-pointer"
                       >
                         <MessageSquare size={12} />
-                        Get via WhatsApp
+                        <span>Send to WhatsApp Now</span>
                       </button>
-                    </div>
-                  )}
+                    ) : (
+                      /* If sent via WhatsApp, offer SMS switch */
+                      <button
+                        type="button"
+                        onClick={() => void onResendOtp('11')}
+                        disabled={authLoading}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-amber-300 shadow-2xs hover:bg-black transition cursor-pointer"
+                      >
+                        <Smartphone size={12} />
+                        <span>Try SMS instead</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-200/60">
+                    <span>Resend via {authChannel === '12' ? 'WhatsApp' : 'SMS'}:</span>
+                    {resendCooldown > 0 ? (
+                      <span className="font-semibold text-slate-400">
+                        Wait <span className="font-mono text-slate-700 font-bold">{resendCooldown}s</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void onResendOtp(authChannel)}
+                        disabled={authLoading}
+                        className="font-bold text-[#B8860B] hover:underline cursor-pointer"
+                      >
+                        Resend now
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 

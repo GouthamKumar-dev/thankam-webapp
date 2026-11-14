@@ -43,7 +43,7 @@ export class QuotationsPublicController {
 
   @Post('auth/request-otp')
   requestOtp(@Body() dto: RequestCustomerOtpDto) {
-    return this.quotationsService.requestCustomerOtp(dto.phone);
+    return this.quotationsService.requestCustomerOtp(dto.phone, dto.channel);
   }
 
   @Post('auth/resend-otp')

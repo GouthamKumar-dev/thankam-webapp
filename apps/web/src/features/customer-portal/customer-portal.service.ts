@@ -98,12 +98,13 @@ export const customerPortalService = {
     return data;
   },
 
-  async requestOtp(phone: string) {
+  async requestOtp(phone: string, channel: '11' | '12' = '12') {
     const { data } = await portalApiClient.post<{
       message: string;
+      channel?: string;
       otp?: string;
       existingCustomer: boolean;
-    }>('/portal/auth/request-otp', { phone });
+    }>('/portal/auth/request-otp', { phone, channel });
     return data;
   },
 
