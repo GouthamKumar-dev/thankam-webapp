@@ -13,6 +13,7 @@ import { v4 as uuid } from 'uuid';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { Msg91Service } from '../notifications/msg91.service';
+import { EmailNotificationService } from '../notifications/email.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -32,6 +33,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly msg91: Msg91Service,
+    private readonly emailService: EmailNotificationService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -427,15 +429,22 @@ export class AuthService {
   }
 
   private async sendPasswordResetEmail(email: string, resetUrl: string) {
-    await this.msg91.sendEmail({
-      to: { name: email, email },
+    await this.emailService.send({
+      toEmail: email,
+      toName: email.split('@')[0] || 'User',
       subject: 'Reset your Thankam Events password',
-      html: `
-        <p>Hello,</p>
-        <p>We received a request to reset your password.</p>
-        <p><a href="${resetUrl}">Click here to reset your password</a></p>
-        <p>This link will expire in 30 minutes.</p>
-        <p>If you did not request this, you can ignore this email.</p>
+      htmlContent: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #0F172A; margin-top: 0;">Password Reset Request</h2>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6;">Hello,</p>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6;">We received a request to reset your password for Thankam Events Management.</p>
+          <div style="margin: 24px 0;">
+            <a href="${resetUrl}" target="_blank" style="display: inline-block; background: #F59E0B; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 24px; border-radius: 8px;">Reset Password &rarr;</a>
+          </div>
+          <p style="color: #64748B; font-size: 12px; line-height: 1.5;">This link will expire in 30 minutes. If you did not request this, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #94A3B8; font-size: 11px; margin: 0;">Thankam Events Management • Kollam, Kerala</p>
+        </div>
       `,
     });
   }
