@@ -11,6 +11,7 @@ type FormDialogProps = {
   children: ReactNode;
   contentClassName?: string;
   bodyClassName?: string;
+  preventOutsideClose?: boolean;
 };
 
 export function FormDialog({
@@ -21,12 +22,19 @@ export function FormDialog({
   children,
   contentClassName,
   bodyClassName,
+  preventOutsideClose = false,
 }: FormDialogProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm" />
         <Dialog.Content
+          onPointerDownOutside={(e) => {
+            if (preventOutsideClose) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (preventOutsideClose) e.preventDefault();
+          }}
           className={cn(
             'fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[95vw] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-[0_20px_60px_rgba(15,23,42,0.24)]',
             contentClassName,

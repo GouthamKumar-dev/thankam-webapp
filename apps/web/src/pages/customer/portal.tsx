@@ -286,6 +286,22 @@ function getQuotationStatusBadge(rawStatus?: string | null, rawReqStatus?: strin
 
 /* ─── Main Customer Portal Component ─────────────────────────── */
 
+const OTP_RESEND_TARGET_KEY = "thankam_customer_otp_resend_until";
+const OTP_SESSION_KEY = "thankam_customer_otp_session";
+
+const getRemainingResendCooldown = () => {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = sessionStorage.getItem(OTP_RESEND_TARGET_KEY);
+    if (!raw) return 0;
+    const target = Number(raw);
+    const diff = Math.ceil((target - Date.now()) / 1000);
+    return diff > 0 ? diff : 0;
+  } catch {
+    return 0;
+  }
+};
+
 export function CustomerPortalPage() {
   const navigate = useNavigate();
   const [catalogTree, setCatalogTree] = useState<CategoryNode[]>([]);
@@ -320,7 +336,7 @@ export function CustomerPortalPage() {
   const [authEmail, setAuthEmail] = useState("");
   const [authOtpRequested, setAuthOtpRequested] = useState(false);
   const [authExistingCustomer, setAuthExistingCustomer] = useState(true);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(() => getRemainingResendCooldown());
   const [notificationItems, setNotificationItems] = useState<NotificationItem[]>([]);
   const [liveQuotations, setLiveQuotations] = useState<any[]>([]);
   const [quotationsLoading, setQuotationsLoading] = useState(false);
@@ -434,6 +450,31 @@ export function CustomerPortalPage() {
           setShowCartModal(true);
         });
       }
+    }
+  }, []);
+
+  /* Restore active OTP verification session if tab was refreshed or returned from recent apps */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = sessionStorage.getItem(OTP_SESSION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.phone && /^\d{10}$/.test(parsed.phone)) {
+          setAuthPhone(parsed.phone);
+          if (parsed.channel === "11" || parsed.channel === "12") {
+            setAuthChannel(parsed.channel);
+          }
+          if (parsed.existingCustomer !== undefined) {
+            setAuthExistingCustomer(Boolean(parsed.existingCustomer));
+          }
+          setAuthOtpRequested(true);
+          setAuthModalOpen(true);
+          setResendCooldown(getRemainingResendCooldown());
+        }
+      }
+    } catch {
+      /* ignore */
     }
   }, []);
 
@@ -873,14 +914,54 @@ export function CustomerPortalPage() {
     }
   };
 
-  /* OTP Resend Timer */
+  /* OTP Resend Wall-Clock Timer & App Visibility Sync */
   useEffect(() => {
-    if (resendCooldown <= 0) return;
+    const syncTimer = () => {
+      const remaining = getRemainingResendCooldown();
+      setResendCooldown(remaining);
+      if (remaining <= 0) {
+        try {
+          sessionStorage.removeItem(OTP_RESEND_TARGET_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
+      return remaining;
+    };
+
+    syncTimer();
+
     const interval = setInterval(() => {
-      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      syncTimer();
     }, 1000);
-    return () => clearInterval(interval);
-  }, [resendCooldown]);
+
+    const onVisibilityOrFocus = () => {
+      syncTimer();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+    window.addEventListener("focus", onVisibilityOrFocus);
+    window.addEventListener("pageshow", onVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+      window.removeEventListener("focus", onVisibilityOrFocus);
+      window.removeEventListener("pageshow", onVisibilityOrFocus);
+    };
+  }, [authOtpRequested]);
+
+  const resetAuthOtpSession = () => {
+    setAuthOtpRequested(false);
+    setAuthOtp("");
+    setResendCooldown(0);
+    try {
+      sessionStorage.removeItem(OTP_RESEND_TARGET_KEY);
+      sessionStorage.removeItem(OTP_SESSION_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
 
   /* OTP Handlers */
   const onRequestAuthOtp = async (preferredChannel: '11' | '12' = authChannel) => {
@@ -894,6 +975,20 @@ export function CustomerPortalPage() {
       setAuthLoading(true);
       setAuthChannel(preferredChannel);
       const res = await customerPortalService.requestOtp(sanitizedPhone, preferredChannel);
+      const targetTime = Date.now() + 30 * 1000;
+      try {
+        sessionStorage.setItem(OTP_RESEND_TARGET_KEY, String(targetTime));
+        sessionStorage.setItem(
+          OTP_SESSION_KEY,
+          JSON.stringify({
+            phone: sanitizedPhone,
+            channel: preferredChannel,
+            existingCustomer: res.existingCustomer,
+          }),
+        );
+      } catch {
+        /* ignore */
+      }
       setAuthOtpRequested(true);
       setAuthExistingCustomer(res.existingCustomer);
       setAuthPhone(sanitizedPhone);
@@ -920,6 +1015,12 @@ export function CustomerPortalPage() {
       setAuthLoading(true);
       setAuthChannel(channel);
       await customerPortalService.retryOtp(sanitizedPhone, channel);
+      const targetTime = Date.now() + 30 * 1000;
+      try {
+        sessionStorage.setItem(OTP_RESEND_TARGET_KEY, String(targetTime));
+      } catch {
+        /* ignore */
+      }
       setResendCooldown(30);
       toast.success(channel === '12' ? 'OTP sent via WhatsApp' : 'OTP resent via SMS');
     } catch (err: any) {
@@ -964,6 +1065,14 @@ export function CustomerPortalPage() {
         customerName: prev.customerName || stored.name,
         customerPhone: stored.phone,
       }));
+      try {
+        sessionStorage.removeItem(OTP_RESEND_TARGET_KEY);
+        sessionStorage.removeItem(OTP_SESSION_KEY);
+      } catch {
+        /* ignore */
+      }
+      setResendCooldown(0);
+      setAuthOtpRequested(false);
       toast.success("Login successful");
       setAuthModalOpen(false);
       if (authRedirectTarget === "cart") {
@@ -2044,7 +2153,11 @@ export function CustomerPortalPage() {
             : "Enter your 10-digit mobile number to track catering quotations."
         }
         open={authModalOpen}
-        onOpenChange={setAuthModalOpen}
+        onOpenChange={(open) => {
+          setAuthModalOpen(open);
+          if (!open) setAdminPhoneAlert(false);
+        }}
+        preventOutsideClose={authOtpRequested}
         contentClassName="max-w-md w-[95vw] rounded-3xl overflow-hidden shadow-2xl"
         bodyClassName="p-5 sm:p-6"
       >
@@ -2216,10 +2329,7 @@ export function CustomerPortalPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setAuthOtpRequested(false);
-                    setAuthOtp("");
-                  }}
+                  onClick={resetAuthOtpSession}
                   className="text-xs font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline cursor-pointer"
                 >
                   Change
