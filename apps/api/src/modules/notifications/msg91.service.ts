@@ -210,6 +210,92 @@ export class Msg91Service {
 
   // ─── Transactional Email ─────────────────────────────────────────────────────
 
+  private cachedTemplateId: string | null = null;
+
+  async resolveTemplateId(requestedTemplateId?: string): Promise<string | undefined> {
+    if (requestedTemplateId) return requestedTemplateId;
+    if (this.cachedTemplateId) return this.cachedTemplateId;
+
+    const envTemplate = this.configService.get<string>('MSG91_EMAIL_TEMPLATE_ID');
+    if (envTemplate) {
+      this.cachedTemplateId = envTemplate;
+      return envTemplate;
+    }
+
+    const authKey = this.configService.get<string>('MSG91_AUTH_KEY');
+    if (!authKey) return undefined;
+
+    try {
+      // 1. Check existing templates in the MSG91 account
+      const listRes = await fetch(
+        'https://control.msg91.com/api/v5/email/templates?per_page=20',
+        {
+          headers: { authkey: authKey, Accept: 'application/json' },
+        },
+      );
+      const listRaw = await listRes.text();
+      let listData: any = {};
+      try {
+        listData = JSON.parse(listRaw);
+      } catch {
+        /* non-json */
+      }
+
+      const templates = listData?.data || (Array.isArray(listData) ? listData : []);
+      if (Array.isArray(templates) && templates.length > 0) {
+        const matched =
+          templates.find(
+            (t: any) =>
+              t.slug === 'thankam_notifications' ||
+              (t.name && /thankam/i.test(t.name)),
+          ) ?? templates[0];
+        const resolved = matched.slug || String(matched.id);
+        this.logger.log(`[MSG91] Auto-discovered email template: ${resolved}`);
+        this.cachedTemplateId = resolved;
+        return resolved;
+      }
+
+      // 2. If no templates exist, auto-create the default notification template
+      this.logger.log(
+        '[MSG91] No email template found, registering default "thankam_notifications" template...',
+      );
+      const createRes = await fetch(
+        'https://control.msg91.com/api/v5/email/templates',
+        {
+          method: 'POST',
+          headers: {
+            authkey: authKey,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            name: 'Thankam Events Notifications',
+            slug: 'thankam_notifications',
+            subject: '{{subject}}',
+            body: '{{{body}}}',
+          }),
+        },
+      );
+
+      const createRaw = await createRes.text();
+      this.logger.log(`[MSG91] Template creation response: ${createRaw}`);
+      let createData: any = {};
+      try {
+        createData = JSON.parse(createRaw);
+      } catch {
+        /* non-json */
+      }
+
+      const createdSlug =
+        createData?.data?.slug || createData?.slug || 'thankam_notifications';
+      this.cachedTemplateId = createdSlug;
+      return createdSlug;
+    } catch (err) {
+      this.logger.warn(`[MSG91] Auto template resolution note: ${err}`);
+      return undefined;
+    }
+  }
+
   async sendEmail(opts: SendEmailOptions): Promise<void> {
     const authKey = this.configService.get<string>('MSG91_AUTH_KEY');
     const fromEmail = this.configService.get<string>('MSG91_FROM_EMAIL');
@@ -224,22 +310,31 @@ export class Msg91Service {
     }
 
     const domain = fromEmail.includes('@') ? fromEmail.split('@')[1] : undefined;
+    const templateId = await this.resolveTemplateId(opts.templateId);
 
     const payload: Record<string, any> = {
       recipients: [
         {
           to: [{ name: opts.to.name, email: opts.to.email }],
-          ...(opts.variables ? { variables: opts.variables } : {}),
+          variables: {
+            name: opts.to.name,
+            customer_name: opts.to.name,
+            subject: opts.subject,
+            body: opts.html || '',
+            content: opts.html || '',
+            message: opts.html || '',
+            ...(opts.variables || {}),
+          },
         },
       ],
+      sender: { name: fromName, email: fromEmail },
       from: { name: fromName, email: fromEmail },
       domain,
       subject: opts.subject,
+      ...(templateId ? { template_id: templateId } : {}),
     };
 
-    if (opts.templateId) {
-      payload.template_id = opts.templateId;
-    } else if (opts.html) {
+    if (opts.html && !templateId) {
       payload.body = {
         type: 'text/html',
         data: opts.html,
@@ -263,11 +358,16 @@ export class Msg91Service {
     }
 
     try {
+      this.logger.log(
+        `[MSG91] Dispatching email to ${opts.to.email} via template: ${templateId || 'NONE'}`,
+      );
+
       const res = await fetch('https://control.msg91.com/api/v5/email/send', {
         method: 'POST',
         headers: {
           authkey: authKey,
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify(payload),
       });
@@ -280,8 +380,14 @@ export class Msg91Service {
         /* non-JSON */
       }
 
+      this.logger.log(
+        `[MSG91] Email send response for ${opts.to.email}: HTTP ${res.status} — ${raw}`,
+      );
+
       if (!res.ok || data.type === 'error') {
-        const errorDetail = data.errors ? JSON.stringify(data.errors) : (data.message ?? raw);
+        const errorDetail = data.errors
+          ? JSON.stringify(data.errors)
+          : data.message ?? raw;
         throw new Error(`MSG91 email failed (${res.status}): ${errorDetail}`);
       }
 
@@ -292,7 +398,7 @@ export class Msg91Service {
         error instanceof Error ? error.stack : String(error),
       );
       throw new InternalServerErrorException(
-        'Failed to send email. Please try again later.',
+        error instanceof Error ? error.message : 'Failed to send email.',
       );
     }
   }

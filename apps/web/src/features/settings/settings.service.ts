@@ -21,4 +21,12 @@ export const settingsService = {
     const { data } = await apiClient.put('/settings', { key, value });
     return data;
   },
+
+  async testEmail(email: string) {
+    const { data } = await apiClient.post<{ success: boolean; method: string; error?: string }>(
+      '/settings/test-email',
+      { email },
+    );
+    return data;
+  },
 };

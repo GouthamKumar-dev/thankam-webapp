@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,11 @@ export class SettingsController {
   @Get()
   findAll() {
     return this.settingsService.findAll();
+  }
+
+  @Post('test-email')
+  testEmail(@Body() body: { email: string }) {
+    return this.settingsService.testEmail(body.email);
   }
 
   @Get(':key')

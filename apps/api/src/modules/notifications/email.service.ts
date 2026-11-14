@@ -33,8 +33,13 @@ export class EmailNotificationService {
   }
 
   private initSmtp() {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const user = this.configService.get<string>('SMTP_USER');
+    const host =
+      this.configService.get<string>('SMTP_HOST') ||
+      (this.configService.get<string>('SMTP_PASS') ? 'smtp.hostinger.com' : undefined);
+    const user =
+      this.configService.get<string>('SMTP_USER') ||
+      this.configService.get<string>('SMTP_FROM_EMAIL') ||
+      'info@thankamevents.in';
     const pass = this.configService.get<string>('SMTP_PASS');
     const port = Number(this.configService.get<string>('SMTP_PORT') ?? 465);
     const secure = port === 465;
@@ -86,19 +91,14 @@ export class EmailNotificationService {
         await this.msg91Service.sendEmail({
           to: { name: options.toName, email: options.toEmail },
           subject: options.subject,
-          ...(templateId
-            ? {
-                templateId,
-                variables: {
-                  name: options.toName,
-                  customer_name: options.toName,
-                  subject: options.subject,
-                  ...(options.variables || {}),
-                },
-              }
-            : {
-                html: options.htmlContent,
-              }),
+          html: options.htmlContent,
+          templateId,
+          variables: {
+            name: options.toName,
+            customer_name: options.toName,
+            subject: options.subject,
+            ...(options.variables || {}),
+          },
           attachments: options.attachments?.map((att) => ({
             filename: att.filename,
             content: att.content,

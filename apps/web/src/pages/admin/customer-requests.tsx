@@ -689,6 +689,7 @@ export function CustomerRequestsPage() {
       setSelectedRow((prev) => (prev?.id === id ? prev : (rows.find((r) => r.id === id) ?? null)));
 
       const emailFromNotes =
+        d.customerEmail ||
         d.notes?.match(/\[(?:Email|Customer Email|Mail):\s*([^\]\s]+)\]/i)?.[1] ||
         d.notes?.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)?.[1] ||
         d.customerAddress?.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)?.[1] ||

@@ -142,6 +142,30 @@ export function SettingsPage() {
     }
   }, [user]);
 
+  const [testEmailTarget, setTestEmailTarget] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
+
+  const onSendTestEmail = async () => {
+    const target = testEmailTarget.trim() || companyForm.email.trim();
+    if (!target || !target.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    setTestingEmail(true);
+    try {
+      const res = await settingsService.testEmail(target);
+      if (res.success) {
+        toast.success(`Test email delivered successfully via ${res.method}! Check inbox/spam of ${target}`);
+      } else {
+        toast.error(`Email delivery failed: ${res.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? err?.message ?? 'Failed to send test email');
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   // Advanced raw settings columns
   const columns = useMemo<MRT_ColumnDef<SettingRow>[]>(
     () => [
@@ -665,6 +689,41 @@ export function SettingsPage() {
                 />
               </Field>
             </div>
+
+            {/* Email Delivery Diagnostics Box */}
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800">
+                  <Mail size={15} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Notification Email Delivery Test
+                  </h4>
+                  <p className="text-[11px] text-slate-600">
+                    Test live dispatch via MSG91 (primary) and Hostinger SMTP (fallback).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
+                <Input
+                  type="email"
+                  placeholder="Enter email to receive test message (e.g. your personal email)"
+                  value={testEmailTarget}
+                  onChange={(e) => setTestEmailTarget(e.target.value)}
+                  className="text-xs h-9 bg-white border-amber-200"
+                />
+                <Button
+                  type="button"
+                  onClick={() => void onSendTestEmail()}
+                  disabled={testingEmail}
+                  className="shrink-0 h-9 px-4 text-xs font-bold bg-[#080C14] text-[#F3CA52] hover:bg-slate-800 border border-[#D4AF37]/50"
+                >
+                  {testingEmail ? 'Dispatching Test...' : 'Send Test Email'}
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-end border-t border-slate-100 pt-4">
@@ -741,6 +800,41 @@ export function SettingsPage() {
                   className="min-h-[110px] text-xs leading-relaxed"
                 />
               </Field>
+            </div>
+
+            {/* Email Delivery Diagnostics Box */}
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800">
+                  <Mail size={15} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Notification Email Delivery Test
+                  </h4>
+                  <p className="text-[11px] text-slate-600">
+                    Test live dispatch via MSG91 (primary) and Hostinger SMTP (fallback).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
+                <Input
+                  type="email"
+                  placeholder="Enter email to receive test message (e.g. your personal email)"
+                  value={testEmailTarget}
+                  onChange={(e) => setTestEmailTarget(e.target.value)}
+                  className="text-xs h-9 bg-white border-amber-200"
+                />
+                <Button
+                  type="button"
+                  onClick={() => void onSendTestEmail()}
+                  disabled={testingEmail}
+                  className="shrink-0 h-9 px-4 text-xs font-bold bg-[#080C14] text-[#F3CA52] hover:bg-slate-800 border border-[#D4AF37]/50"
+                >
+                  {testingEmail ? 'Dispatching Test...' : 'Send Test Email'}
+                </Button>
+              </div>
             </div>
           </div>
 

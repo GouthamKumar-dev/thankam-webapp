@@ -2381,7 +2381,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
 </html>
       `;
 
-      await this.emailService.send({
+      const sendResult = await this.emailService.send({
         toEmail: customerEmail,
         toName: customerName,
         subject,
@@ -2410,6 +2410,16 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
           },
         ],
       });
+
+      if (!sendResult.success) {
+        this.logger.error(
+          `[Email Dispatch Failed] Quotation ${quotation.quotationNumber} to ${customerEmail}: ${sendResult.error} (method: ${sendResult.method})`,
+        );
+      } else {
+        this.logger.log(
+          `[Email Dispatch Success] Quotation ${quotation.quotationNumber} dispatched to ${customerEmail} via ${sendResult.method}`,
+        );
+      }
     } catch (err) {
       this.logger.error(`Error notifying customer by email for quotation ${quotationId}:`, err);
     }
