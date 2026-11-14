@@ -330,7 +330,7 @@ export function CustomerPortalPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authPhone, setAuthPhone] = useState("");
   const [adminPhoneAlert, setAdminPhoneAlert] = useState(false);
-  const [authChannel, setAuthChannel] = useState<'12' | '11'>('12');
+  const [authChannel, setAuthChannel] = useState<'11' | '12'>('11');
   const [authOtp, setAuthOtp] = useState("");
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
@@ -1008,7 +1008,7 @@ export function CustomerPortalPage() {
     }
   };
 
-  const onResendOtp = async (channel: '11' | '12' = '12') => {
+  const onResendOtp = async (channel: '11' | '12' = '11') => {
     const sanitizedPhone = sanitizePhoneInput(authPhone);
     if (!sanitizedPhone) return;
     try {
@@ -2232,23 +2232,6 @@ export function CustomerPortalPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setAuthChannel('12')}
-                    className={cn(
-                      "flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold border transition-all cursor-pointer",
-                      authChannel === '12'
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-400 ring-2 ring-emerald-400/20 shadow-2xs"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
-                    )}
-                  >
-                    <MessageSquare size={14} className={authChannel === '12' ? "text-emerald-600" : "text-slate-400"} />
-                    <span>WhatsApp</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-emerald-600 text-white">
-                      Instant
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={() => setAuthChannel('11')}
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold border transition-all cursor-pointer",
@@ -2259,6 +2242,23 @@ export function CustomerPortalPage() {
                   >
                     <Smartphone size={14} className={authChannel === '11' ? "text-[#B8860B]" : "text-slate-400"} />
                     <span>SMS</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-slate-900 text-amber-300">
+                      Default
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAuthChannel('12')}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold border transition-all cursor-pointer",
+                      authChannel === '12'
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-400 ring-2 ring-emerald-400/20 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+                    )}
+                  >
+                    <MessageSquare size={14} className={authChannel === '12' ? "text-emerald-600" : "text-slate-400"} />
+                    <span>WhatsApp</span>
                   </button>
                 </div>
               </div>
@@ -2298,7 +2298,7 @@ export function CustomerPortalPage() {
                     ) : (
                       <>
                         <Smartphone size={14} />
-                        <span>Get OTP via SMS</span>
+                        <span>Continue with SMS OTP</span>
                       </>
                     )}
                     <ArrowRight size={14} />

@@ -35,7 +35,7 @@ export class Msg91Service {
 
   async sendWidgetOtp(
     phone: string,
-    channel: string = '12',
+    channel: string = '11',
   ): Promise<{ success: boolean; reqId?: string; error?: string }> {
     const authKey = this.configService.get<string>('MSG91_AUTH_KEY');
     const widgetId =

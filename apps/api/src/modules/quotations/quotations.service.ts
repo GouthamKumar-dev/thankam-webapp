@@ -1194,7 +1194,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     };
   }
 
-  async requestCustomerOtp(phone: string, requestedChannel: string = '12') {
+  async requestCustomerOtp(phone: string, requestedChannel: string = '11') {
     const normalizedPhone = this.normalizePhone(phone);
     if (!/^\d{10}$/.test(normalizedPhone)) {
       throw new BadRequestException('Valid phone number is required');
@@ -1204,7 +1204,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     const existingCustomer = await this.isKnownPortalCustomer(normalizedPhone);
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    const channel = requestedChannel === '11' || requestedChannel === 'SMS' ? '11' : '12';
+    const channel = requestedChannel === '12' || requestedChannel === 'WHATSAPP' ? '12' : '11';
 
     // Dispatch OTP via MSG91 Widget Platform
     const msg91Result = await this.msg91.sendWidgetOtp(normalizedPhone, channel);
@@ -1246,7 +1246,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
 
   async resendCustomerOtp(phone: string, requestedChannel?: string) {
     const normalizedPhone = this.normalizePhone(phone);
-    const channel = requestedChannel === '11' || requestedChannel === 'SMS' ? '11' : '12';
+    const channel = requestedChannel === '12' || requestedChannel === 'WHATSAPP' ? '12' : '11';
     const latestOtp = await this.prisma.customerPortalOtp.findFirst({
       where: {
         phone: normalizedPhone,

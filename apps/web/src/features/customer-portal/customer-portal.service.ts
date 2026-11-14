@@ -98,7 +98,7 @@ export const customerPortalService = {
     return data;
   },
 
-  async requestOtp(phone: string, channel: '11' | '12' = '12') {
+  async requestOtp(phone: string, channel: '11' | '12' = '11') {
     const { data } = await portalApiClient.post<{
       message: string;
       channel?: string;
