@@ -104,14 +104,6 @@ export const customerPortalService = {
       otp?: string;
       existingCustomer: boolean;
     }>('/portal/auth/request-otp', { phone });
-
-    // Trigger MSG91 Headless OTP sending via SMS/WhatsApp
-    try {
-      await msg91OtpService.sendOtp(phone);
-    } catch (err) {
-      console.warn('MSG91 sendOtp note:', err);
-    }
-
     return data;
   },
 
@@ -134,8 +126,16 @@ export const customerPortalService = {
     return data;
   },
 
-  async retryOtp(channel?: string | null) {
-    return msg91OtpService.retryOtp(channel);
+  async retryOtp(phone: string, channel: '11' | '12' = '11') {
+    try {
+      const { data } = await portalApiClient.post<{ message: string }>(
+        '/portal/auth/resend-otp',
+        { phone, channel },
+      );
+      return data;
+    } catch {
+      return msg91OtpService.retryOtp(channel);
+    }
   },
 
   async myQuotations(accessToken: string) {

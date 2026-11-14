@@ -46,6 +46,11 @@ export class QuotationsPublicController {
     return this.quotationsService.requestCustomerOtp(dto.phone);
   }
 
+  @Post('auth/resend-otp')
+  resendOtp(@Body() body: { phone: string; channel?: string }) {
+    return this.quotationsService.resendCustomerOtp(body.phone, body.channel);
+  }
+
   @Post('auth/verify-otp')
   verifyOtp(@Body() dto: VerifyCustomerOtpDto) {
     return this.quotationsService.verifyCustomerOtp(

@@ -2000,21 +2000,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     phone: string,
     email?: string,
   ) {
-    const phoneConflict = await this.prisma.user.findFirst({
-      where: {
-        phone: {
-          not: null,
-          endsWith: phone,
-        },
-      },
-      select: { id: true },
-    });
-    if (phoneConflict) {
-      throw new BadRequestException(
-        'This phone number is already used by an admin/staff account',
-      );
-    }
-
+    // Allow admin/staff phone numbers to access customer portal for testing & inquiries
     const trimmedEmail = email?.trim();
     if (!trimmedEmail) return;
 
@@ -2028,9 +2014,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       select: { id: true },
     });
     if (emailConflict) {
-      throw new BadRequestException(
-        'This email is already used by an admin/staff account',
-      );
+      this.logger.log(`Customer email ${trimmedEmail} matches an existing staff account.`);
     }
   }
 

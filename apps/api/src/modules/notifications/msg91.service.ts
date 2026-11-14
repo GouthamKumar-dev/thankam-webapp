@@ -117,7 +117,7 @@ export class Msg91Service {
           body: JSON.stringify({
             widgetId,
             reqId,
-            ...(channel ? { channel } : {}),
+            retryChannel: channel || '11',
           }),
         },
       );

@@ -905,6 +905,21 @@ export function CustomerPortalPage() {
     }
   };
 
+  const onResendOtp = async (channel: '11' | '12' = '11') => {
+    const sanitizedPhone = sanitizePhoneInput(authPhone);
+    if (!sanitizedPhone) return;
+    try {
+      setAuthLoading(true);
+      await customerPortalService.retryOtp(sanitizedPhone, channel);
+      setResendCooldown(30);
+      toast.success(channel === '12' ? 'OTP sent via WhatsApp' : 'OTP resent to your mobile');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to resend OTP');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const onVerifyAuthOtp = async () => {
     const sanitizedOtp = authOtp.replace(/\D/g, "").slice(0, CUSTOMER_PORTAL_OTP_LENGTH);
     const sanitizedPhone = sanitizePhoneInput(authPhone);
@@ -2154,21 +2169,33 @@ export function CustomerPortalPage() {
                 </div>
 
                 {/* Resend Option */}
-                <div className="mt-2.5 flex items-center justify-between text-xs px-1">
+                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs px-1">
                   <span className="text-slate-400 text-[11px]">Didn&apos;t receive the OTP?</span>
                   {resendCooldown > 0 ? (
                     <span className="text-[11px] font-semibold text-slate-400">
                       Resend in <span className="font-mono text-slate-600 font-bold">{resendCooldown}s</span>
                     </span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => void onRequestAuthOtp()}
-                      disabled={authLoading}
-                      className="text-[11px] font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline transition"
-                    >
-                      Resend OTP
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void onResendOtp('11')}
+                        disabled={authLoading}
+                        className="text-[11px] font-bold text-[#B8860B] hover:text-[#9A7009] hover:underline transition"
+                      >
+                        Resend SMS
+                      </button>
+                      <span className="text-slate-300">•</span>
+                      <button
+                        type="button"
+                        onClick={() => void onResendOtp('12')}
+                        disabled={authLoading}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition"
+                      >
+                        <MessageSquare size={12} />
+                        Get via WhatsApp
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
