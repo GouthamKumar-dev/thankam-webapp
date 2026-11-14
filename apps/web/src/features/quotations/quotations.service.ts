@@ -180,10 +180,10 @@ export const quotationsService = {
     window.URL.revokeObjectURL(url);
   },
 
-  async sendEmail(id: string, email?: string) {
+  async sendEmail(id: string, email?: string, pdfBase64?: string, pdfFilename?: string) {
     const { data } = await apiClient.post<{ success: boolean; method: string; error?: string }>(
       `/quotations/${id}/send-email`,
-      { email },
+      { email, pdfBase64, pdfFilename },
     );
     return data;
   },

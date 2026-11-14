@@ -139,9 +139,14 @@ export class QuotationsController {
   @Roles(Role.ADMIN)
   sendEmail(
     @Param('id') id: string,
-    @Body() body: { email?: string },
+    @Body() body: { email?: string; pdfBase64?: string; pdfFilename?: string },
   ) {
-    return this.quotationsService.manuallySendQuotationEmail(id, body?.email);
+    return this.quotationsService.manuallySendQuotationEmail(
+      id,
+      body?.email,
+      body?.pdfBase64,
+      body?.pdfFilename,
+    );
   }
 
   @Delete(':id')

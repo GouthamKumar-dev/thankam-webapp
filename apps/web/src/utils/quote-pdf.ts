@@ -395,6 +395,48 @@ export async function downloadQuotePdf(q: PdfQuoteInput): Promise<void> {
   }
 }
 
+export async function generateQuotePdfBase64(q: PdfQuoteInput): Promise<string> {
+  const html = generateQuoteHtml(q);
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.style.position = 'absolute';
+  container.style.top = '0';
+  container.style.left = '0';
+  container.style.width = '794px';
+  container.style.background = '#ffffff';
+  container.style.zIndex = '-9999';
+  container.style.opacity = '1';
+  container.style.pointerEvents = 'none';
+  document.body.appendChild(container);
+
+  try {
+    const opt = {
+      margin: 8,
+      filename: `Quotation-${q.quotationNumber}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        logging: false,
+        windowWidth: 794,
+        scrollX: 0,
+        scrollY: 0,
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dataUri = await (html2pdf() as any).set(opt).from(container).outputPdf('datauristring');
+    const base64 = typeof dataUri === 'string' && dataUri.includes(',') ? dataUri.split(',')[1] : String(dataUri);
+    return base64;
+  } finally {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }
+}
+
 export function openQuotePdf(q: PdfQuoteInput) {
   void downloadQuotePdf(q);
 }

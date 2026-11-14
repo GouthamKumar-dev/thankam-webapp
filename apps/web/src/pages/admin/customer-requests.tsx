@@ -38,7 +38,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageShell } from '@/layouts/page-shell';
-import { openQuotePdf } from '@/utils/quote-pdf';
+import { openQuotePdf, generateQuotePdfBase64 } from '@/utils/quote-pdf';
 import { generateAgreementHtml, fetchImageBase64 } from '@/utils/agreement-pdf';
 import { settingsService } from '@/features/settings/settings.service';
 import { customerPortalService } from '@/features/customer-portal/customer-portal.service';
@@ -945,7 +945,21 @@ export function CustomerRequestsPage() {
     }
     setSendingEmail(true);
     try {
-      const res = await quotationsService.sendEmail(detail.id, emailToSend);
+      const pdfInput = buildPdfInput();
+      let pdfBase64: string | undefined;
+      if (pdfInput) {
+        try {
+          pdfBase64 = await generateQuotePdfBase64(pdfInput);
+        } catch (pdfErr) {
+          console.warn('Could not generate client-side PDF, falling back to server PDF', pdfErr);
+        }
+      }
+      const res = await quotationsService.sendEmail(
+        detail.id,
+        emailToSend,
+        pdfBase64,
+        `Quotation-${detail.quotationNumber}.pdf`,
+      );
       if (res.success) {
         toast.success(`Proposal email sent to ${emailToSend} via ${res.method || 'MSG91'}`);
       } else {
