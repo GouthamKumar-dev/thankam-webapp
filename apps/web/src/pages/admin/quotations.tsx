@@ -97,6 +97,7 @@ type ServiceLineItem = {
 type QuoteForm = {
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   customerAddress: string;
   eventDate: string;
   eventType: string;
@@ -250,6 +251,7 @@ function emptyForm(): QuoteForm {
   return {
     customerName: '',
     customerPhone: '',
+    customerEmail: '',
     customerAddress: '',
     eventDate: '',
     eventType: '',
@@ -269,6 +271,7 @@ function detailToForm(d: QuotationDetail): QuoteForm {
   return {
     customerName: d.customerName ?? '',
     customerPhone: d.customerPhone ?? '',
+    customerEmail: d.customerEmail ?? '',
     customerAddress: d.customerAddress ?? '',
     eventDate: d.eventDate?.slice(0, 10) ?? '',
     eventType: d.eventType ?? '',
@@ -428,6 +431,7 @@ function buildPayload(
   return {
     customerName: form.customerName,
     customerPhone: normalizePhone(form.customerPhone),
+    customerEmail: form.customerEmail?.trim() || undefined,
     customerAddress: form.customerAddress || undefined,
     eventDate: form.eventDate,
     eventType: form.eventType,
@@ -712,6 +716,7 @@ export function QuotationsPage() {
       createdAt: selectedRow ? new Date().toISOString() : new Date().toISOString(),
       customerName: form.customerName,
       customerPhone: form.customerPhone,
+      customerEmail: form.customerEmail || undefined,
       eventType: form.eventType,
       eventDate: form.eventDate,
       venue: form.venue,
@@ -781,6 +786,7 @@ export function QuotationsPage() {
         guestCount: num(form.guestCount),
         customerName: form.customerName,
         customerPhone: form.customerPhone,
+        customerEmail: form.customerEmail || undefined,
         customerAddress: form.customerAddress,
         items: [
           ...lines.map((l) => ({
@@ -1820,7 +1826,7 @@ export function QuotationsPage() {
                 </div>
 
                 <div className="p-6 space-y-5">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-3">
                     <FormField label="Customer Name" required>
                       <Input
                         value={form.customerName}
@@ -1837,6 +1843,16 @@ export function QuotationsPage() {
                         placeholder="e.g. 9745684766"
                         inputMode="numeric"
                         className="text-xs font-mono h-10"
+                      />
+                    </FormField>
+
+                    <FormField label="Customer Email">
+                      <Input
+                        type="email"
+                        value={form.customerEmail}
+                        onChange={(e) => setForm((s) => ({ ...s, customerEmail: e.target.value }))}
+                        placeholder="e.g. customer@example.com"
+                        className="text-xs h-10"
                       />
                     </FormField>
                   </div>

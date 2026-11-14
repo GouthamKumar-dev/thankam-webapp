@@ -851,6 +851,7 @@ export function CustomerPortalPage() {
     const payload: QuotationPayload = {
       customerName,
       customerPhone: submitPhone,
+      customerEmail: profileEmail || undefined,
       customerAddress: customerAddress || undefined,
       eventDate: form.eventDate,
       eventType: form.eventType.trim(),

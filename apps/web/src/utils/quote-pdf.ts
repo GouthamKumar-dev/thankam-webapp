@@ -22,6 +22,7 @@ export type PdfQuoteInput = {
   createdAt?: string;
   customerName: string;
   customerPhone?: string;
+  customerEmail?: string;
   eventType?: string;
   eventDate?: string;
   venue?: string;
@@ -306,6 +307,7 @@ td{padding:9px 12px;border-bottom:1px solid #f5f0e8;vertical-align:middle}
 <div class="info-grid">
   <div class="info-item"><label>Customer</label><span>${q.customerName}</span></div>
   <div class="info-item"><label>Phone</label><span>${q.customerPhone ?? '—'}</span></div>
+  <div class="info-item"><label>Email</label><span>${q.customerEmail ?? '—'}</span></div>
   <div class="info-item"><label>Event Type</label><span>${q.eventType ?? '—'}</span></div>
   <div class="info-item"><label>Event Date</label><span>${fmt(q.eventDate)}</span></div>
   <div class="info-item"><label>Venue</label><span>${q.venue ?? '—'}</span></div>

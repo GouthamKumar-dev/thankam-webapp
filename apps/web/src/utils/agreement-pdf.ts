@@ -41,6 +41,7 @@ export type AgreementInput = {
   guestCount?: number;
   customerName: string;
   customerPhone?: string;
+  customerEmail?: string;
   customerAddress?: string;
   items: AgreementItem[];
   isPerPerson?: boolean;
@@ -506,7 +507,7 @@ td{padding:8px 10px;border-bottom:1px solid #f5f0e8;vertical-align:middle;font-s
   <div class="party-box">
     <div class="party-title">Client (Party A)</div>
     <div class="party-name">${q.customerName}</div>
-    <div class="party-detail">${q.customerPhone ? `Phone: ${q.customerPhone}` : ''}${q.customerAddress ? `<br/>${q.customerAddress}` : ''}</div>
+    <div class="party-detail">${q.customerPhone ? `Phone: ${q.customerPhone}` : ''}${q.customerEmail ? `<br/>Email: ${q.customerEmail}` : ''}${q.customerAddress ? `<br/>${q.customerAddress}` : ''}</div>
   </div>
   <div class="party-box">
     <div class="party-title">Service Provider (Party B)</div>

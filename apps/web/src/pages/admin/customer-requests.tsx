@@ -801,6 +801,7 @@ export function CustomerRequestsPage() {
       createdAt: detail.createdAt,
       customerName: detail.customerName,
       customerPhone: detail.customerPhone ?? undefined,
+      customerEmail: detail.customerEmail ?? undefined,
       eventType: detail.eventType ?? undefined,
       eventDate: detail.eventDate,
       venue: detail.venue ?? undefined,
@@ -906,6 +907,7 @@ export function CustomerRequestsPage() {
       await quotationsService.update(detail.id, {
         customerName: detail.customerName,
         customerPhone: detail.customerPhone ?? '',
+        customerEmail: targetEmail || detail.customerEmail || undefined,
         customerAddress: detail.customerAddress ?? undefined,
         eventDate: detail.eventDate,
         eventType: detail.eventType ?? '',
@@ -978,6 +980,7 @@ export function CustomerRequestsPage() {
       await quotationsService.update(detail.id, {
         customerName: detail.customerName,
         customerPhone: detail.customerPhone ?? '',
+        customerEmail: targetEmail || detail.customerEmail || undefined,
         customerAddress: detail.customerAddress ?? undefined,
         eventDate: detail.eventDate,
         eventType: detail.eventType ?? '',
@@ -1030,6 +1033,7 @@ export function CustomerRequestsPage() {
         guestCount: detail.guestCount,
         customerName: detail.customerName,
         customerPhone: detail.customerPhone ?? undefined,
+        customerEmail: detail.customerEmail ?? undefined,
         customerAddress: detail.customerAddress ?? undefined,
         items: editItems.map((l) => ({
           name: l.name,
@@ -1951,6 +1955,27 @@ export function CustomerRequestsPage() {
                       </a>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Customer Email */}
+              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                  <Mail size={15} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</p>
+                  {detail.customerEmail ? (
+                    <a
+                      href={`mailto:${detail.customerEmail}`}
+                      className="truncate text-xs font-bold text-slate-900 hover:text-amber-700 hover:underline block"
+                      title={detail.customerEmail}
+                    >
+                      {detail.customerEmail}
+                    </a>
+                  ) : (
+                    <p className="truncate text-xs font-bold text-slate-400">Not provided</p>
+                  )}
                 </div>
               </div>
 

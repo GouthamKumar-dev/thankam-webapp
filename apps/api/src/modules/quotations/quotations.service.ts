@@ -47,12 +47,16 @@ export class QuotationsService {
     const quotationNumber = await this.generateQuotationNumber();
     const normalized = await this.normalizeItems(dto.items, dto.menuId);
     const totals = this.calculateTotals(normalized, dto);
+    const resolvedEmail =
+      dto.customerEmail?.trim().toLowerCase() ||
+      this.extractCustomerEmail(dto.notes, dto.customerAddress);
 
     const created = await this.prisma.quotation.create({
       data: {
         quotationNumber,
         customerName: dto.customerName,
         customerPhone: dto.customerPhone,
+        customerEmail: resolvedEmail || null,
         customerAddress: dto.customerAddress,
         eventDate: new Date(dto.eventDate),
         eventType: dto.eventType,
@@ -121,10 +125,16 @@ export class QuotationsService {
       );
     }
 
+    const resolvedPublicEmail =
+      dto.customerEmail?.trim().toLowerCase() ||
+      this.extractCustomerEmail(dto.notes, dto.customerAddress) ||
+      (await this.findMostRecentCustomerEmail(normalizedPhone));
+
     const created = await this.create(
       {
         ...dto,
         customerPhone: normalizedPhone,
+        customerEmail: resolvedPublicEmail || undefined,
         notes: dto.notes
           ? `${dto.notes}\n\n[Submitted from customer portal]`
           : '[Submitted from customer portal]',
@@ -282,11 +292,21 @@ export class QuotationsService {
 
     await this.prisma.quotationItem.deleteMany({ where: { quotationId: id } });
 
+    const resolvedUpdateEmail =
+      dto.customerEmail !== undefined
+        ? (dto.customerEmail ? dto.customerEmail.trim().toLowerCase() : null)
+        : existing.customerEmail ||
+          this.extractCustomerEmail(
+            dto.notes ?? existing.notes,
+            dto.customerAddress ?? existing.customerAddress,
+          );
+
     const updated = await this.prisma.quotation.update({
       where: { id },
       data: {
         customerName: dto.customerName,
         customerPhone: dto.customerPhone,
+        customerEmail: resolvedUpdateEmail,
         customerAddress: dto.customerAddress,
         eventDate: dto.eventDate ? new Date(dto.eventDate) : undefined,
         eventType: dto.eventType,
@@ -1375,6 +1395,20 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       },
     });
 
+    const resolvedCustomerEmail = email?.trim().toLowerCase() || null;
+    if (resolvedCustomerEmail) {
+      await this.prisma.quotation.updateMany({
+        where: {
+          customerPhone: normalizedPhone,
+          customerEmail: null,
+          isDeleted: false,
+        },
+        data: {
+          customerEmail: resolvedCustomerEmail,
+        },
+      });
+    }
+
     if (pendingOtpRequests.length > 0) {
       await this.prisma.quotation.updateMany({
         where: {
@@ -1383,6 +1417,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
         data: {
           requestStatus: 'OTP_VERIFIED',
           requestStatusUpdatedAt: new Date(),
+          ...(resolvedCustomerEmail ? { customerEmail: resolvedCustomerEmail } : {}),
         },
       });
       for (const request of pendingOtpRequests) {
@@ -2106,14 +2141,36 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
 
   // ─── Customer Email Notifications ───────────────────────────────────────────
 
-  private extractCustomerEmail(notes?: string | null, address?: string | null): string | null {
+  private extractCustomerEmail(
+    notes?: string | null,
+    address?: string | null,
+    directEmail?: string | null,
+  ): string | null {
+    if (directEmail && directEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(directEmail.trim())) {
+      return directEmail.trim().toLowerCase();
+    }
     const text = `${notes || ''} ${address || ''}`;
     const tagMatch = text.match(/\[(?:Email|Customer Email|Mail):\s*([^\]\s]+)\]/i);
-    if (tagMatch && tagMatch[1]) return tagMatch[1].trim();
+    if (tagMatch && tagMatch[1] && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tagMatch[1].trim())) {
+      return tagMatch[1].trim().toLowerCase();
+    }
 
     const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
     const rawMatch = text.match(emailRegex);
-    return rawMatch ? rawMatch[1].trim() : null;
+    return rawMatch ? rawMatch[1].trim().toLowerCase() : null;
+  }
+
+  private async findMostRecentCustomerEmail(phone: string): Promise<string | null> {
+    const prior = await this.prisma.quotation.findFirst({
+      where: {
+        customerPhone: phone,
+        customerEmail: { not: null },
+        isDeleted: false,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { customerEmail: true },
+    });
+    return prior?.customerEmail ?? null;
   }
 
   async notifyCustomerByEmail(
@@ -2127,7 +2184,23 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       });
       if (!quotation) return;
 
-      const customerEmail = this.extractCustomerEmail(quotation.notes, quotation.customerAddress);
+      let customerEmail = this.extractCustomerEmail(
+        quotation.notes,
+        quotation.customerAddress,
+        quotation.customerEmail,
+      );
+
+      // If still missing, check prior quotes with this customer's phone number
+      if (!customerEmail && quotation.customerPhone) {
+        customerEmail = await this.findMostRecentCustomerEmail(quotation.customerPhone);
+        if (customerEmail) {
+          await this.prisma.quotation.update({
+            where: { id: quotation.id },
+            data: { customerEmail },
+          });
+        }
+      }
+
       if (!customerEmail) {
         this.logger.log(`No email found for quotation ${quotation.quotationNumber}, skipping email notification.`);
         return;

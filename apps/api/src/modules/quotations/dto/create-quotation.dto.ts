@@ -51,6 +51,10 @@ export class CreateQuotationDto {
 
   @IsOptional()
   @IsString()
+  customerEmail?: string;
+
+  @IsOptional()
+  @IsString()
   customerAddress?: string;
 
   @IsDateString()

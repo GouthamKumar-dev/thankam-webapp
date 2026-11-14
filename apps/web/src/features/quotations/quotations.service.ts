@@ -7,6 +7,7 @@ export type QuotationRow = {
   createdAt?: string;
   customerName: string;
   customerPhone?: string;
+  customerEmail?: string | null;
   eventDate: string;
   eventType?: string;
   venue?: string;
@@ -32,6 +33,7 @@ export type QuotationRow = {
 export type QuotationPayload = {
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   eventDate: string;
   eventType: string;
   venue: string;
