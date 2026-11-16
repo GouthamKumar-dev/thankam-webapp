@@ -94,7 +94,7 @@ export function GalleryPage() {
   };
 
   return (
-    <PageShell title="Gallery" subtitle="Upload and curate images/videos for site and social media">
+    <PageShell title="Gallery" subtitle="Upload and manage images/videos for site and social media">
       <Card>
         <h3 className="mb-3 flex items-center gap-2 text-xl font-bold tracking-tight">
           <Upload size={18} /> Upload Media

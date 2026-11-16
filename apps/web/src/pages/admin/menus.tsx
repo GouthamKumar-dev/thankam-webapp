@@ -409,7 +409,7 @@ export function MenusPage() {
   return (
     <PageShell
       title="Menus & Packages"
-      subtitle="Curate General catering packages and traditional Kerala Sadya feast menus for client quotations."
+      subtitle="Manage General catering packages and traditional Kerala Sadya feast menus for client quotations."
     >
       {/* 1. Metric Overview Cards — Real, Informative Catering Metrics (Replaced ₹0 awkward card) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4 mb-6">
@@ -781,7 +781,7 @@ function MenuCard({
         <p className="mt-3 text-xs text-slate-500 line-clamp-2 min-h-[32px]">
           {menu.description || (
             <span className="italic text-slate-400">
-              Curated event feast menu template for quick quote creation.
+              Event feast menu template for quick quote creation.
             </span>
           )}
         </p>
@@ -1733,7 +1733,7 @@ function MenuInspectModal({
   return (
     <FormDialog
       title={menu.name}
-      description={menu.description || 'Curated event feast package details'}
+      description={menu.description || 'Event feast package details'}
       open={true}
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -1777,7 +1777,7 @@ function MenuInspectModal({
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                {menu.menuItems.length} curated {menu.menuItems.length === 1 ? 'dish' : 'dishes'} in this package
+                {menu.menuItems.length} selected {menu.menuItems.length === 1 ? 'dish' : 'dishes'} in this package
               </p>
             </div>
           </div>
