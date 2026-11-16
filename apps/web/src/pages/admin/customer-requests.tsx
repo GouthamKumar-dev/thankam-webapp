@@ -38,6 +38,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageShell } from '@/layouts/page-shell';
+import { TableSkeleton, CardListSkeleton, PageLoader } from '@/components/common/skeleton';
 import { openQuotePdf, generateQuotePdfBase64 } from '@/utils/quote-pdf';
 import {
   generateAgreementHtml,
@@ -570,6 +571,7 @@ export function CustomerRequestsPage() {
   const selectedIdFromUrl = searchParams.get('id');
 
   const [rows, setRows] = useState<QuotationRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selectedRow, setSelectedRow] = useState<QuotationRow | null>(null);
@@ -613,8 +615,9 @@ export function CustomerRequestsPage() {
   const agIframeRef = useRef<HTMLIFrameElement>(null);
 
   /* ── data loading ── */
-  const refresh = () =>
-    void quotationsService
+  const refresh = () => {
+    setLoading(true);
+    return quotationsService
       .customerRequests(1, 100)
       .then((res) => {
         setRows(res.data);
@@ -623,7 +626,9 @@ export function CustomerRequestsPage() {
           if (match) setSelectedRow(match);
         }
       })
-      .catch(() => toast.error('Failed to load requests'));
+      .catch(() => toast.error('Failed to load requests'))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     refresh();
@@ -1552,8 +1557,18 @@ export function CustomerRequestsPage() {
           </div>
 
           {/* Full-Width Requests Data Table */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-            {totalItems === 0 ? (
+          {loading ? (
+            <div className="space-y-4">
+              <div className="hidden lg:block">
+                <TableSkeleton rows={7} cols={7} />
+              </div>
+              <div className="lg:hidden">
+                <CardListSkeleton count={5} />
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+              {totalItems === 0 ? (
               <div className="p-16 text-center">
                 <FileText size={38} className="mx-auto mb-3 text-slate-400" />
                 <p className="text-base font-bold text-slate-800">No customer requests found</p>
@@ -2012,6 +2027,7 @@ export function CustomerRequestsPage() {
               </>
             )}
           </div>
+        )}
         </div>
       </PageShell>
     );
@@ -2068,7 +2084,11 @@ export function CustomerRequestsPage() {
           </div>
         </div>
 
-        {/* Hero Card: Customer Presentation + Metadata + Stepper */}
+        {detailLoading && !detail ? (
+          <PageLoader message="Loading Customer Request Details..." />
+        ) : (
+          <>
+            {/* Hero Card: Customer Presentation + Metadata + Stepper */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-5">
           {/* Main Title & Status Line */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -3176,6 +3196,9 @@ export function CustomerRequestsPage() {
             perPersonRate={parseCurrency(perPersonAmt)}
             quoteMode={quoteMode}
           />
+        )}
+
+          </>
         )}
 
         {agLoading && (

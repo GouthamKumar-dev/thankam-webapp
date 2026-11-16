@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { SelectInput } from '@/components/ui/select-input';
 import { Textarea } from '@/components/ui/textarea';
 import { categoriesService, CategoryNode } from '@/features/categories/categories.service';
+import { Skeleton, TableSkeleton } from '@/components/common/skeleton';
 import { itemsService } from '@/features/items/items.service';
 import { uploadService } from '@/features/upload/upload.service';
 import { useConfirmModal } from '@/hooks/use-confirm-modal';
@@ -438,8 +439,22 @@ export function CategoriesPage() {
           </div>
         </div>
 
-        {/* ── Global Search Results View (If Search Active) ── */}
-        {isGlobalSearching ? (
+        {loading ? (
+          <div className="grid gap-4 lg:grid-cols-[340px_1fr] items-start">
+            <div className="space-y-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+              <Skeleton className="h-5 w-36 mb-3" />
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2 py-1.5">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-4">
+              <TableSkeleton rows={7} cols={5} />
+            </div>
+          </div>
+        ) : isGlobalSearching ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-5 animate-fade-in">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>

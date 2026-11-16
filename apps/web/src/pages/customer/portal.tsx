@@ -45,6 +45,7 @@ import { Input } from "@/components/ui/input";
 import { LuxurySelect } from "@/components/ui/luxury-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/common/skeleton";
 import { CategoryNode } from "@/features/categories/categories.service";
 import { QuotationPayload } from "@/features/quotations/quotations.service";
 import { customerPortalService } from "@/features/customer-portal/customer-portal.service";
@@ -310,7 +311,7 @@ export function CustomerPortalPage() {
   const [companyName, setCompanyName] = useState("Thankam Events");
   const [search, setSearch] = useState("");
   const [foodTypeFilter, setFoodTypeFilter] = useState<"ALL" | "VEG" | "NON_VEG">("ALL");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
@@ -1437,9 +1438,24 @@ export function CustomerPortalPage() {
               </div>
 
               {loading ? (
-                <div className="py-20 text-center">
-                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#B8860B]" />
-                  <p className="mt-3 text-xs font-bold text-slate-500">Loading Thankam Menu...</p>
+                <div className="divide-y divide-slate-100">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="flex items-start justify-between gap-4 py-5 px-2">
+                      <div className="flex-1 space-y-2.5 pr-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <Skeleton className="h-3.5 w-24" />
+                        </div>
+                        <Skeleton className="h-5 w-48" />
+                        <Skeleton className="h-3.5 w-32" />
+                        <Skeleton className="h-10 w-full max-w-md rounded-lg" />
+                      </div>
+                      <div className="shrink-0 flex flex-col items-center">
+                        <Skeleton className="h-24 w-28 sm:h-28 sm:w-36 rounded-2xl" />
+                        <Skeleton className="h-7 w-20 rounded-xl -mt-3 shadow-xs" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredItems.length === 0 ? (
                 <div className="py-16 text-center">

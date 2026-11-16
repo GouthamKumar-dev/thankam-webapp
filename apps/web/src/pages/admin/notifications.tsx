@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { KpiGridSkeleton, CardListSkeleton } from '@/components/common/skeleton';
 import {
   AdminNotificationItem,
   readAdminNotifications,
@@ -260,49 +261,53 @@ export function AdminNotificationsPage() {
       subtitle="Live updates for customer quotation requests, digital agreements, and booking statuses."
     >
       {/* 1. Overview Metrics Strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4 mb-6">
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Alerts</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
-              <Bell size={14} />
+      {loading ? (
+        <KpiGridSkeleton count={4} className="mb-6" />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4 mb-6">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Alerts</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
+                <Bell size={14} />
+              </div>
             </div>
+            <p className="mt-2 text-2xl font-black text-slate-900">{metrics.total}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Workflow event history</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.total}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Workflow event history</p>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Unread Updates</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <BellRing size={14} />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Unread Updates</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <BellRing size={14} />
+              </div>
             </div>
+            <p className="mt-2 text-2xl font-black text-emerald-700">{metrics.unread}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Pending admin review</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-emerald-700">{metrics.unread}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Pending admin review</p>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Agreements</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
-              <ShieldCheck size={14} />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Agreements</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+                <ShieldCheck size={14} />
+              </div>
             </div>
+            <p className="mt-2 text-2xl font-black text-slate-900">{metrics.agreements}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Signed or reviewed</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.agreements}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Signed or reviewed</p>
-        </div>
 
-        <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Customer Inquiries</span>
-            <MailPlus size={15} className="text-[#F3CA52]" />
+          <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Customer Inquiries</span>
+              <MailPlus size={15} className="text-[#F3CA52]" />
+            </div>
+            <p className="mt-2 text-2xl font-black text-[#F3CA52]">{metrics.requests}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Portal submissions & leads</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-[#F3CA52]">{metrics.requests}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Portal submissions & leads</p>
         </div>
-      </div>
+      )}
 
       {/* 2. Search, Filter & Sound Preferences Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
@@ -446,7 +451,9 @@ export function AdminNotificationsPage() {
       </div>
 
       {/* 4. Notification Items Feed */}
-      {filteredItems.length === 0 ? (
+      {loading ? (
+        <CardListSkeleton count={6} />
+      ) : filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-[#B8860B] mb-3">
             <Inbox size={28} />

@@ -39,6 +39,7 @@ import { FormDialog, FormDialogFooter } from '@/components/common/form-dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { FormSkeleton } from '@/components/common/skeleton';
 import { uploadService } from '@/features/upload/upload.service';
 import { cn } from '@/utils/cn';
 import { toMediaUrl } from '@/utils/media-url';
@@ -117,15 +118,20 @@ export function SettingsPage() {
 
   // Company settings form
   const [companyForm, setCompanyForm] = useState<CompanySetting>(initialCompanySetting());
+  const [loading, setLoading] = useState(true);
   const [companySaving, setCompanySaving] = useState(false);
   const [assetUploading, setAssetUploading] = useState<'logo' | 'favicon' | null>(null);
 
   const refresh = async () => {
-    const settings = await settingsService.list();
-    setRows(settings);
+    try {
+      const settings = await settingsService.list();
+      setRows(settings);
 
-    const company = settings.find((row) => row.key === 'company');
-    setCompanyForm(normalizeCompanySetting(company?.value));
+      const company = settings.find((row) => row.key === 'company');
+      setCompanyForm(normalizeCompanySetting(company?.value));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -379,7 +385,11 @@ export function SettingsPage() {
         </button>
       </div>
 
-      {/* 2. TAB 1: BRAND IDENTITY & LOGO */}
+      {loading ? (
+        <FormSkeleton />
+      ) : (
+        <>
+          {/* 2. TAB 1: BRAND IDENTITY & LOGO */}
       {activeTab === 'branding' && (
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Main Form (8 cols) */}
@@ -1020,6 +1030,8 @@ export function SettingsPage() {
 
           <DataTable columns={columns} data={rows} />
         </Card>
+      )}
+        </>
       )}
 
       {/* Advanced Key Dialog */}

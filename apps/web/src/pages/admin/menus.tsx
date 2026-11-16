@@ -30,6 +30,7 @@ import { itemsService } from '@/features/items/items.service';
 import { menusService, MenuRow } from '@/features/menus/menus.service';
 import { useConfirmModal } from '@/hooks/use-confirm-modal';
 import { PageShell } from '@/layouts/page-shell';
+import { KpiGridSkeleton, CardGridSkeleton, TableSkeleton } from '@/components/common/skeleton';
 import { cn } from '@/utils/cn';
 import { formatInr } from '@/utils/currency';
 import { isNonVegDish, isVegDish } from '@/utils/dietary';
@@ -412,51 +413,55 @@ export function MenusPage() {
       subtitle="Manage General catering packages and traditional Kerala Sadya feast menus for client quotations."
     >
       {/* 1. Metric Overview Cards — Real, Informative Catering Metrics (Replaced ₹0 awkward card) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4 mb-6">
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Packages</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
-              <BookOpen size={14} />
+      {loading ? (
+        <KpiGridSkeleton count={4} className="mb-6" />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4 mb-6">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Packages</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
+                <BookOpen size={14} />
+              </div>
             </div>
+            <p className="mt-2 text-2xl font-black text-slate-900">{metrics.totalMenus}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Active menu templates</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.totalMenus}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Active menu templates</p>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">General Menus</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-              <ChefHat size={14} />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">General Menus</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                <ChefHat size={14} />
+              </div>
             </div>
+            <p className="mt-2 text-2xl font-black text-slate-900">{metrics.generalMenus}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Weddings &amp; receptions</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.generalMenus}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Weddings &amp; receptions</p>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Sadya Feasts</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <ChefHat size={14} />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Sadya Feasts</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <ChefHat size={14} />
+              </div>
             </div>
+            <p className="mt-2 text-2xl font-black text-slate-900">{metrics.sadyaMenus}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Traditional leaf packages</p>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.sadyaMenus}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Traditional leaf packages</p>
-        </div>
 
-        <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Catalog Dishes</span>
-            <Layers size={15} className="text-[#F3CA52]" />
+          <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Catalog Dishes</span>
+              <Layers size={15} className="text-[#F3CA52]" />
+            </div>
+            <p className="mt-2 text-2xl font-black font-mono text-[#F3CA52]">
+              {metrics.catalogDishes || 425}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">General & Sadya dishes</p>
           </div>
-          <p className="mt-2 text-2xl font-black font-mono text-[#F3CA52]">
-            {metrics.catalogDishes || 425}
-          </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">General & Sadya dishes</p>
         </div>
-      </div>
+      )}
 
       {/* 2. Controls & Search Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
@@ -569,7 +574,15 @@ export function MenusPage() {
       </div>
 
       {/* 3. Main Content: Grid View or Table View */}
-      {viewMode === 'grid' ? (
+      {loading ? (
+        viewMode === 'grid' ? (
+          <CardGridSkeleton count={6} />
+        ) : (
+          <Card className="p-4 border-slate-200">
+            <TableSkeleton rows={8} cols={5} />
+          </Card>
+        )
+      ) : viewMode === 'grid' ? (
         filteredRows.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredRows.map((menu) => (

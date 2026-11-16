@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageShell } from '@/layouts/page-shell';
+import { KpiGridSkeleton, CalendarSkeleton } from '@/components/common/skeleton';
 import { dashboardService, DashboardStats } from '@/features/dashboard/dashboard.service';
 import { quotationsService, QuotationRow } from '@/features/quotations/quotations.service';
 import { formatInr } from '@/utils/currency';
@@ -529,8 +530,15 @@ export function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── ROW 1: 4 ESSENTIAL EXECUTIVE METRIC CARDS (Real Database Metrics & Mobile Responsive) ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {loading ? (
+          <div className="space-y-6">
+            <KpiGridSkeleton count={4} />
+            <CalendarSkeleton />
+          </div>
+        ) : (
+          <>
+            {/* ── ROW 1: 4 ESSENTIAL EXECUTIVE METRIC CARDS (Real Database Metrics & Mobile Responsive) ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* 1. Confirmed Bookings Revenue */}
           <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
@@ -1260,6 +1268,8 @@ export function AdminDashboardPage() {
             )}
           </div>
         </div>
+          </>
+        )}
 
         {/* ── ROW 4: QUICK OPERATIONS SHORTCUTS (Thankam UI Clean White Cards) ── */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

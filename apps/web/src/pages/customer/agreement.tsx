@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { customerPortalService } from '@/features/customer-portal/customer-portal.service';
 import { createWorkflowSocket } from '@/features/quotations/workflow-socket';
 import { formatInr } from '@/utils/currency';
+import { CardListSkeleton } from '@/components/common/skeleton';
 import { isVegDish } from '@/utils/dietary';
 import { generateAgreementHtml, downloadAgreementPdf, AgreementInput } from '@/utils/agreement-pdf';
 import { toMediaUrl } from '@/utils/media-url';
@@ -646,11 +647,7 @@ export function CustomerAgreementPage() {
       {/* ── Main Content Container ── */}
       <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 space-y-4">
         {loading ? (
-          <div className="space-y-4">
-            <div className="h-24 animate-pulse rounded-2xl bg-white border border-slate-200" />
-            <div className="h-56 animate-pulse rounded-2xl bg-white border border-slate-200" />
-            <div className="h-64 animate-pulse rounded-2xl bg-white border border-slate-200" />
-          </div>
+          <CardListSkeleton count={4} />
         ) : finalized.length === 0 ? (
           /* Empty State */
           <div className="py-16 text-center">

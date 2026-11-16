@@ -40,6 +40,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Skeleton, PageLoader } from '@/components/common/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectInput } from '@/components/ui/select-input';
@@ -483,6 +484,7 @@ export function QuotationsPage() {
   const [ppRate, setPpRate] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
 
   /* catalog search */
   const [catSearch, setCatSearch] = useState('');
@@ -505,7 +507,11 @@ export function QuotationsPage() {
 
   /* ── Load ── */
   const refresh = useCallback(() => {
-    return quotationsService.list(1, 100).then((r) => setRows(r.data));
+    setLoadingList(true);
+    return quotationsService
+      .list(1, 100)
+      .then((r) => setRows(r.data))
+      .finally(() => setLoadingList(false));
   }, []);
 
   useEffect(() => {
@@ -1484,7 +1490,23 @@ export function QuotationsPage() {
             hasDetail ? 'hidden lg:block' : 'block'
           }`}
         >
-          {filteredRows.length === 0 ? (
+          {loadingList ? (
+            <div className="space-y-2.5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-3.5 space-y-2.5 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-24 font-mono" />
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-36" />
+                  <div className="flex items-center justify-between pt-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-16 font-mono" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredRows.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
               <FileText size={28} className="mx-auto mb-2 text-slate-300" />
               <p className="text-xs font-bold text-slate-700">No quotations found</p>
@@ -1581,11 +1603,8 @@ export function QuotationsPage() {
             </div>
           </div>
         ) : loading ? (
-          <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-16">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#D4AF37]" />
-              <p className="mt-3 text-xs font-bold text-slate-500">Loading quotation details...</p>
-            </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-8">
+            <PageLoader message="Loading quotation details..." />
           </div>
         ) : (
           <div className="space-y-4 lg:max-h-[calc(100vh-230px)] lg:overflow-y-auto lg:pr-1">

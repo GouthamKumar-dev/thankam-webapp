@@ -38,6 +38,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { SelectInput } from '@/components/ui/select-input';
 import { CustomerSummary, UserPayload, UserRow, usersService } from '@/features/users/users.service';
+import { KpiGridSkeleton, CardGridSkeleton, TableSkeleton } from '@/components/common/skeleton';
 import { useConfirmModal } from '@/hooks/use-confirm-modal';
 import { PageShell } from '@/layouts/page-shell';
 import { cn } from '@/utils/cn';
@@ -556,51 +557,55 @@ export function UsersPage() {
       {activeTab === 'customers' && (
         <div className="space-y-6">
           {/* Customer Metrics */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Clients</span>
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
-                  <Users size={14} />
+          {loadingCustomers ? (
+            <KpiGridSkeleton count={4} />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Clients</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
+                    <Users size={14} />
+                  </div>
                 </div>
+                <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.totalClients}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Unique customer profiles</p>
               </div>
-              <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.totalClients}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Unique customer profiles</p>
-            </div>
 
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Confirmed Events</span>
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                  <CheckCircle2 size={14} />
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Confirmed Events</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <CheckCircle2 size={14} />
+                  </div>
                 </div>
+                <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.totalBookings}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Bookings & signed contracts</p>
               </div>
-              <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.totalBookings}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Bookings & signed contracts</p>
-            </div>
 
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Negotiation</span>
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-                  <Clock size={14} />
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Negotiation</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                    <Clock size={14} />
+                  </div>
                 </div>
+                <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.inNegotiation}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Active quote discussions</p>
               </div>
-              <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.inNegotiation}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Active quote discussions</p>
-            </div>
 
-            <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Total Portfolio</span>
-                <TrendingUp size={15} className="text-[#F3CA52]" />
+              <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Total Portfolio</span>
+                  <TrendingUp size={15} className="text-[#F3CA52]" />
+                </div>
+                <p className="mt-2 text-2xl font-black font-mono text-[#F3CA52]">
+                  {formatInr(customerMetrics.totalValue)}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Finalized contract value</p>
               </div>
-              <p className="mt-2 text-2xl font-black font-mono text-[#F3CA52]">
-                {formatInr(customerMetrics.totalValue)}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Finalized contract value</p>
             </div>
-          </div>
+          )}
 
           {/* Search, Filter & View Mode Bar */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -697,7 +702,15 @@ export function UsersPage() {
           </div>
 
           {/* Customer Content Display */}
-          {customerViewMode === 'grid' ? (
+          {loadingCustomers ? (
+            customerViewMode === 'grid' ? (
+              <CardGridSkeleton count={6} />
+            ) : (
+              <Card className="p-4 border-slate-200">
+                <TableSkeleton rows={8} cols={6} />
+              </Card>
+            )
+          ) : customerViewMode === 'grid' ? (
             filteredCustomers.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredCustomers.map((customer) => (
@@ -731,28 +744,32 @@ export function UsersPage() {
       {activeTab === 'staff' && (
         <div className="space-y-6">
           {/* Staff Metrics */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Staff</span>
-              <p className="mt-2 text-2xl font-black text-slate-900">{staffMetrics.total}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Registered accounts</p>
+          {loadingStaff ? (
+            <KpiGridSkeleton count={4} />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Staff</span>
+                <p className="mt-2 text-2xl font-black text-slate-900">{staffMetrics.total}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Registered accounts</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Administrators</span>
+                <p className="mt-2 text-2xl font-black text-[#B8860B]">{staffMetrics.admins}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Full admin control</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Coordinators</span>
+                <p className="mt-2 text-2xl font-black text-sky-700">{staffMetrics.staff}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Staff & operations</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Accounts</span>
+                <p className="mt-2 text-2xl font-black text-emerald-600">{staffMetrics.active}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Currently enabled</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Administrators</span>
-              <p className="mt-2 text-2xl font-black text-[#B8860B]">{staffMetrics.admins}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Full admin control</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Coordinators</span>
-              <p className="mt-2 text-2xl font-black text-sky-700">{staffMetrics.staff}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Staff & operations</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Accounts</span>
-              <p className="mt-2 text-2xl font-black text-emerald-600">{staffMetrics.active}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Currently enabled</p>
-            </div>
-          </div>
+          )}
 
           {/* Search bar */}
           <div className="flex items-center justify-between gap-3">
@@ -776,9 +793,15 @@ export function UsersPage() {
             </div>
           </div>
 
-          <Card className="p-0 overflow-hidden border-slate-200">
-            <DataTable columns={staffColumns} data={filteredStaff} />
-          </Card>
+          {loadingStaff ? (
+            <Card className="p-4 border-slate-200">
+              <TableSkeleton rows={6} cols={5} />
+            </Card>
+          ) : (
+            <Card className="p-0 overflow-hidden border-slate-200">
+              <DataTable columns={staffColumns} data={filteredStaff} />
+            </Card>
+          )}
         </div>
       )}
 

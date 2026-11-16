@@ -33,6 +33,7 @@ import {
   CreateReviewPayload,
 } from '@/features/website-review/website-review.service';
 import { uploadService } from '@/features/upload/upload.service';
+import { CardGridSkeleton, KpiGridSkeleton } from '@/components/common/skeleton';
 
 type Tab = 'gallery' | 'testimonials';
 type GalleryFilter = 'all' | 'IMAGE' | 'VIDEO' | 'FEATURED';
@@ -710,7 +711,7 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
 
   const [galleryItems, setGalleryItems] = useState<MediaRow[]>([]);
   const [testimonials, setTestimonials] = useState<ReviewRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [viewImg, setViewImg] = useState<string | null>(null);
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>('all');
   const [search, setSearch] = useState('');
@@ -903,7 +904,9 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
         </div>
 
         {/* ── METRICS STRIP ── */}
-        {tab === 'gallery' ? (
+        {loading ? (
+          <KpiGridSkeleton count={4} />
+        ) : tab === 'gallery' ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#0c121e] to-[#080C14] p-4 text-white shadow-xl">
               <div className="flex items-center justify-between">
@@ -1069,7 +1072,9 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
         ══════════════════════════════ */}
         {tab === 'gallery' && (
           <div>
-            {filteredGalleryItems.length === 0 ? (
+            {loading ? (
+              <CardGridSkeleton count={8} columns="grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
+            ) : filteredGalleryItems.length === 0 ? (
               <div className="rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 p-16 text-center shadow-xl">
                 <GalleryHorizontal size={40} className="mx-auto mb-3 text-slate-600" />
                 <p className="text-base font-bold text-white">No gallery items found</p>
@@ -1189,7 +1194,9 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
         ══════════════════════════════ */}
         {tab === 'testimonials' && (
           <div>
-            {filteredTestimonials.length === 0 ? (
+            {loading ? (
+              <CardGridSkeleton count={6} columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" />
+            ) : filteredTestimonials.length === 0 ? (
               <div className="rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 p-16 text-center shadow-xl">
                 <MessageSquarePlus size={40} className="mx-auto mb-3 text-slate-600" />
                 <p className="text-base font-bold text-white">No testimonials found</p>
