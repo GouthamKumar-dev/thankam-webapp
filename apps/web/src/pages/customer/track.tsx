@@ -371,6 +371,14 @@ export function CustomerTrackPage() {
       }
     };
 
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedWorkflowEvent = (payload?: any) => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        onWorkflowEvent(payload);
+      }, 300);
+    };
+
     [
       'workflow:request.created',
       'workflow:request.updated',
@@ -378,28 +386,11 @@ export function CustomerTrackPage() {
       'workflow:quotation.status',
       'workflow:agreement.initiated',
       'workflow:agreement.feedback',
-    ].forEach((e) => socket.on(e, onWorkflowEvent));
-
-    // Silent background polling (every 6s) to ensure zero stale UI states
-    const pollTimer = setInterval(() => {
-      if (!token) return;
-      void customerPortalService
-        .myQuotations(token)
-        .then((data) => {
-          setRows(data);
-          if (selectedRef.current?.id) {
-            void customerPortalService
-              .myQuotationById(token, selectedRef.current.id)
-              .then(setSelected)
-              .catch(() => {});
-          }
-        })
-        .catch(() => {});
-    }, 6000);
+    ].forEach((e) => socket.on(e, debouncedWorkflowEvent));
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       socket.disconnect();
-      clearInterval(pollTimer);
     };
   }, [token]);
 

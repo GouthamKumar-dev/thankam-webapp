@@ -566,16 +566,23 @@ export function QuotationsPage() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   /* ── Load ── */
-  const refresh = useCallback(() => {
-    setLoadingList(true);
+  const isFetchingRef = useRef(false);
+  const refresh = useCallback((showSkeleton = false) => {
+    if (isFetchingRef.current) return Promise.resolve();
+    isFetchingRef.current = true;
+    if (showSkeleton) setLoadingList(true);
     return quotationsService
       .list(1, 100)
       .then((r) => setRows(r.data))
-      .finally(() => setLoadingList(false));
+      .catch(() => null)
+      .finally(() => {
+        isFetchingRef.current = false;
+        setLoadingList(false);
+      });
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh(true);
     void categoriesService
       .list()
       .then((tree) => {
@@ -631,20 +638,19 @@ export function QuotationsPage() {
       })
       .catch(() => null);
 
-    // Real-Time WebSocket updates via dashboard layout broadcast
+    // Event-Driven Real-Time WebSocket updates (Debounced, Zero Polling)
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleWorkflowEvent = () => {
-      void refresh();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void refresh(false);
+      }, 300);
     };
     window.addEventListener('thankam:quotation-event', handleWorkflowEvent);
 
-    // Silent background polling (every 8s) to guarantee zero UI stale states
-    const pollTimer = setInterval(() => {
-      void refresh();
-    }, 8000);
-
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener('thankam:quotation-event', handleWorkflowEvent);
-      clearInterval(pollTimer);
     };
   }, [refresh]);
 
@@ -1527,7 +1533,7 @@ export function QuotationsPage() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={refresh}
+            onClick={() => void refresh(true)}
             className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 transition-colors"
             title="Refresh list"
           >

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -127,8 +127,11 @@ export function AdminDashboardPage() {
   const [hoveredPoint, setHoveredPoint] = useState<{ label: string; value: number; count: number } | null>(null);
 
   /* ── Load Data ── */
-  const loadData = async () => {
-    setLoading(true);
+  const isFetchingRef = useRef(false);
+  const loadData = async (showSkeleton = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    if (showSkeleton) setLoading(true);
     try {
       const [statsData, quotesRes, inqRes] = await Promise.allSettled([
         dashboardService.getStats(),
@@ -142,23 +145,27 @@ export function AdminDashboardPage() {
     } catch (err) {
       console.error('Failed to load dashboard data', err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    void loadData();
+    void loadData(true);
 
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleEvent = () => {
-      void loadData();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void loadData(false);
+      }, 300);
     };
 
     window.addEventListener('thankam:quotation-event', handleEvent);
-    const syncInterval = setInterval(handleEvent, 10000);
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener('thankam:quotation-event', handleEvent);
-      clearInterval(syncInterval);
     };
   }, []);
 
@@ -511,7 +518,7 @@ export function AdminDashboardPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
-              onClick={loadData}
+              onClick={() => void loadData(true)}
               title="Sync Live Records"
               className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-2xs"
             >

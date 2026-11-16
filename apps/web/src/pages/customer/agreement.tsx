@@ -368,19 +368,24 @@ export function CustomerAgreementPage() {
         .catch(() => null);
     };
 
-    socket.on('workflow:agreement.initiated', handleUpdate);
-    socket.on('workflow:agreement.feedback', handleUpdate);
-    socket.on('workflow:quotation.status', handleUpdate);
-    socket.on('workflow:request.status', handleUpdate);
-    socket.on('workflow:request.updated', handleUpdate);
-    socket.on('workflow:request.created', handleUpdate);
-    socket.on('quotation:statusChanged', handleUpdate);
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedUpdate = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        handleUpdate();
+      }, 300);
+    };
 
-    // Silent background sync interval (7s)
-    const syncTimer = setInterval(handleUpdate, 7000);
+    socket.on('workflow:agreement.initiated', debouncedUpdate);
+    socket.on('workflow:agreement.feedback', debouncedUpdate);
+    socket.on('workflow:quotation.status', debouncedUpdate);
+    socket.on('workflow:request.status', debouncedUpdate);
+    socket.on('workflow:request.updated', debouncedUpdate);
+    socket.on('workflow:request.created', debouncedUpdate);
+    socket.on('quotation:statusChanged', debouncedUpdate);
 
     return () => {
-      clearInterval(syncTimer);
+      if (debounceTimer) clearTimeout(debounceTimer);
       socket.disconnect();
     };
   }, [token]);

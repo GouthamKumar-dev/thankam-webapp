@@ -613,10 +613,13 @@ export function CustomerRequestsPage() {
   const [agSent, setAgSent] = useState(false);
   const [agLoading, setAgLoading] = useState(false);
   const agIframeRef = useRef<HTMLIFrameElement>(null);
+  const isFetchingRef = useRef(false);
 
   /* ── data loading ── */
-  const refresh = () => {
-    setLoading(true);
+  const refresh = (showSkeleton = false) => {
+    if (isFetchingRef.current) return Promise.resolve();
+    isFetchingRef.current = true;
+    if (showSkeleton) setLoading(true);
     return quotationsService
       .customerRequests(1, 100)
       .then((res) => {
@@ -627,11 +630,14 @@ export function CustomerRequestsPage() {
         }
       })
       .catch(() => toast.error('Failed to load requests'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        isFetchingRef.current = false;
+        setLoading(false);
+      });
   };
 
   useEffect(() => {
-    refresh();
+    void refresh(true);
   }, []);
 
   // Synchronize URL param ?id=... with detail view
@@ -662,36 +668,24 @@ export function CustomerRequestsPage() {
     void customerPortalService.catalog().then((tree) => setCatalog(flattenCatalog(tree)));
   }, []);
 
+  // Event-Driven Real-Time Updates via Dashboard Layout (Debounced, Zero Polling)
   useEffect(() => {
-    if (!auth.accessToken) return;
-    const socket = createWorkflowSocket({ token: auth.accessToken });
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const onEvent = () => {
-      refresh();
-      if (detailRef.current?.id) void openDetail(detailRef.current.id);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void refresh(false);
+        if (detailRef.current?.id) void openDetail(detailRef.current.id);
+      }, 300);
     };
-    [
-      'workflow:request.created',
-      'workflow:request.updated',
-      'workflow:request.status',
-      'workflow:quotation.status',
-      'workflow:agreement.initiated',
-      'workflow:agreement.feedback',
-      'workflow:customer.interested',
-      'workflow:customer.otpVerified',
-    ].forEach((e) => socket.on(e, onEvent));
 
     window.addEventListener('thankam:quotation-event', onEvent);
 
-    const pollTimer = setInterval(() => {
-      refresh();
-    }, 8000);
-
     return () => {
-      socket.disconnect();
+      if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener('thankam:quotation-event', onEvent);
-      clearInterval(pollTimer);
     };
-  }, [auth.accessToken]);
+  }, []);
 
   const openDetail = async (id: string) => {
     try {
@@ -1434,7 +1428,7 @@ export function CustomerRequestsPage() {
               Manage incoming customer requests, customize catering menus, and finalize event quotes.
             </p>
             <button
-              onClick={refresh}
+              onClick={() => void refresh(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs"
             >
               <RefreshCw size={13} className="text-slate-500" />

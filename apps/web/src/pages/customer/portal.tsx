@@ -678,8 +678,12 @@ export function CustomerPortalPage() {
     const token = localStorage.getItem(CUSTOMER_PORTAL_TOKEN_KEY);
     if (!token || !isAuthenticated) return;
     const socket = createWorkflowSocket({ token });
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleUpdate = () => {
-      void loadLiveQuotations();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void loadLiveQuotations();
+      }, 300);
     };
 
     socket.on("workflow:request.created", handleUpdate);
@@ -690,10 +694,8 @@ export function CustomerPortalPage() {
     socket.on("workflow:agreement.feedback", handleUpdate);
     socket.on("quotation:statusChanged", handleUpdate);
 
-    const timer = setInterval(handleUpdate, 8000);
-
     return () => {
-      clearInterval(timer);
+      if (debounceTimer) clearTimeout(debounceTimer);
       socket.disconnect();
     };
   }, [isAuthenticated]);
