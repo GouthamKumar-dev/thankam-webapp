@@ -50,6 +50,7 @@ type EventCalendarItem = {
   guestCount: number;
   grandTotal: number;
   type: 'CONFIRMED' | 'QUOTED' | 'INQUIRY' | 'REMINDER';
+  source?: 'ADMIN' | 'CUSTOMER_PORTAL';
   notes?: string;
 };
 
@@ -195,12 +196,18 @@ export function AdminDashboardPage() {
   /* ── Unified Calendar Events Collection ── */
   const calendarEvents = useMemo(() => {
     const events: EventCalendarItem[] = [];
+    const inquiryIdSet = new Set(inquiries.map((i) => i.id));
 
     // 1. Quotations
     for (const q of quotations) {
       if (!q.eventDate) continue;
       const dKey = toDateKey(parseDateKey(q.eventDate));
       const isConfirmed = q.agreementStatus === 'ACCEPTED';
+      const isCustomerRequest =
+        q.source === 'CUSTOMER_PORTAL' ||
+        Boolean(q.requestStatus) ||
+        inquiryIdSet.has(q.id);
+
       events.push({
         id: q.id,
         quotationNumber: q.quotationNumber,
@@ -211,7 +218,8 @@ export function AdminDashboardPage() {
         venue: q.venue,
         guestCount: Number(q.guestCount || 0),
         grandTotal: Number(q.grandTotal || 0),
-        type: isConfirmed ? 'CONFIRMED' : 'QUOTED',
+        type: isConfirmed ? 'CONFIRMED' : isCustomerRequest ? 'INQUIRY' : 'QUOTED',
+        source: isCustomerRequest ? 'CUSTOMER_PORTAL' : (q.source || 'ADMIN'),
       });
     }
 
@@ -219,7 +227,14 @@ export function AdminDashboardPage() {
     for (const inq of inquiries) {
       if (!inq.eventDate) continue;
       const dKey = toDateKey(parseDateKey(inq.eventDate));
-      if (events.some((e) => e.id === inq.id)) continue;
+      const existing = events.find((e) => e.id === inq.id);
+      if (existing) {
+        existing.source = 'CUSTOMER_PORTAL';
+        if (existing.type !== 'CONFIRMED') {
+          existing.type = 'INQUIRY';
+        }
+        continue;
+      }
       const isConfirmed = inq.agreementStatus === 'ACCEPTED';
       events.push({
         id: inq.id,
@@ -232,6 +247,7 @@ export function AdminDashboardPage() {
         guestCount: Number(inq.guestCount || 0),
         grandTotal: Number(inq.grandTotal || 0),
         type: isConfirmed ? 'CONFIRMED' : 'INQUIRY',
+        source: 'CUSTOMER_PORTAL',
       });
     }
 
@@ -347,9 +363,9 @@ export function AdminDashboardPage() {
     if (calFilter === 'CONFIRMED') {
       filteredEvents = rawEvents.filter((e) => e.type === 'CONFIRMED');
     } else if (calFilter === 'QUOTED') {
-      filteredEvents = rawEvents.filter((e) => e.type === 'QUOTED');
+      filteredEvents = rawEvents.filter((e) => e.source !== 'CUSTOMER_PORTAL' && e.type === 'QUOTED');
     } else if (calFilter === 'INQUIRY') {
-      filteredEvents = rawEvents.filter((e) => e.type === 'INQUIRY');
+      filteredEvents = rawEvents.filter((e) => e.source === 'CUSTOMER_PORTAL' || e.type === 'INQUIRY');
     } else if (calFilter === 'REMINDERS') {
       filteredEvents = [];
     }
@@ -537,7 +553,12 @@ export function AdminDashboardPage() {
           </div>
 
           {/* 2. Quotation Pipeline */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div
+            onClick={() => navigate('/admin/quotations')}
+            role="button"
+            tabIndex={0}
+            className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer hover:border-amber-400"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Quotation Pipeline
@@ -579,7 +600,12 @@ export function AdminDashboardPage() {
           </div>
 
           {/* 4. Action Required / Pending Requests */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div
+            onClick={() => navigate('/admin/customer-requests')}
+            role="button"
+            tabIndex={0}
+            className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer hover:border-orange-400"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Action Required
@@ -630,6 +656,7 @@ export function AdminDashboardPage() {
                     { key: 'ALL', label: 'All' },
                     { key: 'CONFIRMED', label: 'Confirmed' },
                     { key: 'QUOTED', label: 'Quotes' },
+                    { key: 'INQUIRY', label: 'Requests' },
                     { key: 'REMINDERS', label: 'Reminders' },
                   ] as const
                 ).map((f) => (
@@ -850,19 +877,34 @@ export function AdminDashboardPage() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="font-bold text-slate-900 text-sm">{evt.customerName}</p>
+                              <p
+                                onClick={() => {
+                                  if (evt.source === 'CUSTOMER_PORTAL') {
+                                    navigate(`/admin/customer-requests?id=${evt.id}`);
+                                  } else {
+                                    navigate(`/admin/quotations?id=${evt.id}`);
+                                  }
+                                }}
+                                className="font-bold text-slate-900 text-sm hover:text-amber-700 cursor-pointer transition-colors"
+                              >
+                                {evt.customerName}
+                              </p>
                               <p className="text-xs text-amber-800 font-semibold">{evt.eventType}</p>
                             </div>
                             <span
                               className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
                                 evt.type === 'CONFIRMED'
                                   ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                  : evt.type === 'QUOTED'
-                                  ? 'bg-amber-50 border-amber-200 text-amber-900'
-                                  : 'bg-orange-50 border-orange-200 text-orange-900'
+                                  : evt.source === 'CUSTOMER_PORTAL'
+                                  ? 'bg-orange-50 border-orange-200 text-orange-900'
+                                  : 'bg-amber-50 border-amber-200 text-amber-900'
                               }`}
                             >
-                              {evt.type === 'CONFIRMED' ? 'Confirmed' : evt.type === 'QUOTED' ? 'Quote' : 'Inquiry'}
+                              {evt.type === 'CONFIRMED'
+                                ? 'Confirmed'
+                                : evt.source === 'CUSTOMER_PORTAL'
+                                ? 'Customer Request'
+                                : 'Quote'}
                             </span>
                           </div>
 
@@ -907,7 +949,13 @@ export function AdminDashboardPage() {
                               )}
                               <button
                                 type="button"
-                                onClick={() => navigate(`/admin/quotations?id=${evt.id}`)}
+                                onClick={() => {
+                                  if (evt.source === 'CUSTOMER_PORTAL') {
+                                    navigate(`/admin/customer-requests?id=${evt.id}`);
+                                  } else {
+                                    navigate(`/admin/quotations?id=${evt.id}`);
+                                  }
+                                }}
                                 className="text-xs font-bold text-amber-700 hover:text-amber-800 hover:underline"
                               >
                                 View &rarr;

@@ -693,7 +693,7 @@ export function CustomerRequestsPage() {
       setDetailLoading(true);
       const d = await quotationsService.getOne(id);
       setDetail(d);
-      setSelectedRow((prev) => (prev?.id === id ? prev : (rows.find((r) => r.id === id) ?? null)));
+      setSelectedRow((prev) => (prev?.id === id ? prev : (rows.find((r) => r.id === id) ?? (d as unknown as QuotationRow))));
 
       const emailFromNotes =
         d.customerEmail ||

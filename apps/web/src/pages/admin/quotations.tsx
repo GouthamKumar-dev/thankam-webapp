@@ -38,6 +38,7 @@ import {
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -451,6 +452,8 @@ function buildPayload(
    ══════════════════════════════════════════════════════════════════ */
 export function QuotationsPage() {
   const { confirm, confirmModal } = useConfirmModal();
+  const [searchParams] = useSearchParams();
+  const selectedIdFromUrl = searchParams.get('id');
 
   /* lists */
   const [rows, setRows] = useState<QuotationRow[]>([]);
@@ -635,6 +638,17 @@ export function QuotationsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedIdFromUrl) {
+      void quotationsService
+        .getOne(selectedIdFromUrl)
+        .then((d) => {
+          void onSelectRow(d as unknown as QuotationRow);
+        })
+        .catch(() => {});
+    }
+  }, [selectedIdFromUrl]);
 
   /* ── New quotation ── */
   const onNew = () => {
