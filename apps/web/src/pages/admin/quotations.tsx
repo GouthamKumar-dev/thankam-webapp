@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   ArrowRight,
+  Building2,
   Calendar,
   CalendarDays,
   Check,
@@ -104,6 +105,8 @@ type QuoteForm = {
   eventDate: string;
   eventType: string;
   venue: string;
+  venueType?: string;
+  venueName?: string;
   guestCount: string;
   notes: string;
   terms: string;
@@ -141,6 +144,57 @@ const VENUES = [
   'Open Ground',
   'Other',
 ];
+
+export function parseVenue(rawVenue?: string | null): { venueType: string; venueName: string } {
+  if (!rawVenue) return { venueType: '', venueName: '' };
+  const v = rawVenue.trim();
+
+  // Exact match with known venues
+  if (VENUES.includes(v)) {
+    return { venueType: v, venueName: '' };
+  }
+
+  // Format "Type — Name" or "Type - Name" or "Type: Name"
+  const dashMatch = v.match(/^([A-Za-z\s]+)\s*[-—:]\s*(.+)$/);
+  if (dashMatch) {
+    const candidateType = dashMatch[1].trim();
+    const candidateName = dashMatch[2].trim();
+    const matchedKnown = VENUES.find((known) => known.toLowerCase() === candidateType.toLowerCase());
+    if (matchedKnown) {
+      return { venueType: matchedKnown, venueName: candidateName };
+    }
+  }
+
+  // Format "Name (Type)"
+  const parenMatch = v.match(/^(.+)\s*\(([^)]+)\)$/);
+  if (parenMatch) {
+    const candidateName = parenMatch[1].trim();
+    const candidateType = parenMatch[2].trim();
+    const matchedKnown = VENUES.find((known) => known.toLowerCase() === candidateType.toLowerCase());
+    if (matchedKnown) {
+      return { venueType: matchedKnown, venueName: candidateName };
+    }
+  }
+
+  // Starts with known venue prefix
+  for (const known of VENUES) {
+    if (v.toLowerCase().startsWith(known.toLowerCase()) && v.length > known.length) {
+      const rest = v.slice(known.length).replace(/^[\s—\-:,]+/, '').trim();
+      return { venueType: known, venueName: rest };
+    }
+  }
+
+  return { venueType: 'Other', venueName: v };
+}
+
+export function composeVenue(venueType?: string | null, venueName?: string | null): string {
+  const t = (venueType ?? '').trim();
+  const n = (venueName ?? '').trim();
+  if (!t && !n) return '';
+  if (!n) return t;
+  if (!t) return n;
+  return `${t} — ${n}`;
+}
 
 const ALLOWED_UNITS = ['plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'];
 
@@ -258,6 +312,8 @@ function emptyForm(): QuoteForm {
     eventDate: '',
     eventType: '',
     venue: '',
+    venueType: '',
+    venueName: '',
     guestCount: '100',
     notes: '',
     terms: '50% advance on booking, 40% on event date morning, 10% upon event completion.',
@@ -270,6 +326,7 @@ function emptyForm(): QuoteForm {
 
 function detailToForm(d: QuotationDetail): QuoteForm {
   const gst = num(String(d.gstPercent ?? 5));
+  const { venueType, venueName } = parseVenue(d.venue);
   return {
     customerName: d.customerName ?? '',
     customerPhone: d.customerPhone ?? '',
@@ -278,6 +335,8 @@ function detailToForm(d: QuotationDetail): QuoteForm {
     eventDate: d.eventDate?.slice(0, 10) ?? '',
     eventType: d.eventType ?? '',
     venue: d.venue ?? '',
+    venueType: venueType || (d.venue ? 'Other' : ''),
+    venueName,
     guestCount: String(d.guestCount ?? 100),
     notes: d.notes ?? '',
     terms: d.terms ?? '',
@@ -430,6 +489,7 @@ function buildPayload(
       unitPrice: s.unitPrice,
     })),
   ];
+  const effectiveVenue = composeVenue(form.venueType || form.venue, form.venueName);
   return {
     customerName: form.customerName,
     customerPhone: normalizePhone(form.customerPhone),
@@ -437,7 +497,7 @@ function buildPayload(
     customerAddress: form.customerAddress || undefined,
     eventDate: form.eventDate,
     eventType: form.eventType,
-    venue: form.venue,
+    venue: effectiveVenue || form.venue,
     guestCount: guests,
     items,
     notes: form.notes || undefined,
@@ -677,7 +737,8 @@ export function QuotationsPage() {
 
   /* ── Save ── */
   const onSave = async () => {
-    if (!form.customerName || !form.eventDate || !form.eventType || !form.venue) {
+    const currentVenue = composeVenue(form.venueType || form.venue, form.venueName);
+    if (!form.customerName || !form.eventDate || !form.eventType || !currentVenue) {
       toast.error('Please fill customer name, event date, event type, and venue');
       return;
     }
@@ -739,7 +800,7 @@ export function QuotationsPage() {
       customerEmail: form.customerEmail || undefined,
       eventType: form.eventType,
       eventDate: form.eventDate,
-      venue: form.venue,
+      venue: composeVenue(form.venueType || form.venue, form.venueName) || form.venue,
       guestCount: num(form.guestCount),
       isPerPerson: isPP,
       perPersonRate: isPP ? num(ppRate) : undefined,
@@ -802,7 +863,7 @@ export function QuotationsPage() {
         createdAt: selectedRow ? new Date().toISOString() : undefined,
         eventDate: form.eventDate,
         eventType: form.eventType,
-        venue: form.venue,
+        venue: composeVenue(form.venueType || form.venue, form.venueName) || form.venue,
         guestCount: num(form.guestCount),
         customerName: form.customerName,
         customerPhone: form.customerPhone,
@@ -1947,8 +2008,15 @@ export function QuotationsPage() {
 
                     <FormField label="Venue Location" required>
                       <SelectInput
-                        value={form.venue}
-                        onChange={(e) => setForm((s) => ({ ...s, venue: e.target.value }))}
+                        value={form.venueType || form.venue}
+                        onChange={(e) => {
+                          const vType = e.target.value;
+                          setForm((s) => ({
+                            ...s,
+                            venueType: vType,
+                            venue: composeVenue(vType, s.venueName || ''),
+                          }));
+                        }}
                         className="h-10 text-xs font-semibold"
                       >
                         <option value="">— Select Venue —</option>
@@ -1970,6 +2038,75 @@ export function QuotationsPage() {
                         className="h-10 text-xs font-mono font-bold"
                       />
                     </FormField>
+                  </div>
+
+                  {/* Optional Specific Convention Center / Auditorium / Hall Name */}
+                  <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-r from-amber-50/40 via-slate-50/60 to-white p-4 shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Building2 size={14} className="text-[#B8860B]" />
+                        <span>Convention Center / Auditorium / Venue Name</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                        Optional
+                      </span>
+                    </div>
+                    <Input
+                      value={form.venueName || ''}
+                      onChange={(e) => {
+                        const vName = e.target.value;
+                        setForm((s) => ({
+                          ...s,
+                          venueName: vName,
+                          venue: composeVenue(s.venueType || s.venue, vName),
+                        }));
+                      }}
+                      placeholder={
+                        form.venueType === 'Convention Center'
+                          ? 'e.g. Al-Saj Convention Centre, Kazhakkoottam / Girideepam Convention Centre'
+                          : form.venueType === 'Auditorium'
+                          ? 'e.g. Sree Krishna Auditorium, Kollam / Tagore Centenary Hall'
+                          : form.venueType === 'Hotel'
+                          ? 'e.g. The Raviz Ashtamudi, Grand Ballroom / Leela Palace'
+                          : form.venueType === 'Temple'
+                          ? 'e.g. Anandavalleswaram Temple Kalyana Mandapam'
+                          : form.venueType === 'Open Ground'
+                          ? 'e.g. Asramam Ground / Beach Park Open Lawn'
+                          : form.venueType === 'Home'
+                          ? 'e.g. Tharavadu / House Name (e.g. Krishna Vilasam)'
+                          : 'e.g. Al-Saj Convention Centre / Sree Krishna Auditorium / Grand Ballroom'
+                      }
+                      className="h-10 text-xs font-semibold bg-white border-slate-200 focus:border-[#D4AF37]"
+                    />
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                      <p>
+                        {form.venueName?.trim() ? (
+                          <span>
+                            Appears on Proposal &amp; Agreement as:{' '}
+                            <strong className="text-slate-900 font-bold">
+                              &ldquo;{composeVenue(form.venueType || form.venue, form.venueName)}&rdquo;
+                            </strong>
+                          </span>
+                        ) : (
+                          <span>Specify the exact convention center, auditorium, or hall name to display on the client quotation &amp; agreement.</span>
+                        )}
+                      </p>
+                      {form.venueName && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((s) => ({
+                              ...s,
+                              venueName: '',
+                              venue: s.venueType || '',
+                            }))
+                          }
+                          className="text-[10px] text-slate-400 hover:text-slate-600 font-bold ml-2 underline cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Step 1 Footer */}

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bell,
+  Building2,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -367,6 +368,7 @@ export function CustomerPortalPage() {
   });
 
   const [locationPin, setLocationPin] = useState<LocationPinValue | null>(null);
+  const [customVenueName, setCustomVenueName] = useState("");
 
   /* Prevent background scroll when cart modal is open */
   useEffect(() => {
@@ -442,10 +444,15 @@ export function CustomerPortalPage() {
             customerAddress: q.customerAddress ?? "",
             eventDate: q.eventDate ? q.eventDate.split("T")[0] : "",
             eventType: q.eventType ?? "",
-            venue: q.venue ?? "",
+            venue: (q.venue ?? "").includes(" — ") ? (q.venue ?? "").split(" — ")[0].trim() : (q.venue ?? ""),
             guestCount: String(q.guestCount ?? "100"),
             notes: q.notes ?? "",
           });
+          if ((q.venue ?? "").includes(" — ")) {
+            setCustomVenueName((q.venue ?? "").split(" — ").slice(1).join(" — ").trim());
+          } else {
+            setCustomVenueName("");
+          }
           const preCart: Record<string, number> = {};
           for (const item of q.items ?? []) {
             if (item.itemId) preCart[item.itemId] = 1;
@@ -860,7 +867,9 @@ export function CustomerPortalPage() {
       customerAddress: customerAddress || undefined,
       eventDate: form.eventDate,
       eventType: form.eventType.trim(),
-      venue: form.venue.trim(),
+      venue: customVenueName.trim()
+        ? `${form.venue.trim()} — ${customVenueName.trim()}`
+        : form.venue.trim(),
       guestCount,
       notes: finalNotes || undefined,
       gstPercent: DEFAULT_GST,
@@ -2046,6 +2055,25 @@ export function CustomerPortalPage() {
                             placeholder="Select venue"
                           />
                         </div>
+                      </div>
+
+                      {/* Optional Specific Convention Center / Auditorium Name */}
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                            <Building2 size={13} className="text-[#B8860B]" />
+                            <span>Convention Center / Auditorium / Hall Name</span>
+                          </label>
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                            Optional
+                          </span>
+                        </div>
+                        <Input
+                          value={customVenueName}
+                          onChange={(e) => setCustomVenueName(e.target.value)}
+                          placeholder="e.g. Al-Saj Convention Centre / Sree Krishna Auditorium"
+                          className="h-10 text-xs rounded-xl mt-1.5 font-medium"
+                        />
                       </div>
                     </div>
                   </div>
