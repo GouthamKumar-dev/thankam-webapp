@@ -40,7 +40,7 @@ function VegBadge({ isVeg, size = 14 }: { isVeg: boolean; size?: number }) {
   );
 }
 
-/* ─── Curated Feast Styles ────────────────────────────────────── */
+/* ─── Feast Styles ─────────────────────────────────────────── */
 const FEAST_FORMATS = [
   {
     id: "sadya",
@@ -159,7 +159,7 @@ const OCCASIONS = [
   },
   {
     title: "Milestones & Jubilees",
-    subtitle: "Curated spreads with live food stations and dessert bars",
+    subtitle: "Complete spreads with live food stations and dessert bars",
     guests: "50 to 500 Guests",
     image: "/assets/img/event-birthday.jpg",
     link: "/customer/portal?event=birthday",
@@ -358,7 +358,7 @@ export function PublicLandingPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider text-slate-950 bg-gradient-to-r from-amber-400 via-[#F3CA52] to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-sm active:scale-95 transition-all whitespace-nowrap group"
             >
               <Utensils className="w-3.5 h-3.5 text-slate-950" />
-              <span>Curate Menu &amp; Quote</span>
+              <span>Select Menu &amp; Get Quote</span>
               <ArrowRight className="w-3.5 h-3.5 text-slate-950 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -419,7 +419,7 @@ export function PublicLandingPage() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full py-3 rounded-xl text-center text-xs font-black uppercase tracking-wider text-slate-950 bg-gradient-to-r from-amber-400 via-[#F3CA52] to-amber-500 shadow-sm"
               >
-                Curate Menu &amp; Request Quote →
+                Select Menu &amp; Get Quote →
               </Link>
               <Link
                 to="/customer/track"
@@ -469,7 +469,7 @@ export function PublicLandingPage() {
                   className="inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-[#d97706] to-[#b45309] px-7 py-4 text-xs sm:text-sm font-black uppercase tracking-wider text-white shadow-md shadow-amber-500/20 hover:brightness-105 active:scale-98 transition-all group"
                 >
                   <Utensils size={16} />
-                  <span>Curate Food Menu &amp; Get Quote</span>
+                  <span>Select Menu &amp; Get Quote</span>
                   <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
 
@@ -568,7 +568,7 @@ export function PublicLandingPage() {
                   to={selectedFeast.portalLink}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 py-3 text-xs font-black uppercase tracking-wider text-[#F3CA52] hover:bg-slate-900 border border-[#D4AF37]/50 transition shadow-xs group"
                 >
-                  <span>Curate This Feast in Menu Builder</span>
+                  <span>Select This Feast Menu</span>
                   <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -587,7 +587,7 @@ export function PublicLandingPage() {
               Banquets &amp; Traditions
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-black text-slate-900 mt-1">
-              Curated Feast Formats
+              Popular Feast Menus
             </h2>
             <p className="text-sm text-slate-600 mt-2">
               Select a signature style to start building your customized menu in our self-service portal.
@@ -655,7 +655,7 @@ export function PublicLandingPage() {
                 Culinary Highlights
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl font-black text-slate-900 mt-1">
-                Curate from 425+ Traditional Dishes
+                Choose from 425+ Traditional Dishes
               </h2>
               <p className="text-sm text-slate-600 mt-1.5 max-w-xl">
                 A preview of our central kitchen specialties. Add items to your menu and receive an itemized per-plate quote.
@@ -1024,7 +1024,7 @@ export function PublicLandingPage() {
               Ready to Plan Your Event Menu?
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-              Curate your favorite dishes online, specify your guest count, and receive an itemized proposal directly from our catering desk.
+              Select your favorite dishes online, specify your guest count, and receive an itemized proposal directly from our catering desk.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
               <Link
