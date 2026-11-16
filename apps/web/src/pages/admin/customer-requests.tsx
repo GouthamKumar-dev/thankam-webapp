@@ -1578,13 +1578,129 @@ export function CustomerRequestsPage() {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] text-xs text-left">
+                {/* ── MOBILE & TABLET CARD VIEW (Visible on < lg screens: iPad Mini, Tablets, Phones) ── */}
+                <div className="lg:hidden divide-y divide-slate-100">
+                  {paginatedRows.map((row) => {
+                    const uiSt = toUiRequestStatus(row.requestStatus);
+                    const cleanPhone = (row.customerPhone ?? '').replace(/[^\d]/g, '');
+                    const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                    const eventDateObj = new Date(row.eventDate);
+                    const dateStr = Number.isNaN(eventDateObj.getTime())
+                      ? 'Date TBD'
+                      : eventDateObj.toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        });
+
+                    return (
+                      <div
+                        key={row.id}
+                        className="p-4 sm:p-5 hover:bg-amber-50/20 transition-colors space-y-3"
+                      >
+                        {/* Top Row: Quotation #, Status Badge, Event Date */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                              {row.quotationNumber}
+                            </span>
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold shadow-2xs ${STATUS_BADGE[uiSt]}`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[uiSt]}`} />
+                              {STATUS_LABELS[uiSt] || uiSt}
+                            </span>
+                          </div>
+                          <div className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                            <CalendarDays size={13} className="text-amber-600" />
+                            <span>{dateStr}</span>
+                          </div>
+                        </div>
+
+                        {/* Middle Row: Customer Info & Event Scope */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">{row.customerName}</h4>
+                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                              <span className="font-mono">{row.customerPhone}</span>
+                              {cleanPhone && (
+                                <div className="flex items-center gap-1.5 ml-1">
+                                  <a
+                                    href={`https://wa.me/${waPhone}?text=Hello%20${encodeURIComponent(row.customerName)},%20regarding%20your%20inquiry%20${row.quotationNumber}%20with%20Thankam%20Events...`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-emerald-600 hover:text-emerald-700 p-0.5"
+                                    title="WhatsApp Chat"
+                                  >
+                                    <MessageCircle size={14} />
+                                  </a>
+                                  <a
+                                    href={`tel:${cleanPhone}`}
+                                    className="text-amber-700 hover:text-amber-800 p-0.5"
+                                    title="Call Phone"
+                                  >
+                                    <Phone size={13} />
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs text-slate-600 self-start sm:self-auto">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 border border-slate-200">
+                              {row.eventType || 'Catering'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 font-bold text-slate-800 text-[11px] bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
+                              <Users size={12} className="text-slate-500" />
+                              {row.guestCount} Pax
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Venue snippet if any */}
+                        {row.venue && (
+                          <p className="text-[11px] text-slate-500 truncate" title={row.venue}>
+                            📍 {row.venue}
+                          </p>
+                        )}
+
+                        {/* Bottom Row: Total Value & Properly Aligned Action Button */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Value</span>
+                            {Number(row.grandTotal || 0) > 0 ? (
+                              <span className="font-mono font-bold text-slate-900 text-sm">
+                                {formatInr(Number(row.grandTotal))}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                Awaiting Quote
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => onSelectRow(row)}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-all active:scale-95 whitespace-nowrap shrink-0"
+                          >
+                            <span>Review &amp; Quote</span>
+                            <ArrowRight size={13} className="shrink-0" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ── DESKTOP TABLE VIEW (Visible on lg+ screens with strict non-wrapping buttons) ── */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <table className="w-full min-w-[960px] text-xs text-left">
                     <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 select-none">
                       <tr>
                         <th
                           onClick={() => handleSort('quotationNumber')}
-                          className="cursor-pointer px-5 py-3.5 transition-colors hover:text-slate-900"
+                          className="cursor-pointer px-5 py-3.5 transition-colors hover:text-slate-900 whitespace-nowrap"
                         >
                           <div className="flex items-center gap-1.5">
                             <span>Quotation #</span>
@@ -1626,7 +1742,7 @@ export function CustomerRequestsPage() {
 
                         <th
                           onClick={() => handleSort('eventDate')}
-                          className="cursor-pointer px-4 py-3.5 text-center transition-colors hover:text-slate-900"
+                          className="cursor-pointer px-4 py-3.5 text-center transition-colors hover:text-slate-900 whitespace-nowrap"
                         >
                           <div className="flex items-center justify-center gap-1.5">
                             <span>Event Date</span>
@@ -1640,7 +1756,7 @@ export function CustomerRequestsPage() {
 
                         <th
                           onClick={() => handleSort('guestCount')}
-                          className="cursor-pointer px-4 py-3.5 text-center transition-colors hover:text-slate-900"
+                          className="cursor-pointer px-4 py-3.5 text-center transition-colors hover:text-slate-900 whitespace-nowrap"
                         >
                           <div className="flex items-center justify-center gap-1.5">
                             <span>Guests</span>
@@ -1654,7 +1770,7 @@ export function CustomerRequestsPage() {
 
                         <th
                           onClick={() => handleSort('requestStatus')}
-                          className="cursor-pointer px-4 py-3.5 text-center transition-colors hover:text-slate-900"
+                          className="cursor-pointer px-4 py-3.5 text-center transition-colors hover:text-slate-900 whitespace-nowrap"
                         >
                           <div className="flex items-center justify-center gap-1.5">
                             <span>Status</span>
@@ -1668,7 +1784,7 @@ export function CustomerRequestsPage() {
 
                         <th
                           onClick={() => handleSort('grandTotal')}
-                          className="cursor-pointer px-5 py-3.5 text-right transition-colors hover:text-slate-900"
+                          className="cursor-pointer px-5 py-3.5 text-right transition-colors hover:text-slate-900 whitespace-nowrap"
                         >
                           <div className="flex items-center justify-end gap-1.5">
                             <span>Total Value</span>
@@ -1680,7 +1796,7 @@ export function CustomerRequestsPage() {
                           </div>
                         </th>
 
-                        <th className="px-5 py-3.5 text-right">Actions</th>
+                        <th className="px-5 py-3.5 text-right whitespace-nowrap min-w-[155px] w-[155px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1703,18 +1819,18 @@ export function CustomerRequestsPage() {
                             className="group hover:bg-slate-50/80 transition-colors"
                           >
                             {/* Quotation Number */}
-                            <td className="px-5 py-4 font-mono font-bold text-slate-900">
+                            <td className="px-5 py-4 font-mono font-bold text-slate-900 whitespace-nowrap">
                               {row.quotationNumber}
                             </td>
 
                             {/* Customer Profile */}
                             <td className="px-5 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center font-bold text-amber-800">
+                                <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center font-bold text-amber-800 shrink-0">
                                   {row.customerName.charAt(0).toUpperCase()}
                                 </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 text-xs group-hover:text-amber-700 transition-colors">
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-900 text-xs group-hover:text-amber-700 transition-colors truncate">
                                     {row.customerName}
                                   </p>
                                   <div className="flex items-center gap-2 mt-0.5">
@@ -1759,7 +1875,7 @@ export function CustomerRequestsPage() {
                             </td>
 
                             {/* Event Date */}
-                            <td className="px-4 py-4 text-center">
+                            <td className="px-4 py-4 text-center whitespace-nowrap">
                               <div className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-medium">
                                 <CalendarDays size={13} className="text-amber-600" />
                                 <span>{dateStr}</span>
@@ -1767,7 +1883,7 @@ export function CustomerRequestsPage() {
                             </td>
 
                             {/* Guests */}
-                            <td className="px-4 py-4 text-center">
+                            <td className="px-4 py-4 text-center whitespace-nowrap">
                               <span className="inline-flex items-center gap-1 font-bold text-slate-800 text-xs bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                                 <Users size={12} className="text-slate-500" />
                                 {row.guestCount}
@@ -1775,7 +1891,7 @@ export function CustomerRequestsPage() {
                             </td>
 
                             {/* Status */}
-                            <td className="px-4 py-4 text-center">
+                            <td className="px-4 py-4 text-center whitespace-nowrap">
                               <span
                                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold shadow-2xs ${STATUS_BADGE[uiSt]}`}
                               >
@@ -1785,7 +1901,7 @@ export function CustomerRequestsPage() {
                             </td>
 
                             {/* Total Value */}
-                            <td className="px-5 py-4 text-right">
+                            <td className="px-5 py-4 text-right whitespace-nowrap">
                               {Number(row.grandTotal || 0) > 0 ? (
                                 <span className="font-mono font-bold text-slate-900 text-xs">
                                   {formatInr(Number(row.grandTotal))}
@@ -1798,14 +1914,14 @@ export function CustomerRequestsPage() {
                             </td>
 
                             {/* Action Button */}
-                            <td className="px-5 py-4 text-right">
+                            <td className="px-5 py-4 text-right whitespace-nowrap min-w-[155px] w-[155px]">
                               <button
                                 type="button"
                                 onClick={() => onSelectRow(row)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition-all active:scale-95"
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-all active:scale-95 whitespace-nowrap shrink-0"
                               >
                                 <span>Review &amp; Quote</span>
-                                <ArrowRight size={13} />
+                                <ArrowRight size={13} className="shrink-0" />
                               </button>
                             </td>
                           </tr>
