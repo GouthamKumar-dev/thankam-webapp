@@ -512,7 +512,7 @@ export function CustomerTrackPage() {
     : `https://wa.me/${WHATSAPP_PHONE}`;
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] text-[#080C14] pb-28">
+    <div className="min-h-screen bg-[#F4F5F7] text-[#080C14] pb-28 lg:pb-12">
       {/* ── Top Header (Thankam Minimalist Style) ── */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
@@ -1381,10 +1381,10 @@ export function CustomerTrackPage() {
         </div>
       )}
 
-      {/* ── Fixed Bottom Navigation (Matches Portal) ── */}
+      {/* ── Fixed Bottom Navigation (Mobile & Tablet View Only) ── */}
       <nav
         aria-label="Bottom Navigation"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)] lg:hidden"
       >
         <div className="relative mx-auto grid h-16 w-full max-w-lg grid-cols-5 px-2">
           <button
