@@ -131,8 +131,15 @@ export class QuotationsController {
 
   @Post(':id/agreement/initiate')
   @Roles(Role.ADMIN)
-  initiateAgreement(@Param('id') id: string) {
-    return this.quotationsService.initiateAgreement(id);
+  initiateAgreement(
+    @Param('id') id: string,
+    @Body() body?: { pdfBase64?: string; pdfFilename?: string },
+  ) {
+    return this.quotationsService.initiateAgreement(
+      id,
+      body?.pdfBase64,
+      body?.pdfFilename,
+    );
   }
 
   @Post(':id/send-email')

@@ -1304,46 +1304,6 @@ export function CustomerPortalPage() {
               </a>
             </div>
           </div>
-
-          {/* The Iconic Thankam Inner Specification Box */}
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            {/* Middle Row: Cuisines & Offerings */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Culinary Specialties
-              </span>
-              <p className="text-xs sm:text-sm font-semibold text-slate-700 leading-relaxed">
-                Traditional Kerala Sadya &bull; Malabar Dum Biryani &bull; Grand Reception Feasts &bull; Live Tandoor &amp; Thattukada Counters &bull; Desserts &amp; Welcome Drinks
-              </p>
-            </div>
-
-            {/* Bottom Row: Thankam 2-Node Route Logistics (Outlet -> Fleet) */}
-            <div className="rounded-2xl bg-[#FAF9F6] border border-slate-100 p-3.5 sm:p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start sm:items-center gap-3">
-                  <div className="flex sm:flex-row flex-col items-start sm:items-center gap-1 text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-slate-800 shrink-0" />
-                      <span className="text-xs font-bold text-slate-900">
-                        Outlet: <span className="font-medium text-slate-600">Central Kitchen, Kollam</span>
-                      </span>
-                    </div>
-                    <span className="text-slate-300 hidden sm:inline mx-1">──</span>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0 animate-pulse" />
-                      <span className="text-xs font-bold text-slate-900">
-                        Fleet Service: <span className="font-medium text-slate-600">All 14 Districts of Kerala (On-Site Live Cooking)</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60 self-start sm:self-auto shrink-0">
-                  ✓ Free Tasting Session on Request
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* 2. Thankam FILTER & SELECTION BAR */}

@@ -39,7 +39,13 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageShell } from '@/layouts/page-shell';
 import { openQuotePdf, generateQuotePdfBase64 } from '@/utils/quote-pdf';
-import { generateAgreementHtml, fetchImageBase64 } from '@/utils/agreement-pdf';
+import {
+  generateAgreementHtml,
+  downloadAgreementPdf,
+  generateAgreementPdfBase64,
+  fetchImageBase64,
+  AgreementInput,
+} from '@/utils/agreement-pdf';
 import { settingsService } from '@/features/settings/settings.service';
 import { customerPortalService } from '@/features/customer-portal/customer-portal.service';
 import { CategoryNode } from '@/features/categories/categories.service';
@@ -1042,67 +1048,74 @@ export function CustomerRequestsPage() {
     }
   };
 
+  const buildAgreementInput = async (): Promise<AgreementInput | null> => {
+    if (!detail) return null;
+    const logoBase64 = await fetchImageBase64(company?.logoUrl);
+    const isPP = quoteMode === 'PER_PERSON';
+
+    const catById = new Map(catalog.map((c) => [c.id, c]));
+    const itemImageMap = new Map<string, string>();
+    await Promise.allSettled(
+      editItems
+        .filter((l) => l.itemId)
+        .map(async (l) => {
+          const raw = l.imageUrl ?? catById.get(l.itemId!)?.imageUrl;
+          if (!raw) return;
+          const b64 = await fetchImageBase64(toMediaUrl(raw));
+          if (b64 && l.itemId) itemImageMap.set(l.itemId, b64);
+        }),
+    );
+
+    return {
+      quotationNumber: detail.quotationNumber,
+      createdAt: detail.createdAt,
+      eventDate: detail.eventDate,
+      eventType: detail.eventType ?? undefined,
+      venue: detail.venue ?? undefined,
+      guestCount: detail.guestCount,
+      customerName: detail.customerName,
+      customerPhone: detail.customerPhone ?? undefined,
+      customerEmail: detail.customerEmail ?? undefined,
+      customerAddress: detail.customerAddress ?? undefined,
+      items: editItems.map((l) => ({
+        name: l.name,
+        category: l.categoryName,
+        quantity: l.quantity,
+        unit: l.unit,
+        unitPrice: !isPP ? l.unitPrice : null,
+        amount: !isPP ? Number((l.quantity * l.unitPrice).toFixed(2)) : null,
+        imageUrl:
+          (l.itemId && itemImageMap.get(l.itemId)) || (l.imageUrl ? toMediaUrl(l.imageUrl) : null),
+      })),
+      isPerPerson: isPP,
+      perPersonRate: isPP ? parseCurrency(perPersonAmt) : undefined,
+      subTotal,
+      discountAmount: parseCurrency(discountAmt) || undefined,
+      extraChargesAmount: parseCurrency(extraCharges) || undefined,
+      gstPercent: gstEnabled ? parsePct(gstPct) : 0,
+      gstAmount: gstEnabled ? gst : 0,
+      grandTotal,
+      agreementStatus: detail.agreementStatus ?? undefined,
+      agreementAcceptedAt: detail.agreementAcceptedAt ?? undefined,
+      terms: detail.terms ?? undefined,
+      notes: detail.notes ?? undefined,
+      companyName: company?.name,
+      companyTagline: company?.tagline,
+      companyLogoUrl: logoBase64,
+      companyPhone: '+91 9745684766',
+      companyEmail: 'info@thankamevents.in',
+      companyAddress: 'Uliyacovil, Kollam, Kerala',
+      isAdminGenerated: true,
+    };
+  };
+
   const onPreviewAgreement = async () => {
     if (!detail) return;
     setAgLoading(true);
     try {
-      const logoBase64 = await fetchImageBase64(company?.logoUrl);
-      const isPP = quoteMode === 'PER_PERSON';
-
-      const catById = new Map(catalog.map((c) => [c.id, c]));
-      const itemImageMap = new Map<string, string>();
-      await Promise.allSettled(
-        editItems
-          .filter((l) => l.itemId)
-          .map(async (l) => {
-            const raw = l.imageUrl ?? catById.get(l.itemId!)?.imageUrl;
-            if (!raw) return;
-            const b64 = await fetchImageBase64(toMediaUrl(raw));
-            if (b64 && l.itemId) itemImageMap.set(l.itemId, b64);
-          }),
-      );
-
-      const html = generateAgreementHtml({
-        quotationNumber: detail.quotationNumber,
-        createdAt: detail.createdAt,
-        eventDate: detail.eventDate,
-        eventType: detail.eventType ?? undefined,
-        venue: detail.venue ?? undefined,
-        guestCount: detail.guestCount,
-        customerName: detail.customerName,
-        customerPhone: detail.customerPhone ?? undefined,
-        customerEmail: detail.customerEmail ?? undefined,
-        customerAddress: detail.customerAddress ?? undefined,
-        items: editItems.map((l) => ({
-          name: l.name,
-          category: l.categoryName,
-          quantity: l.quantity,
-          unit: l.unit,
-          unitPrice: !isPP ? l.unitPrice : null,
-          amount: !isPP ? Number((l.quantity * l.unitPrice).toFixed(2)) : null,
-          imageUrl:
-            (l.itemId && itemImageMap.get(l.itemId)) || (l.imageUrl ? toMediaUrl(l.imageUrl) : null),
-        })),
-        isPerPerson: isPP,
-        perPersonRate: isPP ? parseCurrency(perPersonAmt) : undefined,
-        subTotal,
-        discountAmount: parseCurrency(discountAmt) || undefined,
-        extraChargesAmount: parseCurrency(extraCharges) || undefined,
-        gstPercent: gstEnabled ? parsePct(gstPct) : 0,
-        gstAmount: gstEnabled ? gst : 0,
-        grandTotal,
-        agreementStatus: detail.agreementStatus ?? undefined,
-        agreementAcceptedAt: detail.agreementAcceptedAt ?? undefined,
-        terms: detail.terms ?? undefined,
-        notes: detail.notes ?? undefined,
-        companyName: company?.name,
-        companyTagline: company?.tagline,
-        companyLogoUrl: logoBase64,
-        companyPhone: '+91 9745684766',
-        companyEmail: 'info@thankamevents.in',
-        companyAddress: 'Uliyacovil, Kollam, Kerala',
-        isAdminGenerated: true,
-      });
+      const input = await buildAgreementInput();
+      if (!input) return;
+      const html = generateAgreementHtml(input);
       setAgHtml(html);
       setAgSent(false);
       setAgOpen(true);
@@ -1117,9 +1130,23 @@ export function CustomerRequestsPage() {
     if (!selectedRow) return;
     setAgLoading(true);
     try {
-      await quotationsService.initiateAgreement(selectedRow.id);
+      let pdfBase64: string | undefined;
+      try {
+        const input = await buildAgreementInput();
+        if (input) {
+          pdfBase64 = await generateAgreementPdfBase64(input);
+        }
+      } catch (pdfErr) {
+        console.warn('Could not generate client-side agreement PDF', pdfErr);
+      }
+
+      await quotationsService.initiateAgreement(
+        selectedRow.id,
+        pdfBase64,
+        `Agreement-${selectedRow.quotationNumber}.pdf`,
+      );
       setAgSent(true);
-      toast.success('Agreement sent to customer');
+      toast.success('Agreement sent to customer with official PDF attached');
       refresh();
       void openDetail(selectedRow.id);
     } catch (e: any) {
@@ -1131,6 +1158,17 @@ export function CustomerRequestsPage() {
 
   const onDownloadAgreement = async () => {
     if (!selectedRow) return;
+    try {
+      const input = await buildAgreementInput();
+      if (input) {
+        await downloadAgreementPdf(input);
+        toast.success('Official Agreement PDF downloaded');
+        return;
+      }
+    } catch (e) {
+      console.warn('Client direct agreement PDF download fallback to backend', e);
+    }
+
     try {
       await quotationsService.downloadAgreementPdf(
         selectedRow.id,

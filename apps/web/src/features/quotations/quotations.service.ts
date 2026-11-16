@@ -143,8 +143,11 @@ export const quotationsService = {
     return data;
   },
 
-  async initiateAgreement(id: string) {
-    const { data } = await apiClient.post(`/quotations/${id}/agreement/initiate`);
+  async initiateAgreement(id: string, pdfBase64?: string, pdfFilename?: string) {
+    const { data } = await apiClient.post(`/quotations/${id}/agreement/initiate`, {
+      pdfBase64,
+      pdfFilename,
+    });
     return data;
   },
 

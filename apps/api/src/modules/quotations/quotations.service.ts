@@ -1169,7 +1169,11 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
     return { html };
   }
 
-  async initiateAgreement(id: string) {
+  async initiateAgreement(
+    id: string,
+    customPdfBase64?: string,
+    customPdfFilename?: string,
+  ) {
     const quotation = await this.findOne(id);
     if (
       quotation.source === 'CUSTOMER_PORTAL' &&
@@ -1220,7 +1224,22 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
       customerPhone: updated.customerPhone,
     });
 
-    void this.notifyCustomerByEmail(updated.id, 'AGREEMENT_INITIATED');
+    const customPdfBuffer =
+      customPdfBase64 && customPdfBase64.trim()
+        ? Buffer.from(
+            customPdfBase64.includes(',')
+              ? customPdfBase64.split(',')[1].trim()
+              : customPdfBase64.trim(),
+            'base64',
+          )
+        : undefined;
+
+    void this.notifyCustomerByEmail(
+      updated.id,
+      'AGREEMENT_INITIATED',
+      customPdfBuffer,
+      customPdfFilename,
+    );
 
     return {
       message: 'Agreement initiated successfully',
