@@ -12,6 +12,7 @@ import {
   AgreementStatus,
   CustomerRequestStatus,
   Prisma,
+  QuotationSource,
   QuotationStatus,
   Role,
 } from '@prisma/client';
@@ -43,7 +44,11 @@ export class QuotationsService {
     private readonly pdfService: QuotationPdfService,
   ) {}
 
-  async create(dto: CreateQuotationDto, createdById: string) {
+  async create(
+    dto: CreateQuotationDto,
+    createdById: string,
+    source: QuotationSource = QuotationSource.ADMIN,
+  ) {
     const quotationNumber = await this.generateQuotationNumber();
     const normalized = await this.normalizeItems(dto.items, dto.menuId);
     const totals = this.calculateTotals(normalized, dto);
@@ -73,6 +78,11 @@ export class QuotationsService {
         gstAmount: totals.gstAmount,
         grandTotal: totals.grandTotal,
         createdById,
+        source,
+        requestStatus:
+          source === QuotationSource.CUSTOMER_PORTAL
+            ? CustomerRequestStatus.NEW
+            : undefined,
         items: {
           create: normalized.map((item, index) => ({
             itemId: item.itemId,
@@ -92,7 +102,7 @@ export class QuotationsService {
     });
 
     // Only emit for non-portal creations; public portal requests emit once fully configured in createPublicRequest
-    if (created.source !== 'CUSTOMER_PORTAL') {
+    if (created.source !== QuotationSource.CUSTOMER_PORTAL) {
       this.workflowGateway.emitRequestCreated({
         quotationId: created.id,
         quotationNumber: created.quotationNumber,
@@ -143,13 +153,14 @@ export class QuotationsService {
           : '[Submitted from customer portal]',
       },
       adminUser.id,
+      QuotationSource.CUSTOMER_PORTAL,
     );
 
     await this.prisma.quotation.update({
       where: { id: created.id },
       data: {
-        source: 'CUSTOMER_PORTAL',
-        requestStatus: 'NEW',
+        source: QuotationSource.CUSTOMER_PORTAL,
+        requestStatus: CustomerRequestStatus.NEW,
         requestStatusUpdatedAt: new Date(),
       },
     });

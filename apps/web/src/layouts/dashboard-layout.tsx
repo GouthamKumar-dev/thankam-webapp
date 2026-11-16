@@ -247,18 +247,30 @@ export function DashboardLayout() {
       }
       lastPushedMap.set(dedupKey, now);
 
-      setNotificationItems((prev) => [
-        {
-          id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
-          title,
-          subtitle,
-          quotationId,
-          quotationNumber,
-          createdAt: new Date().toISOString(),
-          read: false,
-        },
-        ...prev,
-      ]);
+      setNotificationItems((prev) => {
+        const isDuplicate = prev.some((item) => {
+          const sameTitle = item.title === title;
+          const sameQuote =
+            (quotationNumber && item.quotationNumber === quotationNumber) ||
+            (quotationId && item.quotationId === quotationId);
+          const timeDiff = Math.abs(new Date(item.createdAt).getTime() - now);
+          return sameTitle && (sameQuote || (!quotationNumber && !item.quotationNumber)) && timeDiff < 30000;
+        });
+        if (isDuplicate) return prev;
+
+        return [
+          {
+            id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+            title,
+            subtitle,
+            quotationId,
+            quotationNumber,
+            createdAt: new Date().toISOString(),
+            read: false,
+          },
+          ...prev,
+        ];
+      });
       playNotificationSound();
     };
 
