@@ -45,8 +45,8 @@ const FEAST_FORMATS = [
   {
     id: "sadya",
     title: "Traditional Kerala Sadya",
-    subtitle: "Travancore Royal Banquet",
-    tagline: "28-Course Plantain Leaf Banquet in Pure Cow Ghee",
+    subtitle: "Travancore Royal Feast",
+    tagline: "28-Course Plantain Leaf Sadya in Pure Cow Ghee",
     image: "/assets/img/kerala-sadhya.jpg",
     fallbackImage: "/assets/img/kerala-sadhya.jpg",
     badge: "Most Celebrated Feast",
@@ -59,7 +59,7 @@ const FEAST_FORMATS = [
     id: "malabar",
     title: "Malabar Dum Biriyani Feast",
     subtitle: "North Kerala Heritage",
-    tagline: "Charcoal Slow-Cooked Kaima Rice Wedding Banquet",
+    tagline: "Charcoal Slow-Cooked Kaima Rice Wedding Feast",
     image: "/assets/img/malabar-biriyani.jpg",
     fallbackImage: "/assets/img/malabar-biriyani.jpg",
     badge: "Crowd Favorite",
@@ -70,7 +70,7 @@ const FEAST_FORMATS = [
   },
   {
     id: "reception",
-    title: "Grand Reception & Live Banquet",
+    title: "Grand Reception & Live Food Counters",
     subtitle: "Contemporary Multi-Cuisine",
     tagline: "Live Appam Counters, Sizzling Grills & Dessert Bars",
     image: "/assets/img/event-marriage.jpg",
@@ -145,7 +145,7 @@ const SIGNATURE_DISHES = [
 const OCCASIONS = [
   {
     title: "Weddings & Vivaham",
-    subtitle: "Grand plantain-leaf Sadyas to evening wedding banquets",
+    subtitle: "Grand plantain-leaf Sadyas to evening wedding dinners",
     guests: "200 to 5,000+ Guests",
     image: "/assets/img/event-marriage.jpg",
     link: "/customer/portal?event=wedding",
@@ -165,7 +165,7 @@ const OCCASIONS = [
     link: "/customer/portal?event=birthday",
   },
   {
-    title: "Corporate & Banquets",
+    title: "Corporate & Celebrations",
     subtitle: "Professional event dining and corporate gala dinners",
     guests: "50 to 1,500 Guests",
     image: "/assets/img/event-custom.jpg",
@@ -187,7 +187,7 @@ const VERIFIED_REVIEWS = [
   {
     id: 2,
     client: "Faisal & Shabana Rasheed",
-    event: "Nikkah & Malabar Banquet • Ashtamudi",
+    event: "Nikkah & Malabar Feast • Ashtamudi",
     guests: "1,100 Guests",
     rating: 5,
     quote:
@@ -200,7 +200,7 @@ const VERIFIED_REVIEWS = [
     guests: "420 Guests",
     rating: 5,
     quote:
-      "We trust Thankam Events for all our company banquets in Kollam and Trivandrum. Central kitchen quality is unmatched and their hospitality team was flawless.",
+      "We trust Thankam Events for all our company events and dinners in Kollam and Trivandrum. Central kitchen quality is unmatched and their hospitality team was flawless.",
   },
 ];
 
@@ -459,7 +459,7 @@ export function PublicLandingPage() {
 
               {/* Crisp 1-Sentence Subtitle */}
               <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-xl">
-                Authentic banana-leaf Sadyas, slow-cooked Thalassery Dum Biriyanis, and complete banquet catering across all 14 districts of Kerala.
+                Authentic banana-leaf Sadyas, slow-cooked Thalassery Dum Biriyanis, and complete event catering across all 14 districts of Kerala.
               </p>
 
               {/* Clear Action Buttons */}
@@ -584,7 +584,7 @@ export function PublicLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-xs font-black uppercase tracking-[0.2em] text-[#B8860B]">
-              Banquets &amp; Traditions
+              Feasts &amp; Traditions
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-black text-slate-900 mt-1">
               Popular Feast Menus
@@ -780,7 +780,7 @@ export function PublicLandingPage() {
               How Your Catering Quote Works
             </h2>
             <p className="text-sm text-slate-600 mt-2">
-              Build your custom banquet menu online in 3 simple steps without sales pressure.
+              Build your custom event menu online in 3 simple steps without sales pressure.
             </p>
           </div>
 
@@ -796,7 +796,7 @@ export function PublicLandingPage() {
                 step: "02",
                 icon: Calendar,
                 title: "2. Set Event Details",
-                desc: "Enter your estimated guest count, event date, and banquet venue across any of Kerala's 14 districts.",
+                desc: "Enter your estimated guest count, event date, and event venue across any of Kerala's 14 districts.",
               },
               {
                 step: "03",
@@ -845,7 +845,7 @@ export function PublicLandingPage() {
               Events We Cater Across Kerala
             </h2>
             <p className="text-sm text-slate-600 mt-2">
-              From intimate 50-guest family gatherings to grand 5,000-guest wedding banquets.
+              From intimate 50-guest family gatherings to grand 5,000-guest wedding celebrations.
             </p>
           </div>
 
@@ -928,7 +928,7 @@ export function PublicLandingPage() {
               {
                 icon: ChefHat,
                 badge: "425+ DISHES",
-                title: "Master Banquet Chefs",
+                title: "Master Chefs",
                 desc: "Dedicated culinary masters specializing in Travancore and Malabar recipes.",
               },
               {
@@ -1018,7 +1018,7 @@ export function PublicLandingPage() {
           {/* Minimal Final Call to Action */}
           <div className="rounded-3xl bg-gradient-to-br from-[#080C14] to-[#121927] p-8 sm:p-12 border border-[#D4AF37]/50 shadow-xl text-center text-white space-y-5">
             <span className="inline-block px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-[#F3CA52] text-xs font-bold uppercase tracking-wider">
-              2026 &amp; 2027 Banquet Bookings Open
+              2026 &amp; 2027 Event Bookings Open
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-black">
               Ready to Plan Your Event Menu?
@@ -1075,7 +1075,7 @@ export function PublicLandingPage() {
                 </div>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed font-normal">
-                Kollam’s premier catering kitchen delivering authentic Kerala Sadyas, Malabar Dum Biriyanis, and complete banquet services since 2006.
+                Kollam’s premier catering kitchen delivering authentic Kerala Sadyas, Malabar Dum Biriyanis, and complete catering services since 2006.
               </p>
             </div>
 

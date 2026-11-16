@@ -24,7 +24,7 @@ async function main() {
     },
     {
       name: 'Kichadi',
-      description: 'Classic Kerala banquet lightly spiced curd and grated coconut relish tempered with mustard seeds and curry leaves (Cucumber / Okra / Bitter Gourd).',
+      description: 'Classic Kerala feast lightly spiced curd and grated coconut relish tempered with mustard seeds and curry leaves (Cucumber / Okra / Bitter Gourd).',
       unit: 'plate',
       imageUrl: 'https://cdn.eypas.com/uploads/400x400_661d199279c7a26.webp',
     },

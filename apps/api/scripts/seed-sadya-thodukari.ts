@@ -27,7 +27,7 @@ async function main() {
     },
     {
       name: 'PACHADI',
-      description: 'Classic Kerala banquet curd and grated coconut pachadi tempered with mustard seeds and curry leaves.',
+      description: 'Classic Kerala feast curd and grated coconut pachadi tempered with mustard seeds and curry leaves.',
       unit: 'plate',
       imageUrl: 'https://cdn.eypas.com/uploads/400x400_661d19dfb37fc26.webp',
     },

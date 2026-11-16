@@ -155,7 +155,7 @@ const CATEGORY_ITEMS_MAP: Record<string, ItemDef[]> = {
     },
     {
       name: 'Nadan Mutton Curry',
-      description: 'Traditional Kerala banquet mutton curry cooked in coconut oil with roasted coriander, shallots, and green chillies.',
+      description: 'Traditional Kerala feast mutton curry cooked in coconut oil with roasted coriander, shallots, and green chillies.',
       unit: 'plate',
       imageUrl: 'https://cdn.eypas.com/uploads/400x400_66118b7f83b2726.webp',
     },
@@ -296,7 +296,7 @@ const CATEGORY_ITEMS_MAP: Record<string, ItemDef[]> = {
     },
     {
       name: 'Vellayappam',
-      description: 'Soft and thick steamed rice pancake fermented with coconut water and yeast, ideal for banquets.',
+      description: 'Soft and thick steamed rice pancake fermented with coconut water and yeast, ideal for celebrations and feasts.',
       unit: 'piece',
       imageUrl: 'https://cdn.eypas.com/uploads/400x400_661e57267c3fa26.webp',
     },
@@ -416,7 +416,7 @@ const CATEGORY_ITEMS_MAP: Record<string, ItemDef[]> = {
     },
     {
       name: 'Beef Cutlet',
-      description: 'Traditional Kerala banquet cutlet made with seasoned minced beef, shallots, and crushed pepper.',
+      description: 'Traditional Kerala feast cutlet made with seasoned minced beef, shallots, and crushed pepper.',
       unit: 'piece',
       imageUrl: 'https://cdn.eypas.com/uploads/400x400_661fa23be7c6e26.webp',
     },

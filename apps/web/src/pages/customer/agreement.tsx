@@ -803,7 +803,7 @@ export function CustomerAgreementPage() {
                   {/* 4-Tile Event Specifications (NO Truncation) */}
                   <div className="grid grid-cols-2 divide-y divide-slate-100 sm:grid-cols-4 sm:divide-y-0 sm:divide-x">
                     {[
-                      { icon: PartyPopper, label: 'Event Type', val: selected.eventType || 'Banquet' },
+                      { icon: PartyPopper, label: 'Event Type', val: selected.eventType || 'Catering Event' },
                       {
                         icon: CalendarDays,
                         label: 'Event Date',
@@ -1252,7 +1252,7 @@ export function CustomerAgreementPage() {
                         Need Custom Adjustments or Tasting Session?
                       </h4>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Our banquet coordinators in Kollam are on call to fine-tune your menu, spice levels, or guest counts.
+                        Our team in Kollam is on call to fine-tune your menu, spice levels, or guest counts.
                       </p>
                     </div>
                   </div>

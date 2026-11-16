@@ -1331,7 +1331,7 @@ export function QuotationsPage() {
   return (
     <PageShell
       title="Quotations & Tax Invoicing Hub"
-      subtitle="Craft professional wedding banquets, event service packages, digital contracts, and GST tax invoices."
+      subtitle="Craft professional wedding catering, event service packages, digital contracts, and GST tax invoices."
     >
       {confirmModal}
 
@@ -3371,7 +3371,7 @@ function TaxInvoiceModal({
                     <td className="border-r border-slate-900 p-2.5 text-center font-mono font-bold text-slate-900">1</td>
                     <td className="border-r border-slate-900 p-2.5">
                       <div className="font-bold text-slate-950 text-xs">
-                        Catering Feast Banquet ({lines.length} items)
+                        Catering Food Menu ({lines.length} items)
                       </div>
                       {lines.length > 0 && (
                         <div className="text-[10px] text-slate-500 italic mt-0.5 leading-relaxed">

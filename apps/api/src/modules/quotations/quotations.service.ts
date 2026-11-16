@@ -2271,7 +2271,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
         subject = `Inquiry Received #${quotation.quotationNumber} — Thankam Events`;
         title = 'Quotation Request Received';
         message =
-          'Thank you for choosing Thankam Events! We have received your catering proposal request. Our event managers are reviewing your menu requirements and preparing your itemized banquet proposal.';
+          'Thank you for choosing Thankam Events! We have received your catering proposal request. Our event managers are reviewing your menu requirements and preparing your itemized catering quote.';
         portalUrl = 'https://thankamevents.in/customer/track';
         buttonText = 'Track Your Inquiry Online';
         if (!providedPdfBuffer || providedPdfBuffer.length === 0) {
@@ -2282,7 +2282,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
         subject = `Catering Service Agreement #${quotation.quotationNumber} — Action Required`;
         title = 'Catering Service Agreement Ready';
         message =
-          'Thank you for choosing Thankam Events! Your banquet catering agreement is now ready for your digital review and formal acceptance.';
+          'Thank you for choosing Thankam Events! Your catering service agreement is now ready for your digital review and formal acceptance.';
         portalUrl = 'https://thankamevents.in/customer/agreement';
         buttonText = 'Review & Accept Agreement';
         if (!providedPdfBuffer || providedPdfBuffer.length === 0) {
@@ -2345,7 +2345,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
                 </tr>
               </table>
               <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">THANKAM EVENTS</h1>
-              <p style="margin: 6px 0 0; color: #F3CA52; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">PREMIER WEDDING, RECEPTION &amp; BANQUET CATERING</p>
+              <p style="margin: 6px 0 0; color: #F3CA52; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">PREMIER WEDDING, RECEPTION &amp; EVENT CATERING</p>
               <p style="margin: 4px 0 0; color: #94A3B8; font-size: 11px;">Central Kitchen, Kollam • Serving All 14 Districts of Kerala</p>
             </td>
           </tr>
@@ -2366,7 +2366,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
                 ${message}
               </div>
 
-              <!-- Banquet Details Card -->
+              <!-- Event Details Card -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; margin-bottom: 28px;">
                 <tr>
                   <td style="padding: 16px 20px; background-color: #F1F5F9; border-bottom: 1px solid #E2E8F0;">
@@ -2427,7 +2427,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
             <td style="background-color: #0F172A; padding: 24px 28px; text-align: center; border-top: 1px solid #1E293B;">
               <p style="margin: 0 0 8px; color: #F3CA52; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">THANKAM EVENTS • KOLLAM CENTRAL KITCHEN</p>
               <p style="margin: 0 0 12px; color: #94A3B8; font-size: 11px; line-height: 1.6;">
-                Pure Cow Ghee • Fresh Banana Leaf Banquets • Live Counters • Authentic Travancore Feasts<br>
+                Pure Cow Ghee • Fresh Banana Leaf Feasts • Live Counters • Authentic Travancore Dishes<br>
                 Helpline: +91 97456 84766 / +91 92076 06150 &bull; <a href="https://thankamevents.in" target="_blank" style="color: #F3CA52; text-decoration: none;">thankamevents.in</a>
               </p>
               <p style="margin: 0; color: #64748B; font-size: 10px;">

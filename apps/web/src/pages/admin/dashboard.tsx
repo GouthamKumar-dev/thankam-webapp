@@ -207,7 +207,7 @@ export function AdminDashboardPage() {
         customerName: q.customerName || 'Client',
         customerPhone: q.customerPhone,
         eventDate: dKey,
-        eventType: q.eventType || 'Catering Banquet',
+        eventType: q.eventType || 'Catering Event',
         venue: q.venue,
         guestCount: Number(q.guestCount || 0),
         grandTotal: Number(q.grandTotal || 0),
@@ -483,7 +483,7 @@ export function AdminDashboardPage() {
             </span>
             <div>
               <p className="text-xs sm:text-sm font-bold text-slate-800">
-                Live Kitchen &amp; Banquet Operations
+                Live Kitchen &amp; Catering Operations
               </p>
               <p className="text-[11px] text-slate-400">
                 Thankam Events &bull; Kollam, Kerala
@@ -568,7 +568,7 @@ export function AdminDashboardPage() {
               </span>
             </div>
             <p className="mt-2 text-sm sm:text-lg lg:text-2xl font-black font-mono text-slate-900 tracking-tight truncate">
-              {thisMonthEventsCount} {thisMonthEventsCount === 1 ? 'Banquet' : 'Banquets'}
+              {thisMonthEventsCount} {thisMonthEventsCount === 1 ? 'Event' : 'Events'}
             </p>
             <div className="mt-1 flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-500 shrink-0" />
@@ -616,7 +616,7 @@ export function AdminDashboardPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Track banquets, catering deliverables, and setup reminders
+                  Track catering events, deliverables, and setup reminders
                 </p>
               </div>
             </div>
@@ -835,7 +835,7 @@ export function AdminDashboardPage() {
 
                 {selectedDayItems.events.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-xs text-slate-400">
-                    No banquet bookings scheduled on this date.
+                    No event bookings scheduled on this date.
                   </div>
                 ) : (
                   <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
@@ -1014,7 +1014,7 @@ export function AdminDashboardPage() {
                   Revenue Trajectory &amp; Booking Volume
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Filterable analytics tracking monthly &amp; daily banquet turnover
+                  Filterable analytics tracking monthly &amp; daily event turnover
                 </p>
               </div>
             </div>
@@ -1090,7 +1090,7 @@ export function AdminDashboardPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-3.5 text-xs">
               <span className="text-slate-500 font-medium">Event Bookings Count</span>
               <p className="mt-1 text-base sm:text-lg font-black font-mono text-amber-800">
-                {graphTotalEvents} {graphTotalEvents === 1 ? 'Banquet' : 'Banquets'}
+                {graphTotalEvents} {graphTotalEvents === 1 ? 'Event' : 'Events'}
               </p>
             </div>
 
@@ -1225,7 +1225,7 @@ export function AdminDashboardPage() {
             </div>
             <div>
               <p className="text-xs font-bold text-slate-900">Create Quotation</p>
-              <p className="text-[11px] text-slate-500">Banquet &amp; tax invoice generator</p>
+              <p className="text-[11px] text-slate-500">Catering &amp; tax invoice generator</p>
             </div>
           </button>
 

@@ -145,7 +145,7 @@ export function CustomerGalleryPage() {
                 Event Photography &amp; Video Reels
               </h2>
               <p className="mt-2 text-xs leading-relaxed text-slate-300">
-                Explore magnificent banquets, royal stage decor, and authentic traditional Kerala Sadhyas crafted by {company?.name ?? 'Thankam Events'}.
+                Explore grand celebrations, royal stage decor, and authentic traditional Kerala Sadhyas crafted by {company?.name ?? 'Thankam Events'}.
               </p>
             </div>
             <div className="flex gap-3 text-center">

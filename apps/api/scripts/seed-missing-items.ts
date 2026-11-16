@@ -106,7 +106,7 @@ async function main() {
     },
     {
       name: 'KUPPI VELLAM (500ML)',
-      description: 'Packaged 500ml sealed mineral drinking water bottles for banquet guests.',
+      description: 'Packaged 500ml sealed mineral drinking water bottles for event guests.',
       unit: 'piece',
       basePrice: 0,
       categoryId: sadyaLeaf?.id,

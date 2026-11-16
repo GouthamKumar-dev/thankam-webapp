@@ -432,7 +432,7 @@ export function MenusPage() {
             </div>
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">{metrics.generalMenus}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Banquets & receptions</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Weddings &amp; receptions</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">

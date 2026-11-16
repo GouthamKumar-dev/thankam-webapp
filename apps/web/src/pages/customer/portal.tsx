@@ -111,7 +111,7 @@ const CUSTOMER_PORTAL_NOTIFICATIONS_KEY = "customer_portal_notifications";
 const EVENT_TYPE_OPTIONS = [
   "Grand Wedding (Vivaham)",
   "Engagement & Betrothal (Nischayam)",
-  "Wedding Reception & Banquet",
+  "Wedding Reception",
   "Nikkah & Malabar Feast",
   "Christian Holy Matrimony & Reception",
   "Traditional Kerala Sadya Feast",
@@ -122,7 +122,7 @@ const EVENT_TYPE_OPTIONS = [
   "Cultural & Temple Festival Feast",
   "Anniversary Celebration",
   "Cocktail, Mocktail & Sangeet Evening",
-  "Intimate Family Banquet",
+  "Intimate Family Gathering",
   "Memorial / Prayer Gathering",
   "Other Special Celebration",
 ];
@@ -137,7 +137,7 @@ const VENUE_OPTIONS = [
   "Temple Auditorium / Temple Premises",
   "Church Parish Hall / Community Center",
   "Open Lawn / Garden Ground",
-  "Club House / Banquet Hall",
+  "Club House / Party Hall",
   "Outdoor Thattukada & Live Counter Setup",
   "Corporate Campus / Office",
   "Other Custom Venue",
@@ -178,9 +178,9 @@ function getItemDescription(item: CatalogItem): string {
     return "Fresh coastal catch cooked to golden perfection with turmeric, crushed chili and kokum essence.";
   }
   if (n.includes("appam") || n.includes("porotta")) {
-    return "Freshly made hot bread with crisp lacy edges, ideal accompaniment for rich banquet gravies.";
+    return "Freshly made hot bread with crisp lacy edges, ideal accompaniment for rich curries and gravies.";
   }
-  return `Authentic Thankam banquet recipe, prepared fresh using premium traditional ingredients.`;
+  return `Authentic Thankam traditional recipe, prepared fresh using premium ingredients.`;
 }
 
 /* ─── Veg / Non-Veg Icon Component ───────────────────────────── */
@@ -785,7 +785,7 @@ export function CustomerPortalPage() {
     return errs;
   }, [submitAttempted, form, authenticatedPhone]);
 
-  /* ── Submit Banquet Quotation Request ── */
+  /* ── Submit Quotation Request ── */
   const onSubmit = async () => {
     setSubmitAttempted(true);
 
@@ -1279,7 +1279,7 @@ export function CustomerPortalPage() {
                   </h1>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Premier Wedding, Reception &amp; Traditional Banquet Catering in Kerala
+                  Premier Wedding, Reception &amp; Event Catering Across Kerala
                 </p>
               </div>
             </div>
@@ -1487,7 +1487,7 @@ export function CustomerPortalPage() {
                           {/* Catering Menu inclusion badge (Replaces price) */}
                           <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
                             <Check size={11} className="text-[#B8860B]" />
-                            <span>Included in Custom Banquet Selection</span>
+                            <span>Included in Your Menu Selection</span>
                           </div>
 
                           <p className="mt-1.5 text-xs text-slate-500 line-clamp-2 leading-relaxed">
@@ -1720,7 +1720,7 @@ export function CustomerPortalPage() {
                     {showCheckout ? "Step 2: Event & Delivery" : "Step 1: Review Selected Dishes"}
                   </p>
                   <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
-                    {showCheckout ? "Event & Venue Details" : "Your Banquet Proposal"}
+                    {showCheckout ? "Event & Venue Details" : "Your Selected Menu"}
                   </h3>
                 </div>
               </div>

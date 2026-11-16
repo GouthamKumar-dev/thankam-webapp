@@ -358,7 +358,7 @@ function GalleryUploadDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Royal Wedding Banquet at Raviz Resort"
+              placeholder="e.g. Royal Wedding Feast at Raviz Resort"
               className="h-10 border-amber-500/20 bg-[#080C14] text-xs text-white placeholder:text-slate-500 focus:border-[#D4AF37]"
             />
           </div>

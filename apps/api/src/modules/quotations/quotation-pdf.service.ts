@@ -231,7 +231,7 @@ export class QuotationPdfService {
         .font('Helvetica-Bold')
         .fontSize(10)
         .fillColor(primaryNavy)
-        .text(quotation.eventType || 'Banquet Catering', rightColX, boxY + 22);
+        .text(quotation.eventType || 'Catering Event', rightColX, boxY + 22);
 
       doc
         .font('Helvetica')
@@ -586,7 +586,7 @@ export class QuotationPdfService {
         .font('Helvetica-Bold')
         .fontSize(16)
         .fillColor(primaryNavy)
-        .text('CATERING & BANQUET SERVICE AGREEMENT', margin, 30, { align: 'center', width: contentWidth });
+        .text('CATERING & EVENT SERVICE AGREEMENT', margin, 30, { align: 'center', width: contentWidth });
 
       doc
         .font('Helvetica-Bold')
@@ -609,7 +609,7 @@ export class QuotationPdfService {
         .fontSize(7.5)
         .fillColor(textDark)
         .text(
-          `This Catering & Event Agreement is entered into between ${quotation.customerName} (hereinafter referred to as the "Client") and Thankam Events Management (hereinafter referred to as the "Company"). The Company agrees to provide culinary preparations, banquet service crew, and event management deliverables for the event specified herein.`,
+          `This Catering & Event Agreement is entered into between ${quotation.customerName} (hereinafter referred to as the "Client") and Thankam Events Management (hereinafter referred to as the "Company"). The Company agrees to provide culinary preparations, catering service crew, and event management deliverables for the event specified herein.`,
           margin,
           doc.y,
           { width: contentWidth, lineGap: 1.5 },
@@ -631,7 +631,7 @@ export class QuotationPdfService {
         .text(`Client: ${quotation.customerName}`, margin + 10, specY + 6);
       doc.text(`Phone: ${quotation.customerPhone || '—'}`, margin + 10, specY + 18);
 
-      doc.text(`Event: ${quotation.eventType || 'Banquet'}`, margin + 180, specY + 6);
+      doc.text(`Event: ${quotation.eventType || 'Catering Event'}`, margin + 180, specY + 6);
       doc.text(`Date: ${fmtDate(quotation.eventDate)}`, margin + 180, specY + 18);
 
       doc.text(`Guests: ${quotation.guestCount || '—'} Pax`, margin + 350, specY + 6);
