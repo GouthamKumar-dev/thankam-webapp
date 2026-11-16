@@ -241,7 +241,7 @@ export function generateQuoteHtml(q: PdfQuoteInput): string {
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#fff;padding:44px;font-size:13px;line-height:1.5}
+body, .quote-body{font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#fff;padding:36px 40px;font-size:13px;line-height:1.5}
 @media screen and (max-width:680px){
   body{padding:16px 12px}
   .header{flex-direction:column;gap:12px;align-items:flex-start}
@@ -350,14 +350,47 @@ ${q.rejectionHistory && q.rejectionHistory.length > 0 ? `
 
 export async function downloadQuotePdf(q: PdfQuoteInput): Promise<void> {
   const html = generateQuoteHtml(q);
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.top = '0';
+  host.style.left = '-100000px';
+  host.style.width = '794px';
+  host.style.height = 'auto';
+  host.style.overflow = 'hidden';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-99999';
+
   const container = document.createElement('div');
+  container.className = 'quote-body';
   container.innerHTML = html;
   container.style.width = '794px';
+  container.style.background = '#ffffff';
+
+  host.appendChild(container);
+  document.body.appendChild(host);
 
   try {
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
+    const images = Array.from(container.querySelectorAll('img'));
+    if (images.length > 0) {
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) {
+                resolve();
+              } else {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+                setTimeout(resolve, 2000);
+              }
+            }),
+        ),
+      );
+    }
+
     const opt = {
       margin: 8,
       filename: `Quotation-${q.quotationNumber}.pdf`,
@@ -367,9 +400,6 @@ export async function downloadQuotePdf(q: PdfQuoteInput): Promise<void> {
         useCORS: true,
         letterRendering: true,
         logging: false,
-        windowWidth: 794,
-        scrollX: 0,
-        scrollY: 0,
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
@@ -384,22 +414,55 @@ export async function downloadQuotePdf(q: PdfQuoteInput): Promise<void> {
       win.focus();
     }
   } finally {
-    if (container.parentNode) {
-      container.parentNode.removeChild(container);
+    if (host.parentNode) {
+      host.parentNode.removeChild(host);
     }
   }
 }
 
 export async function generateQuotePdfBase64(q: PdfQuoteInput): Promise<string> {
   const html = generateQuoteHtml(q);
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.top = '0';
+  host.style.left = '-100000px';
+  host.style.width = '794px';
+  host.style.height = 'auto';
+  host.style.overflow = 'hidden';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-99999';
+
   const container = document.createElement('div');
+  container.className = 'quote-body';
   container.innerHTML = html;
   container.style.width = '794px';
+  container.style.background = '#ffffff';
+
+  host.appendChild(container);
+  document.body.appendChild(host);
 
   try {
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
+    const images = Array.from(container.querySelectorAll('img'));
+    if (images.length > 0) {
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) {
+                resolve();
+              } else {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+                setTimeout(resolve, 2000);
+              }
+            }),
+        ),
+      );
+    }
+
     const opt = {
       margin: 8,
       filename: `Quotation-${q.quotationNumber}.pdf`,
@@ -409,9 +472,6 @@ export async function generateQuotePdfBase64(q: PdfQuoteInput): Promise<string> 
         useCORS: true,
         letterRendering: true,
         logging: false,
-        windowWidth: 794,
-        scrollX: 0,
-        scrollY: 0,
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
@@ -421,8 +481,8 @@ export async function generateQuotePdfBase64(q: PdfQuoteInput): Promise<string> 
     const base64 = typeof dataUri === 'string' && dataUri.includes(',') ? dataUri.split(',')[1] : String(dataUri);
     return base64;
   } finally {
-    if (container.parentNode) {
-      container.parentNode.removeChild(container);
+    if (host.parentNode) {
+      host.parentNode.removeChild(host);
     }
   }
 }

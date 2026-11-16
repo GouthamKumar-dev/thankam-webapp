@@ -653,14 +653,46 @@ ${serviceItems.length > 0 ? `
 
 export async function downloadAgreementPdf(q: AgreementInput): Promise<void> {
   const html = generateAgreementHtml(q);
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.top = '0';
+  host.style.left = '-100000px';
+  host.style.width = '794px';
+  host.style.height = 'auto';
+  host.style.overflow = 'hidden';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-99999';
+
   const container = document.createElement('div');
   container.innerHTML = html;
   container.style.width = '794px';
+  container.style.background = '#ffffff';
+
+  host.appendChild(container);
+  document.body.appendChild(host);
 
   try {
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
+    const images = Array.from(container.querySelectorAll('img'));
+    if (images.length > 0) {
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) {
+                resolve();
+              } else {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+                setTimeout(resolve, 2000);
+              }
+            }),
+        ),
+      );
+    }
+
     const opt = {
       margin: 8,
       filename: `Agreement-${q.quotationNumber}.pdf`,
@@ -670,9 +702,6 @@ export async function downloadAgreementPdf(q: AgreementInput): Promise<void> {
         useCORS: true,
         letterRendering: true,
         logging: false,
-        windowWidth: 794,
-        scrollX: 0,
-        scrollY: 0,
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
@@ -687,22 +716,54 @@ export async function downloadAgreementPdf(q: AgreementInput): Promise<void> {
       win.focus();
     }
   } finally {
-    if (container.parentNode) {
-      container.parentNode.removeChild(container);
+    if (host.parentNode) {
+      host.parentNode.removeChild(host);
     }
   }
 }
 
 export async function generateAgreementPdfBase64(q: AgreementInput): Promise<string> {
   const html = generateAgreementHtml(q);
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.top = '0';
+  host.style.left = '-100000px';
+  host.style.width = '794px';
+  host.style.height = 'auto';
+  host.style.overflow = 'hidden';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-99999';
+
   const container = document.createElement('div');
   container.innerHTML = html;
   container.style.width = '794px';
+  container.style.background = '#ffffff';
+
+  host.appendChild(container);
+  document.body.appendChild(host);
 
   try {
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
+    const images = Array.from(container.querySelectorAll('img'));
+    if (images.length > 0) {
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) {
+                resolve();
+              } else {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+                setTimeout(resolve, 2000);
+              }
+            }),
+        ),
+      );
+    }
+
     const opt = {
       margin: 8,
       filename: `Agreement-${q.quotationNumber}.pdf`,
@@ -712,9 +773,6 @@ export async function generateAgreementPdfBase64(q: AgreementInput): Promise<str
         useCORS: true,
         letterRendering: true,
         logging: false,
-        windowWidth: 794,
-        scrollX: 0,
-        scrollY: 0,
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
@@ -724,8 +782,8 @@ export async function generateAgreementPdfBase64(q: AgreementInput): Promise<str
     const base64 = typeof dataUri === 'string' && dataUri.includes(',') ? dataUri.split(',')[1] : String(dataUri);
     return base64;
   } finally {
-    if (container.parentNode) {
-      container.parentNode.removeChild(container);
+    if (host.parentNode) {
+      host.parentNode.removeChild(host);
     }
   }
 }
