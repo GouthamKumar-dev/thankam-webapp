@@ -655,17 +655,12 @@ export async function downloadAgreementPdf(q: AgreementInput): Promise<void> {
   const html = generateAgreementHtml(q);
   const container = document.createElement('div');
   container.innerHTML = html;
-  container.style.position = 'absolute';
-  container.style.top = '0';
-  container.style.left = '0';
   container.style.width = '794px';
-  container.style.background = '#ffffff';
-  container.style.zIndex = '-9999';
-  container.style.opacity = '1';
-  container.style.pointerEvents = 'none';
-  document.body.appendChild(container);
 
   try {
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
     const opt = {
       margin: 8,
       filename: `Agreement-${q.quotationNumber}.pdf`,
@@ -702,17 +697,12 @@ export async function generateAgreementPdfBase64(q: AgreementInput): Promise<str
   const html = generateAgreementHtml(q);
   const container = document.createElement('div');
   container.innerHTML = html;
-  container.style.position = 'absolute';
-  container.style.top = '0';
-  container.style.left = '0';
   container.style.width = '794px';
-  container.style.background = '#ffffff';
-  container.style.zIndex = '-9999';
-  container.style.opacity = '1';
-  container.style.pointerEvents = 'none';
-  document.body.appendChild(container);
 
   try {
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
     const opt = {
       margin: 8,
       filename: `Agreement-${q.quotationNumber}.pdf`,
