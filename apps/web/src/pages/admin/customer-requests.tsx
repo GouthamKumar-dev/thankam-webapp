@@ -1682,10 +1682,10 @@ export function CustomerRequestsPage() {
                           <button
                             type="button"
                             onClick={() => onSelectRow(row)}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-all active:scale-95 whitespace-nowrap shrink-0"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300/80 bg-amber-50 hover:bg-amber-100/90 text-amber-900 hover:text-amber-950 px-4 py-2 text-xs font-bold shadow-2xs transition-all hover:border-amber-400 active:scale-95 whitespace-nowrap shrink-0 group"
                           >
                             <span>Review &amp; Quote</span>
-                            <ArrowRight size={13} className="shrink-0" />
+                            <ArrowRight size={13} className="text-amber-700 group-hover:translate-x-0.5 transition-transform shrink-0" />
                           </button>
                         </div>
                       </div>
@@ -1918,10 +1918,10 @@ export function CustomerRequestsPage() {
                               <button
                                 type="button"
                                 onClick={() => onSelectRow(row)}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-all active:scale-95 whitespace-nowrap shrink-0"
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300/80 bg-amber-50 hover:bg-amber-100/90 text-amber-900 hover:text-amber-950 px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all hover:border-amber-400 active:scale-95 whitespace-nowrap shrink-0 group"
                               >
                                 <span>Review &amp; Quote</span>
-                                <ArrowRight size={13} className="shrink-0" />
+                                <ArrowRight size={13} className="text-amber-700 group-hover:translate-x-0.5 transition-transform shrink-0" />
                               </button>
                             </td>
                           </tr>
