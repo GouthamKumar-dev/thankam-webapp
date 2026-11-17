@@ -183,14 +183,28 @@ const sanitizePct = (v: string) => {
 };
 const parsePct = (v: string) => Math.min(Number(sanitizePct(v)) || 0, 100);
 const fmtNum = (v: number) => (v > 0 ? v.toFixed(2).replace(/\.00$/, '') : '');
-const ALLOWED_UNITS = ['plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'] as const;
+const ALLOWED_UNITS = ['pax', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'] as const;
 
 const normalizeUnit = (u?: string | null) => {
   const r = (u ?? '').trim().toLowerCase();
-  if (!r) return 'plate';
+  if (
+    !r ||
+    r === 'kg' ||
+    r === 'kgs' ||
+    r === 'kilogram' ||
+    r === 'kilograms' ||
+    r === 'g' ||
+    r === 'gm' ||
+    r === 'plate' ||
+    r === 'plates' ||
+    r === 'person' ||
+    r === 'guests'
+  ) {
+    return 'Pax';
+  }
   if (r === 'pcs') return 'piece';
   if (ALLOWED_UNITS.includes(r as any)) return r;
-  return 'plate';
+  return 'Pax';
 };
 
 function isPerPersonLine(line: any) {

@@ -52,6 +52,40 @@ function formatServiceLineTitle(rawName: string): { title: string; subtitle?: st
   return { title: rawName.trim() };
 }
 
+function formatFoodMenuQtyAndUnit(qty: number, rawUnit?: string | null): string {
+  const u = (rawUnit || '').toLowerCase().trim();
+  if (
+    !u ||
+    u === 'kg' ||
+    u === 'kgs' ||
+    u === 'kilogram' ||
+    u === 'kilograms' ||
+    u === 'g' ||
+    u === 'gm' ||
+    u === 'grams' ||
+    u === 'plate' ||
+    u === 'plates' ||
+    u === 'person' ||
+    u === 'guests' ||
+    u === 'guest' ||
+    u === 'portion' ||
+    u === 'portions' ||
+    u === 'pax'
+  ) {
+    return `${qty} Pax`;
+  }
+  if (u === 'glass' || u === 'glasses') {
+    return `${qty} Glass`;
+  }
+  if (u === 'cup' || u === 'cups') {
+    return `${qty} Cup`;
+  }
+  if (u === 'piece' || u === 'pieces' || u === 'pcs') {
+    return `${qty} Pcs`;
+  }
+  return `${qty} Pax`;
+}
+
 function isServiceItem(name: string, category?: string): boolean {
   const combined = `${name || ''} ${category || ''}`.toLowerCase();
   const serviceKeywords = [
@@ -267,9 +301,9 @@ export class QuotationPdfService {
       doc.text('Dish Description', tableX + 32, currentY + 5);
 
       if (!isPerPerson) {
-        doc.text('Qty', tableX + 340, currentY + 5, { width: 35, align: 'center' });
-        doc.text('Rate', tableX + 390, currentY + 5, { width: 55, align: 'right' });
-        doc.text('Amount', tableX + 455, currentY + 5, { width: 60, align: 'right' });
+        doc.text('Qty', tableX + 312, currentY + 5, { width: 68, align: 'center' });
+        doc.text('Rate', tableX + 385, currentY + 5, { width: 58, align: 'right' });
+        doc.text('Amount', tableX + 448, currentY + 5, { width: 67, align: 'right' });
       } else {
         doc.text('Course Allocation', tableX + 410, currentY + 5, { width: 105, align: 'right' });
       }
@@ -310,7 +344,7 @@ export class QuotationPdfService {
           doc.font('Helvetica').fontSize(8).fillColor(textMuted).text(String(globalDishIndex), tableX + 8, currentY + 4);
 
           doc.font('Helvetica-Bold').fontSize(8.5).fillColor(textDark).text(title, tableX + 32, currentY + 4, {
-            width: isPerPerson ? 370 : 300,
+            width: isPerPerson ? 370 : 275,
             ellipsis: true,
           });
 
@@ -319,15 +353,16 @@ export class QuotationPdfService {
               .font('Helvetica-Oblique')
               .fontSize(7.5)
               .fillColor(textMuted)
-              .text(subtitle, tableX + 32, currentY + 14, { width: isPerPerson ? 370 : 300, ellipsis: true });
+              .text(subtitle, tableX + 32, currentY + 14, { width: isPerPerson ? 370 : 275, ellipsis: true });
           }
 
           if (!isPerPerson) {
             doc.font('Helvetica').fontSize(8).fillColor(textDark);
-            doc.text(`${qty} ${unit}`, tableX + 340, currentY + 4, { width: 35, align: 'center' });
-            doc.text(unitPrice > 0 ? fmtInr(unitPrice) : '—', tableX + 390, currentY + 4, { width: 55, align: 'right' });
-            doc.font('Helvetica-Bold').text(amount > 0 ? fmtInr(amount) : 'Included', tableX + 455, currentY + 4, {
-              width: 60,
+            const qtyText = formatFoodMenuQtyAndUnit(qty, unit);
+            doc.text(qtyText, tableX + 312, currentY + 4, { width: 68, align: 'center' });
+            doc.text(unitPrice > 0 ? fmtInr(unitPrice) : '—', tableX + 385, currentY + 4, { width: 58, align: 'right' });
+            doc.font('Helvetica-Bold').text(amount > 0 ? fmtInr(amount) : 'Included', tableX + 448, currentY + 4, {
+              width: 67,
               align: 'right',
             });
           } else {

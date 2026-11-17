@@ -880,13 +880,21 @@ export function CustomerPortalPage() {
       guestCount,
       notes: finalNotes || undefined,
       gstPercent: DEFAULT_GST,
-      items: selectedItems.map((item) => ({
-        itemId: item.id,
-        name: item.name,
-        quantity: guestCount,
-        unit: item.unit || "Guests",
-        unitPrice: 0,
-      })),
+      items: selectedItems.map((item) => {
+        const rawU = (item.unit || '').toLowerCase().trim();
+        let foodUnit = 'Pax';
+        if (rawU === 'glass' || rawU === 'glasses') foodUnit = 'Glass';
+        else if (rawU === 'cup' || rawU === 'cups') foodUnit = 'Cup';
+        else if (rawU === 'piece' || rawU === 'pieces' || rawU === 'pcs') foodUnit = 'Piece';
+
+        return {
+          itemId: item.id,
+          name: item.name,
+          quantity: guestCount,
+          unit: foodUnit,
+          unitPrice: 0,
+        };
+      }),
     };
 
     try {

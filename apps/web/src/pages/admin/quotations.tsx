@@ -196,7 +196,7 @@ export function composeVenue(venueType?: string | null, venueName?: string | nul
   return `${t} — ${n}`;
 }
 
-const ALLOWED_UNITS = ['plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'];
+const ALLOWED_UNITS = ['pax', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'];
 
 /* ─── Helpers ────────────────────────────────────────────────── */
 function key() {
@@ -268,7 +268,22 @@ function flattenCatalog(nodes: CategoryNode[], path: string[] = []): CatalogItem
 
 function sanitizeUnit(u?: string | null): string {
   const r = (u ?? '').toLowerCase().trim();
-  return ALLOWED_UNITS.includes(r) ? r : 'plate';
+  if (
+    !r ||
+    r === 'kg' ||
+    r === 'kgs' ||
+    r === 'kilogram' ||
+    r === 'kilograms' ||
+    r === 'g' ||
+    r === 'gm' ||
+    r === 'plate' ||
+    r === 'plates' ||
+    r === 'person' ||
+    r === 'guests'
+  ) {
+    return 'Pax';
+  }
+  return ALLOWED_UNITS.includes(r) ? r : 'Pax';
 }
 
 function computeTotals(
