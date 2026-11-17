@@ -2390,7 +2390,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
                       </tr>
                       <tr>
                         <td style="padding: 7px 0; font-size: 13px; color: #64748B; font-weight: 500; border-top: 1px dashed #E2E8F0;">Expected Guests:</td>
-                        <td align="right" style="padding: 7px 0; font-size: 13px; color: #0F172A; font-weight: 700; border-top: 1px dashed #E2E8F0;">${quotation.guestCount} Pax</td>
+                        <td align="right" style="padding: 7px 0; font-size: 13px; color: #0F172A; font-weight: 700; border-top: 1px dashed #E2E8F0;">${quotation.guestCount} Guests</td>
                       </tr>
                       <tr>
                         <td style="padding: 9px 0 3px; font-size: 14px; color: #0F172A; font-weight: 800; border-top: 2px solid #E2E8F0;">Total Commercial Estimate:</td>
@@ -2459,7 +2459,7 @@ ${company.faviconUrl ? `<link rel="icon" href="${this.escapeHtml(company.favicon
           quote_no: quotation.quotationNumber,
           event_date: eventDateStr,
           venue: `${quotation.eventType || 'Catering'} • ${quotation.venue || 'Kerala'}`,
-          guest_count: `${quotation.guestCount} Pax`,
+          guest_count: `${quotation.guestCount} Guests`,
           total_amount: grandTotalStr,
           portal_url: portalUrl,
           button_text: buttonText,

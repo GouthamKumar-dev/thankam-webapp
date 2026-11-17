@@ -54,36 +54,28 @@ function formatServiceLineTitle(rawName: string): { title: string; subtitle?: st
 
 function formatFoodMenuQtyAndUnit(qty: number, rawUnit?: string | null): string {
   const u = (rawUnit || '').toLowerCase().trim();
-  if (
-    !u ||
-    u === 'kg' ||
-    u === 'kgs' ||
-    u === 'kilogram' ||
-    u === 'kilograms' ||
-    u === 'g' ||
-    u === 'gm' ||
-    u === 'grams' ||
-    u === 'plate' ||
-    u === 'plates' ||
-    u === 'person' ||
-    u === 'guests' ||
-    u === 'guest' ||
-    u === 'portion' ||
-    u === 'portions' ||
-    u === 'pax'
-  ) {
-    return `${qty} Pax`;
-  }
+  const guestLabel = qty === 1 ? 'Guest' : 'Guests';
+
   if (u === 'glass' || u === 'glasses') {
-    return `${qty} Glass`;
+    return `${qty} ${qty === 1 ? 'Glass' : 'Glasses'}`;
   }
   if (u === 'cup' || u === 'cups') {
-    return `${qty} Cup`;
+    return `${qty} ${qty === 1 ? 'Cup' : 'Cups'}`;
   }
   if (u === 'piece' || u === 'pieces' || u === 'pcs') {
     return `${qty} Pcs`;
   }
-  return `${qty} Pax`;
+  if (u === 'bowl' || u === 'bowls') {
+    return `${qty} ${qty === 1 ? 'Bowl' : 'Bowls'}`;
+  }
+  if (u === 'scoop' || u === 'scoops') {
+    return `${qty} ${qty === 1 ? 'Scoop' : 'Scoops'}`;
+  }
+  if (u === 'plate' || u === 'plates') {
+    return `${qty} ${qty === 1 ? 'Plate' : 'Plates'}`;
+  }
+  // Default for food dishes, per-head lines, kg, gm, person, pax, guests, etc.
+  return `${qty} ${guestLabel}`;
 }
 
 function isServiceItem(name: string, category?: string): boolean {
@@ -271,7 +263,7 @@ export class QuotationPdfService {
         .font('Helvetica')
         .fontSize(8)
         .fillColor(textDark)
-        .text(`Date: ${fmtDate(quotation.eventDate)}   |   Guests: ${quotation.guestCount || '—'} Pax`, rightColX, boxY + 36);
+        .text(`Date: ${fmtDate(quotation.eventDate)}   |   Guests: ${quotation.guestCount || '—'}`, rightColX, boxY + 36);
 
       doc
         .font('Helvetica')
@@ -669,7 +661,7 @@ export class QuotationPdfService {
       doc.text(`Event: ${quotation.eventType || 'Catering Event'}`, margin + 180, specY + 6);
       doc.text(`Date: ${fmtDate(quotation.eventDate)}`, margin + 180, specY + 18);
 
-      doc.text(`Guests: ${quotation.guestCount || '—'} Pax`, margin + 350, specY + 6);
+      doc.text(`Guests: ${quotation.guestCount || '—'}`, margin + 350, specY + 6);
       doc.text(`Venue: ${quotation.venue || 'To be specified'}`, margin + 350, specY + 18, { width: 130, ellipsis: true });
 
       doc.y = specY + 42;

@@ -183,7 +183,7 @@ const sanitizePct = (v: string) => {
 };
 const parsePct = (v: string) => Math.min(Number(sanitizePct(v)) || 0, 100);
 const fmtNum = (v: number) => (v > 0 ? v.toFixed(2).replace(/\.00$/, '') : '');
-const ALLOWED_UNITS = ['pax', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'] as const;
+const ALLOWED_UNITS = ['guests', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'] as const;
 
 const normalizeUnit = (u?: string | null) => {
   const r = (u ?? '').trim().toLowerCase();
@@ -198,13 +198,15 @@ const normalizeUnit = (u?: string | null) => {
     r === 'plate' ||
     r === 'plates' ||
     r === 'person' ||
-    r === 'guests'
+    r === 'pax' ||
+    r === 'guests' ||
+    r === 'guest'
   ) {
-    return 'Pax';
+    return 'Guests';
   }
   if (r === 'pcs') return 'piece';
   if (ALLOWED_UNITS.includes(r as any)) return r;
-  return 'Pax';
+  return 'Guests';
 };
 
 function isPerPersonLine(line: any) {
@@ -1675,7 +1677,7 @@ export function CustomerRequestsPage() {
                             </span>
                             <span className="inline-flex items-center gap-1 font-bold text-slate-800 text-[11px] bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
                               <Users size={12} className="text-slate-500" />
-                              {row.guestCount} Pax
+                              {row.guestCount} Guests
                             </span>
                           </div>
                         </div>

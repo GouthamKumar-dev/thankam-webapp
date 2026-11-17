@@ -196,7 +196,7 @@ export function composeVenue(venueType?: string | null, venueName?: string | nul
   return `${t} — ${n}`;
 }
 
-const ALLOWED_UNITS = ['pax', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'];
+const ALLOWED_UNITS = ['guests', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'kg', 'unit', 'person'];
 
 /* ─── Helpers ────────────────────────────────────────────────── */
 function key() {
@@ -279,11 +279,13 @@ function sanitizeUnit(u?: string | null): string {
     r === 'plate' ||
     r === 'plates' ||
     r === 'person' ||
-    r === 'guests'
+    r === 'pax' ||
+    r === 'guests' ||
+    r === 'guest'
   ) {
-    return 'Pax';
+    return 'Guests';
   }
-  return ALLOWED_UNITS.includes(r) ? r : 'Pax';
+  return ALLOWED_UNITS.includes(r) ? r : 'Guests';
 }
 
 function computeTotals(
@@ -3553,7 +3555,7 @@ function TaxInvoiceModal({
                   <span className="font-medium text-slate-500">Event Type:</span>
                   <span className="font-bold text-slate-900">{eventType || 'Special Event'}</span>
                   <span className="font-medium text-slate-500">Total Guests:</span>
-                  <span className="font-mono font-bold text-slate-900">{guestCount} Pax</span>
+                  <span className="font-mono font-bold text-slate-900">{guestCount} Guests</span>
                   <span className="font-medium text-slate-500">Place of Supply:</span>
                   <span className="font-medium text-slate-900">Kerala (32)</span>
                 </div>
@@ -3590,7 +3592,7 @@ function TaxInvoiceModal({
                     </td>
                     <td className="border-r border-slate-900 p-2.5 text-center font-mono text-slate-500">996331</td>
                     <td className="border-r border-slate-900 p-2.5 text-center font-mono font-semibold">{guestCount}</td>
-                    <td className="border-r border-slate-900 p-2.5 text-center text-slate-600 font-medium">Pax</td>
+                    <td className="border-r border-slate-900 p-2.5 text-center text-slate-600 font-medium">Guests</td>
                     <td className="border-r border-slate-900 p-2.5 text-right font-mono font-medium">
                       {isPP ? (foodRate > 0 ? foodRate.toFixed(2) : '—') : '—'}
                     </td>

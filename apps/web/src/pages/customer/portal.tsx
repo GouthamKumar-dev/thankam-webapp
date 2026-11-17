@@ -882,7 +882,7 @@ export function CustomerPortalPage() {
       gstPercent: DEFAULT_GST,
       items: selectedItems.map((item) => {
         const rawU = (item.unit || '').toLowerCase().trim();
-        let foodUnit = 'Pax';
+        let foodUnit = 'Guests';
         if (rawU === 'glass' || rawU === 'glasses') foodUnit = 'Glass';
         else if (rawU === 'cup' || rawU === 'cups') foodUnit = 'Cup';
         else if (rawU === 'piece' || rawU === 'pieces' || rawU === 'pcs') foodUnit = 'Piece';
