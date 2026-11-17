@@ -219,10 +219,14 @@ export function CategoriesPage() {
     }
     setSavingCategory(true);
     try {
-      let imageUrl = categoryForm.imagePreview || undefined;
+      let imageUrl: string | undefined = undefined;
       if (categoryForm.imageFile) {
         const uploaded = await uploadService.uploadOne(categoryForm.imageFile);
         imageUrl = uploaded.url;
+      } else if (categoryEditId) {
+        imageUrl = categoryForm.imagePreview || '';
+      } else {
+        imageUrl = categoryForm.imagePreview || undefined;
       }
 
       if (categoryEditId) {
@@ -314,10 +318,14 @@ export function CategoriesPage() {
     }
     setSavingItem(true);
     try {
-      let imageUrl = itemForm.imagePreview || undefined;
+      let imageUrl: string | undefined = undefined;
       if (itemForm.imageFile) {
         const uploaded = await uploadService.uploadOne(itemForm.imageFile);
         imageUrl = uploaded.url;
+      } else if (itemEditId) {
+        imageUrl = itemForm.imagePreview || '';
+      } else {
+        imageUrl = itemForm.imagePreview || undefined;
       }
 
       if (itemEditId) {
@@ -1182,13 +1190,17 @@ export function CategoriesPage() {
                   imagePreview: URL.createObjectURL(file),
                 }))
               }
-              onClear={() =>
+              onClear={() => {
+                const prev = categoryForm.imagePreview;
                 setCategoryForm((s) => ({
                   ...s,
                   imageFile: null,
                   imagePreview: '',
-                }))
-              }
+                }));
+                if (prev && prev.includes('/uploads/')) {
+                  void uploadService.deleteFile(prev);
+                }
+              }}
             />
           </FormField>
 
@@ -1267,13 +1279,17 @@ export function CategoriesPage() {
                   imagePreview: URL.createObjectURL(file),
                 }))
               }
-              onClear={() =>
+              onClear={() => {
+                const prev = itemForm.imagePreview;
                 setItemForm((s) => ({
                   ...s,
                   imageFile: null,
                   imagePreview: '',
-                }))
-              }
+                }));
+                if (prev && prev.includes('/uploads/')) {
+                  void uploadService.deleteFile(prev);
+                }
+              }}
             />
           </FormField>
 

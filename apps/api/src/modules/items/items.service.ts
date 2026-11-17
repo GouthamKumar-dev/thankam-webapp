@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { toSkipTake } from '../../common/dto/pagination.util';
+import { deleteUploadedFile } from '../../common/utils/upload-path.util';
 import { ItemQueryDto } from './dto/item-query.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
@@ -110,11 +111,31 @@ export class ItemsService {
       throw new NotFoundException('Item not found');
     }
 
-    return this.prisma.item.update({
+    const dataToUpdate: Prisma.ItemUpdateInput = {
+      ...dto,
+      imageUrl: dto.imageUrl === '' ? null : dto.imageUrl,
+    };
+
+    const updated = await this.prisma.item.update({
       where: { id },
-      data: dto,
+      data: dataToUpdate,
       include: { category: true },
     });
+
+    if (
+      existing.imageUrl &&
+      dto.imageUrl !== undefined &&
+      dto.imageUrl !== existing.imageUrl
+    ) {
+      const inUse = await this.prisma.item.count({
+        where: { id: { not: id }, imageUrl: existing.imageUrl },
+      });
+      if (inUse === 0) {
+        await deleteUploadedFile(existing.imageUrl);
+      }
+    }
+
+    return updated;
   }
 
   async remove(id: string) {
@@ -124,6 +145,16 @@ export class ItemsService {
     }
 
     await this.prisma.item.delete({ where: { id } });
+
+    if (existing.imageUrl) {
+      const inUse = await this.prisma.item.count({
+        where: { id: { not: id }, imageUrl: existing.imageUrl },
+      });
+      if (inUse === 0) {
+        await deleteUploadedFile(existing.imageUrl);
+      }
+    }
+
     return { message: 'Item deleted' };
   }
 }

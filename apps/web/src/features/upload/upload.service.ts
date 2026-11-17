@@ -61,4 +61,17 @@ export const uploadService = {
 
     return uploaded;
   },
+
+  async deleteFile(fileUrlOrName?: string | null): Promise<boolean> {
+    if (!fileUrlOrName || typeof fileUrlOrName !== 'string') return false;
+    try {
+      const { data } = await apiClient.delete<{ success: boolean; deleted: boolean }>('/upload/file', {
+        params: { url: fileUrlOrName },
+      });
+      return Boolean(data?.deleted);
+    } catch (error) {
+      console.warn('[uploadService] deleteFile failed:', error);
+      return false;
+    }
+  },
 };

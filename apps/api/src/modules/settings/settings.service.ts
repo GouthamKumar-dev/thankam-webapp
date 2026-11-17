@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { deleteUploadedFile } from '../../common/utils/upload-path.util';
 import { EmailNotificationService } from '../notifications/email.service';
 
 @Injectable()
@@ -23,8 +24,29 @@ export class SettingsService {
     return row;
   }
 
-  upsert(key: string, value: Record<string, unknown>) {
+  async upsert(key: string, value: Record<string, unknown>) {
     const jsonValue = value as Prisma.InputJsonValue;
+
+    if (key === 'company') {
+      try {
+        const existing = await this.prisma.setting.findUnique({ where: { key } });
+        const oldVal = (existing?.value ?? {}) as Record<string, unknown>;
+
+        const oldLogo = typeof oldVal.logoUrl === 'string' ? oldVal.logoUrl : null;
+        const newLogo = typeof value.logoUrl === 'string' ? value.logoUrl : null;
+        if (oldLogo && newLogo !== oldLogo) {
+          await deleteUploadedFile(oldLogo);
+        }
+
+        const oldFavicon = typeof oldVal.faviconUrl === 'string' ? oldVal.faviconUrl : null;
+        const newFavicon = typeof value.faviconUrl === 'string' ? value.faviconUrl : null;
+        if (oldFavicon && newFavicon !== oldFavicon) {
+          await deleteUploadedFile(oldFavicon);
+        }
+      } catch (err) {
+        console.warn('[SettingsService] Failed to clean up replaced brand asset:', err);
+      }
+    }
 
     return this.prisma.setting.upsert({
       where: { key },

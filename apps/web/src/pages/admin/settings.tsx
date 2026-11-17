@@ -23,6 +23,7 @@ import {
   Shield,
   ShieldCheck,
   Sliders,
+  Trash2,
   Upload,
   UserRound,
   X,
@@ -242,10 +243,14 @@ export function SettingsPage() {
 
     try {
       setAssetUploading(field === 'logoUrl' ? 'logo' : 'favicon');
+      const prevAsset = companyForm[field];
       const uploadFile = await prepareCompanyAssetUpload(file, field);
       const uploaded = await uploadService.uploadOne(uploadFile);
       const absoluteUrl = toMediaUrl(uploaded.url);
       setCompanyForm((prev) => ({ ...prev, [field]: absoluteUrl }));
+      if (prevAsset && prevAsset.includes('/uploads/')) {
+        void uploadService.deleteFile(prevAsset);
+      }
       toast.success(`${field === 'logoUrl' ? 'Logo' : 'Favicon'} uploaded successfully`);
     } catch (error: any) {
       toast.error(error?.response?.data?.message ?? error?.message ?? 'Failed to upload asset');
@@ -481,16 +486,34 @@ export function SettingsPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs">
-                        <Upload size={13} />
-                        <span>{assetUploading === 'logo' ? 'Uploading...' : 'Upload Logo'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => void onCompanyAssetUpload(e, 'logoUrl')}
-                          className="hidden"
-                        />
-                      </label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs">
+                          <Upload size={13} />
+                          <span>{assetUploading === 'logo' ? 'Uploading...' : 'Upload Logo'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => void onCompanyAssetUpload(e, 'logoUrl')}
+                            className="hidden"
+                          />
+                        </label>
+                        {companyForm.logoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const prev = companyForm.logoUrl;
+                              setCompanyForm((s) => ({ ...s, logoUrl: '' }));
+                              if (prev && prev.includes('/uploads/')) {
+                                void uploadService.deleteFile(prev);
+                              }
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs"
+                          >
+                            <Trash2 size={12} />
+                            <span>Remove</span>
+                          </button>
+                        )}
+                      </div>
                       <p className="text-[11px] text-slate-400 mt-1">
                         PNG or WebP under 900KB
                       </p>
@@ -526,16 +549,34 @@ export function SettingsPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs">
-                        <Upload size={13} />
-                        <span>{assetUploading === 'favicon' ? 'Uploading...' : 'Upload Favicon'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => void onCompanyAssetUpload(e, 'faviconUrl')}
-                          className="hidden"
-                        />
-                      </label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs">
+                          <Upload size={13} />
+                          <span>{assetUploading === 'favicon' ? 'Uploading...' : 'Upload Favicon'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => void onCompanyAssetUpload(e, 'faviconUrl')}
+                            className="hidden"
+                          />
+                        </label>
+                        {companyForm.faviconUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const prev = companyForm.faviconUrl;
+                              setCompanyForm((s) => ({ ...s, faviconUrl: '' }));
+                              if (prev && prev.includes('/uploads/')) {
+                                void uploadService.deleteFile(prev);
+                              }
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs"
+                          >
+                            <Trash2 size={12} />
+                            <span>Remove</span>
+                          </button>
+                        )}
+                      </div>
                       <p className="text-[11px] text-slate-400 mt-1">
                         Square 32x32 or 64x64 icon
                       </p>

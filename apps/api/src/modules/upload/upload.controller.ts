@@ -1,7 +1,11 @@
 import {
   BadRequestException,
+  Body,
   Controller,
+  Delete,
+  Param,
   Post,
+  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -27,5 +31,61 @@ export class UploadController {
     }
 
     return this.uploadService.mapUploadedFiles(files);
+  }
+
+  @Delete('file')
+  async deleteFile(
+    @Query('url') url?: string,
+    @Body('url') bodyUrl?: string,
+  ) {
+    const target = url || bodyUrl;
+    if (!target) {
+      throw new BadRequestException('File URL or filename is required');
+    }
+
+    const deleted = await this.uploadService.deleteFile(target);
+    return {
+      success: true,
+      deleted,
+      message: deleted
+        ? 'File deleted successfully from upload directory'
+        : 'File not found, in use, or already deleted',
+    };
+  }
+
+  @Post('delete')
+  async postDeleteFile(
+    @Body('url') bodyUrl?: string,
+    @Query('url') url?: string,
+  ) {
+    const target = bodyUrl || url;
+    if (!target) {
+      throw new BadRequestException('File URL or filename is required');
+    }
+
+    const deleted = await this.uploadService.deleteFile(target);
+    return {
+      success: true,
+      deleted,
+      message: deleted
+        ? 'File deleted successfully from upload directory'
+        : 'File not found, in use, or already deleted',
+    };
+  }
+
+  @Delete(':filename')
+  async deleteByFilename(@Param('filename') filename: string) {
+    if (!filename) {
+      throw new BadRequestException('Filename is required');
+    }
+
+    const deleted = await this.uploadService.deleteFile(filename);
+    return {
+      success: true,
+      deleted,
+      message: deleted
+        ? 'File deleted successfully from upload directory'
+        : 'File not found, in use, or already deleted',
+    };
   }
 }

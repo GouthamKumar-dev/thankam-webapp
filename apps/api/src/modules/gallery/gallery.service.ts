@@ -6,6 +6,7 @@ import {
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { deleteUploadedFile } from '../../common/utils/upload-path.util';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
 
@@ -69,6 +70,26 @@ export class GalleryService {
     }
 
     await this.prisma.media.delete({ where: { id } });
+
+    // Clean up corresponding physical files from upload directory
+    if (media.url) {
+      const inUse = await this.prisma.media.count({
+        where: { id: { not: id }, url: media.url },
+      });
+      if (inUse === 0) {
+        await deleteUploadedFile(media.url);
+      }
+    }
+
+    if (media.thumbnailUrl) {
+      const inUse = await this.prisma.media.count({
+        where: { id: { not: id }, thumbnailUrl: media.thumbnailUrl },
+      });
+      if (inUse === 0) {
+        await deleteUploadedFile(media.thumbnailUrl);
+      }
+    }
+
     return { message: 'Media deleted' };
   }
 }

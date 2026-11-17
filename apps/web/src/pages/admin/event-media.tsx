@@ -556,12 +556,16 @@ function TestimonialModal({
                 <button
                   type="button"
                   onClick={() => {
+                    const toDelete = form.mediaUrl;
                     setPreview(null);
                     setForm((p) => ({
                       ...p,
                       mediaUrl: undefined,
                       mediaType: undefined,
                     }));
+                    if (toDelete && toDelete.includes('/uploads/')) {
+                      void uploadService.deleteFile(toDelete);
+                    }
                   }}
                   className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-rose-600 text-white hover:bg-rose-500 shadow-md"
                 >

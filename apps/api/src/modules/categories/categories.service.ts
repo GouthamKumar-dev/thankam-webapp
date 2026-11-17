@@ -3,7 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { deleteUploadedFile } from '../../common/utils/upload-path.util';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -129,12 +131,35 @@ export class CategoriesService {
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
-    await this.ensureExists(id);
+    const existing = await this.prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Category not found');
+    }
 
-    return this.prisma.category.update({
+    const dataToUpdate: Prisma.CategoryUpdateInput = {
+      ...dto,
+      imageUrl: dto.imageUrl === '' ? null : dto.imageUrl,
+    };
+
+    const updated = await this.prisma.category.update({
       where: { id },
-      data: dto,
+      data: dataToUpdate,
     });
+
+    if (
+      existing.imageUrl &&
+      dto.imageUrl !== undefined &&
+      dto.imageUrl !== existing.imageUrl
+    ) {
+      const inUse = await this.prisma.category.count({
+        where: { id: { not: id }, imageUrl: existing.imageUrl },
+      });
+      if (inUse === 0) {
+        await deleteUploadedFile(existing.imageUrl);
+      }
+    }
+
+    return updated;
   }
 
   async remove(id: string) {
@@ -157,6 +182,16 @@ export class CategoriesService {
     }
 
     await this.prisma.category.delete({ where: { id } });
+
+    if (category.imageUrl) {
+      const inUse = await this.prisma.category.count({
+        where: { id: { not: id }, imageUrl: category.imageUrl },
+      });
+      if (inUse === 0) {
+        await deleteUploadedFile(category.imageUrl);
+      }
+    }
+
     return { message: 'Category deleted' };
   }
 
