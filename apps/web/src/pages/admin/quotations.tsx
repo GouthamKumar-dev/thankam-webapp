@@ -748,6 +748,13 @@ export function QuotationsPage() {
       toast.error('Please fill customer name, event date, event type, and venue');
       return;
     }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const parsedEventDate = parseDateVal(form.eventDate);
+    if (parsedEventDate && parsedEventDate < today) {
+      toast.error('Event date cannot be in the past. Please select today or a future date.');
+      return;
+    }
     setSaving(true);
     try {
       const payload = buildPayload(form, lines, services, mode, ppRate);
@@ -1974,6 +1981,8 @@ export function QuotationsPage() {
                           value={parseDateVal(form.eventDate)}
                           onChange={(val) => setForm((s) => ({ ...s, eventDate: formatDateVal(val) }))}
                           format="dd/MM/yyyy"
+                          disablePast
+                          minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                           slotProps={{
                             textField: {
                               fullWidth: true,
@@ -2126,6 +2135,15 @@ export function QuotationsPage() {
                         if (!form.customerName.trim()) {
                           toast.error('Please enter Customer Name to proceed');
                           return;
+                        }
+                        if (form.eventDate) {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const parsed = parseDateVal(form.eventDate);
+                          if (parsed && parsed < today) {
+                            toast.error('Event date cannot be in the past. Please select today or a future date.');
+                            return;
+                          }
                         }
                         setActiveStep(2);
                       }}

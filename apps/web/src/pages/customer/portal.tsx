@@ -787,7 +787,16 @@ export function CustomerPortalPage() {
     if (!sanitizeNameInput(form.customerName).trim()) errs.customerName = "Full name is required";
     const phone = sanitizePhoneInput(authenticatedPhone || form.customerPhone);
     if (!/^\d{10}$/.test(phone)) errs.customerPhone = "Enter a valid 10-digit number";
-    if (!form.eventDate) errs.eventDate = "Event date is required";
+    if (!form.eventDate) {
+      errs.eventDate = "Event date is required";
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const parsed = parseDateInput(form.eventDate);
+      if (parsed && parsed < today) {
+        errs.eventDate = "Event date cannot be in the past";
+      }
+    }
     if (!form.eventType) errs.eventType = "Please select an event type";
     if (!form.venue) errs.venue = "Please select a venue";
     const gc = Number.parseInt(form.guestCount, 10);
@@ -1996,7 +2005,8 @@ export function CustomerPortalPage() {
                               setForm((s) => ({ ...s, eventDate: formatDateInput(value) }));
                               setIsCalendarOpen(false);
                             }}
-                            minDate={new Date()}
+                            disablePast
+                            minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                             format="dd/MM/yyyy"
                             slotProps={{
                               popper: { sx: { zIndex: 99999 } },
