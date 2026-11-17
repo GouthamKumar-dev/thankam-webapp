@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { json, urlencoded } from 'express';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -9,7 +10,11 @@ import { resolveUploadDirectory } from './common/utils/upload-path.util';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: false,
+    bodyParser: false,
   });
+
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   app.use(
     helmet({
@@ -49,6 +54,10 @@ async function bootstrap() {
   const uploadRoot = resolveUploadDirectory(process.env.UPLOAD_LOCAL_DIR ?? 'uploads');
   app.useStaticAssets(uploadRoot, {
     prefix: '/uploads/',
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
   });
 
   app.setGlobalPrefix('api');

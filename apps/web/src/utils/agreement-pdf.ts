@@ -696,14 +696,14 @@ export async function downloadAgreementPdf(q: AgreementInput): Promise<void> {
     const opt = {
       margin: 8,
       filename: `Agreement-${q.quotationNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.92 },
       html2canvas: {
         scale: 2,
         useCORS: true,
         letterRendering: true,
         logging: false,
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const, compress: true },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
     };
     await html2pdf().set(opt).from(container).save();
@@ -767,14 +767,14 @@ export async function generateAgreementPdfBase64(q: AgreementInput): Promise<str
     const opt = {
       margin: 8,
       filename: `Agreement-${q.quotationNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.92 },
       html2canvas: {
         scale: 2,
         useCORS: true,
         letterRendering: true,
         logging: false,
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const, compress: true },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
