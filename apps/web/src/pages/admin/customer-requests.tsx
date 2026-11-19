@@ -39,6 +39,7 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageShell } from '@/layouts/page-shell';
 import { TableSkeleton, CardListSkeleton, PageLoader } from '@/components/common/skeleton';
+import { QuotationPreviewModal } from '@/components/quotations/quotation-preview-modal';
 import { openQuotePdf, generateQuotePdfBase64 } from '@/utils/quote-pdf';
 import {
   generateAgreementHtml,
@@ -608,6 +609,7 @@ export function CustomerRequestsPage() {
   const [activeTab, setActiveTab] = useState<'quote' | 'agreement'>('quote');
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [taxInvoiceOpen, setTaxInvoiceOpen] = useState(false);
+  const [quotationPreviewOpen, setQuotationPreviewOpen] = useState(false);
   const [company, setCompany] = useState<{ name: string; tagline: string; logoUrl?: string } | null>(null);
 
   /* quote fields */
@@ -2088,29 +2090,14 @@ export function CustomerRequestsPage() {
               </button>
             )}
 
-            {/* PDF Preview Trigger */}
+            {/* Quotation Preview Modal Trigger */}
             <button
               type="button"
-              onClick={async () => {
-                if (detail?.id) {
-                  try {
-                    await quotationsService.downloadPdf(
-                      detail.id,
-                      `Quotation-${detail.quotationNumber}.pdf`,
-                    );
-                    toast.success('Official PDF proposal downloaded');
-                    return;
-                  } catch (e) {
-                    console.warn('Direct PDF download fallback to client generation', e);
-                  }
-                }
-                const p = buildPdfInput();
-                if (p) openQuotePdf(p);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all"
+              onClick={() => setQuotationPreviewOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200/90 bg-amber-50/80 px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100/90 shadow-2xs transition-all"
             >
-              <Download size={13} className="text-amber-600" />
-              <span>PDF Proposal</span>
+              <Eye size={14} className="text-amber-700" />
+              <span>Preview Quotation</span>
             </button>
           </div>
         </div>
@@ -3087,25 +3074,10 @@ export function CustomerRequestsPage() {
 
                       <button
                         type="button"
-                        onClick={async () => {
-                          if (detail?.id) {
-                            try {
-                              await quotationsService.downloadPdf(
-                                detail.id,
-                                `Quotation-${detail.quotationNumber}.pdf`,
-                              );
-                              toast.success('Official PDF proposal downloaded');
-                              return;
-                            } catch (e) {
-                              console.warn('Direct PDF download fallback to client generation', e);
-                            }
-                          }
-                          const p = buildPdfInput();
-                          if (p) openQuotePdf(p);
-                        }}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all"
+                        onClick={() => setQuotationPreviewOpen(true)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/80 py-2.5 text-xs font-bold text-amber-900 hover:bg-amber-100 shadow-2xs transition-all"
                       >
-                        <Download size={13} className="text-amber-600" /> Export PDF Proposal
+                        <Eye size={13} className="text-amber-700" /> Preview Quotation
                       </button>
                     </div>
                   </div>
@@ -3226,6 +3198,19 @@ export function CustomerRequestsPage() {
             serviceItems={editServices}
             perPersonRate={parseCurrency(perPersonAmt)}
             quoteMode={quoteMode}
+          />
+        )}
+
+        {/* ── QUOTATION PROPOSAL PREVIEW MODAL ── */}
+        {detail && (
+          <QuotationPreviewModal
+            isOpen={quotationPreviewOpen}
+            onClose={() => setQuotationPreviewOpen(false)}
+            pdfInput={buildPdfInput()}
+            quotationId={detail.id}
+            quotationNumber={detail.quotationNumber}
+            customerPhone={detail.customerPhone ?? undefined}
+            customerName={detail.customerName}
           />
         )}
 

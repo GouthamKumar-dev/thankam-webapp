@@ -64,6 +64,7 @@ import { formatInr } from '@/utils/currency';
 import { toMediaUrl } from '@/utils/media-url';
 import { generateAgreementHtml, fetchImageBase64 } from '@/utils/agreement-pdf';
 import { openQuotePdf } from '@/utils/quote-pdf';
+import { QuotationPreviewModal } from '@/components/quotations/quotation-preview-modal';
 import {
   isEventServiceItem,
   ATOMIC_EVENT_SERVICES,
@@ -593,6 +594,10 @@ export function QuotationsPage() {
   /* tax invoice modal */
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
+  /* quotation preview modal */
+  const [quotePreviewOpen, setQuotePreviewOpen] = useState(false);
+  const [previewPdfInput, setPreviewPdfInput] = useState<any>(null);
+
   /* ── Load ── */
   const isFetchingRef = useRef(false);
   const refresh = useCallback((showSkeleton = false) => {
@@ -833,7 +838,7 @@ export function QuotationsPage() {
     const logoBase64 = await fetchImageBase64(company?.logoUrl);
     const totals = computeTotals(lines, services, form, mode, ppRate);
     const isPP = mode === 'PER_PERSON';
-    openQuotePdf({
+    const input = {
       quotationNumber: selectedRow?.quotationNumber ?? 'DRAFT',
       createdAt: selectedRow ? new Date().toISOString() : new Date().toISOString(),
       customerName: form.customerName,
@@ -875,7 +880,9 @@ export function QuotationsPage() {
       companyName: company?.name,
       companyTagline: company?.tagline,
       companyLogoUrl: logoBase64,
-    });
+    };
+    setPreviewPdfInput(input);
+    setQuotePreviewOpen(true);
   };
 
   /* ── Generate Agreement ── */
@@ -1755,15 +1762,15 @@ export function QuotationsPage() {
                       <span>Tax Invoice</span>
                     </button>
 
-                    {/* PDF Quote Button */}
+                    {/* Preview Quotation Button */}
                     <button
                       type="button"
                       onClick={onPdf}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:border-slate-300 transition-colors shadow-2xs"
-                      title="Download quotation PDF"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-amber-200/90 bg-amber-50/80 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs"
+                      title="Preview quotation proposal"
                     >
-                      <Download size={13} />
-                      <span>Quote PDF</span>
+                      <Eye size={13} className="text-amber-700" />
+                      <span>Preview Quotation</span>
                     </button>
 
                     {/* Digital Agreement Button */}
@@ -3178,6 +3185,19 @@ export function QuotationsPage() {
           ppRate={ppRate}
           company={company}
           onClose={() => setInvoiceOpen(false)}
+        />
+      )}
+
+      {/* ── Quotation Proposal Preview Modal ── */}
+      {quotePreviewOpen && previewPdfInput && (
+        <QuotationPreviewModal
+          isOpen={quotePreviewOpen}
+          onClose={() => setQuotePreviewOpen(false)}
+          pdfInput={previewPdfInput}
+          quotationId={selectedRow?.id}
+          quotationNumber={selectedRow?.quotationNumber || 'DRAFT'}
+          customerPhone={form.customerPhone}
+          customerName={form.customerName}
         />
       )}
 

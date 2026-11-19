@@ -7,6 +7,7 @@ import {
   Crown,
   Download,
   Edit3,
+  Eye,
   FileCheck2,
   FileText,
   HelpCircle,
@@ -41,6 +42,7 @@ import { playNotificationSound } from '@/features/notifications/notification-sou
 import { formatInr } from '@/utils/currency';
 import { toMediaUrl } from '@/utils/media-url';
 import { openQuotePdf } from '@/utils/quote-pdf';
+import { QuotationPreviewModal } from '@/components/quotations/quotation-preview-modal';
 import { quotationsService } from '@/features/quotations/quotations.service';
 import { toUiRequestStatus } from '@/utils/request-status';
 import { isVegDish } from '@/utils/dietary';
@@ -288,6 +290,7 @@ export function CustomerTrackPage() {
 
   /* Customer Response Modal */
   const [respOpen, setRespOpen] = useState(false);
+  const [quotationPreviewOpen, setQuotationPreviewOpen] = useState(false);
   const [respAction, setRespAction] = useState<'ACCEPT' | 'DECLINE' | 'INTERESTED'>('ACCEPT');
   const [respReason, setRespReason] = useState('');
   const [respLoading, setRespLoading] = useState(false);
@@ -463,6 +466,53 @@ export function CustomerTrackPage() {
   const hasQuotedPricing = isFinalized || st === 'QUOTED' || st === 'ACCEPTED' || st === 'DECLINED';
   const agreementStatus = selected?.agreementStatus?.toUpperCase();
   const rejectionHistory = parseRejectionHistory(selected?.notes);
+
+  const customerPdfInput: any = useMemo(() => {
+    if (!selected || !billing) return null;
+    const ppLine = (selected.items ?? []).find((i: any) => isPerPerson(i));
+    const isPP = Boolean(ppLine && Number(ppLine?.unitPrice || 0) > 0);
+    return {
+      quotationNumber: selected.quotationNumber,
+      createdAt: selected.createdAt,
+      customerName: selected.customerName,
+      customerPhone: selected.customerPhone,
+      eventType: selected.eventType,
+      eventDate: selected.eventDate,
+      venue: selected.venue,
+      guestCount: selected.guestCount,
+      isPerPerson: isPP,
+      perPersonRate: isPP ? Number(ppLine?.unitPrice) : undefined,
+      perPersonGuests: isPP ? selected.guestCount : undefined,
+      lines: [
+        ...items.regular.map((l: any) => ({
+          name: l.name,
+          category: lookup.byItemId[l.itemId] || lookup.byName[l.name] || undefined,
+          quantity: Number(l.quantity || 1),
+          unit: l.unit,
+          unitPrice: !isPP ? Number(l.unitPrice ?? 0) || undefined : undefined,
+          amount: !isPP ? Number(l.amount ?? 0) || undefined : undefined,
+        })),
+        ...items.serviceItems.map((s: any) => ({
+          name: s.name,
+          category: s.category || 'Decor, Production & Event Rentals',
+          quantity: Number(s.quantity || 1),
+          unit: s.unit || 'setup',
+          unitPrice: Number(s.unitPrice ?? 0) || undefined,
+          amount: Number(s.amount ?? 0) || Number((Number(s.unitPrice ?? 0) * Number(s.quantity || 1)).toFixed(2)) || undefined,
+        })),
+      ],
+      subTotal: billing.subTotal,
+      discountAmount: billing.disc || undefined,
+      extraChargesAmount: billing.extra || undefined,
+      gstPercent: billing.gstPct > 0 ? billing.gstPct : 0,
+      gstAmount: billing.gst > 0 ? billing.gst : 0,
+      grandTotal: billing.grand,
+      rejectionHistory: rejectionHistory.length > 0 ? rejectionHistory : undefined,
+      companyName: company?.name,
+      companyTagline: company?.tagline,
+      companyLogoUrl: company?.logoUrl,
+    };
+  }, [selected, billing, items, lookup, rejectionHistory, company]);
 
   /* Timeline Steps */
   const STEPS = [
@@ -850,75 +900,16 @@ export function CustomerTrackPage() {
                       Event &amp; Venue Details
                     </h3>
                     <div className="flex items-center gap-2">
-                      {hasQuotedPricing && billing && billing.grand > 0 && (() => {
-                        const ppLine = (selected.items ?? []).find((i: any) => isPerPerson(i));
-                        const isPP = Boolean(ppLine && Number(ppLine?.unitPrice || 0) > 0);
-
-                        return (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (selected?.id) {
-                                try {
-                                  await quotationsService.downloadPortalPdf(
-                                    selected.id,
-                                    `Quotation-${selected.quotationNumber}.pdf`,
-                                  );
-                                  toast.success('Official PDF proposal downloaded');
-                                  return;
-                                } catch (e) {
-                                  console.warn('Customer direct PDF download fallback to client', e);
-                                }
-                              }
-                              openQuotePdf({
-                                quotationNumber: selected.quotationNumber,
-                                createdAt: selected.createdAt,
-                                customerName: selected.customerName,
-                                customerPhone: selected.customerPhone,
-                                eventType: selected.eventType,
-                                eventDate: selected.eventDate,
-                                venue: selected.venue,
-                                guestCount: selected.guestCount,
-                                isPerPerson: isPP,
-                                perPersonRate: isPP ? Number(ppLine?.unitPrice) : undefined,
-                                perPersonGuests: isPP ? selected.guestCount : undefined,
-                                lines: [
-                                  ...items.regular.map((l: any) => ({
-                                    name: l.name,
-                                    category: lookup.byItemId[l.itemId] || lookup.byName[l.name] || undefined,
-                                    quantity: Number(l.quantity || 1),
-                                    unit: l.unit,
-                                    unitPrice: !isPP ? Number(l.unitPrice ?? 0) || undefined : undefined,
-                                    amount: !isPP ? Number(l.amount ?? 0) || undefined : undefined,
-                                  })),
-                                  ...items.serviceItems.map((s: any) => ({
-                                    name: s.name,
-                                    category: s.category || 'Decor, Production & Event Rentals',
-                                    quantity: Number(s.quantity || 1),
-                                    unit: s.unit || 'setup',
-                                    unitPrice: Number(s.unitPrice ?? 0) || undefined,
-                                    amount: Number(s.amount ?? 0) || Number((Number(s.unitPrice ?? 0) * Number(s.quantity || 1)).toFixed(2)) || undefined,
-                                  })),
-                                ],
-                                subTotal: billing.subTotal,
-                                discountAmount: billing.disc || undefined,
-                                extraChargesAmount: billing.extra || undefined,
-                                gstPercent: billing.gstPct > 0 ? billing.gstPct : 0,
-                                gstAmount: billing.gst > 0 ? billing.gst : 0,
-                                grandTotal: billing.grand,
-                                rejectionHistory: rejectionHistory.length > 0 ? rejectionHistory : undefined,
-                                companyName: company?.name,
-                                companyTagline: company?.tagline,
-                                companyLogoUrl: company?.logoUrl,
-                              });
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
-                          >
-                            <Download size={13} className="text-[#B8860B]" />
-                            <span>Download PDF</span>
-                          </button>
-                        );
-                      })()}
+                      {hasQuotedPricing && billing && billing.grand > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setQuotationPreviewOpen(true)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200/90 bg-amber-50/80 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs"
+                        >
+                          <Eye size={13} className="text-amber-700" />
+                          <span>Preview Quotation</span>
+                        </button>
+                      )}
 
                       {st === 'REQUESTED' && (
                         <button
@@ -1464,6 +1455,20 @@ export function CustomerTrackPage() {
           </button>
         </div>
       </nav>
+
+      {/* ── QUOTATION PREVIEW MODAL ── */}
+      {selected && (
+        <QuotationPreviewModal
+          isOpen={quotationPreviewOpen}
+          onClose={() => setQuotationPreviewOpen(false)}
+          pdfInput={customerPdfInput}
+          quotationId={selected.id}
+          quotationNumber={selected.quotationNumber}
+          customerPhone={selected.customerPhone}
+          customerName={selected.customerName}
+          isCustomerPortal={true}
+        />
+      )}
     </div>
   );
 }
