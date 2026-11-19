@@ -465,15 +465,15 @@ body, .quote-body {
   align-items: center;
 }
 .cat-title {
-  font-size: 8px;
-  font-weight: 700;
-  color: #0F1B3C;
-  letter-spacing: 0.05em;
+  font-size: 7.5px;
+  font-weight: 600;
+  color: #64748B;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .cat-count {
-  font-size: 7.5px;
-  color: #64748B;
+  font-size: 7px;
+  color: #94A3B8;
   font-weight: 500;
 }
 .dish-row {
@@ -488,36 +488,41 @@ body, .quote-body {
   vertical-align: middle;
 }
 .dish-row .col-num {
-  font-size: 7.5px;
-  color: #64748B;
-}
-.dish-title {
   font-size: 8px;
   font-weight: 700;
-  color: #1E293B;
+  color: #475569;
+}
+.dish-title {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #050814;
+  letter-spacing: 0.01em;
 }
 .dish-sub {
   font-size: 7px;
   font-style: italic;
-  color: #64748B;
+  color: #475569;
+  font-weight: 600;
   margin-top: 1px;
 }
 .dish-row .col-qty {
   font-size: 8px;
-  color: #334155;
+  font-weight: 700;
+  color: #0F172A;
 }
 .dish-row .col-rate {
   font-size: 8px;
-  color: #334155;
+  font-weight: 700;
+  color: #0F172A;
 }
 .dish-row .col-amount {
-  font-size: 8px;
-  font-weight: 700;
-  color: #0F1B3C;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #050814;
 }
 .incl-text {
-  color: #0F1B3C;
-  font-weight: 700;
+  color: #050814;
+  font-weight: 800;
 }
 
 /* ── Per Person Banner ── */

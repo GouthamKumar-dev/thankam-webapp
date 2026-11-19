@@ -395,15 +395,15 @@ export class QuotationPdfService {
         doc.rect(tableX, currentY + 17.5, contentWidth, 0.5).fill('#EAE5DC');
 
         doc
-          .font('Helvetica-Bold')
-          .fontSize(8)
-          .fillColor(primaryNavy)
-          .text(categoryName.toUpperCase(), tableX + 10, currentY + 5);
+          .font('Helvetica')
+          .fontSize(7.5)
+          .fillColor('#64748B')
+          .text(categoryName.toUpperCase(), tableX + 10, currentY + 5.5, { characterSpacing: 0.8 });
 
         doc
           .font('Helvetica')
-          .fontSize(7.5)
-          .fillColor(textMuted)
+          .fontSize(7)
+          .fillColor('#94A3B8')
           .text(`${items.length} ${items.length === 1 ? 'Item' : 'Items'}`, colX2, currentY + 5.5, {
             width: colW2 + colW3 + colW4,
             align: 'right',
@@ -431,13 +431,13 @@ export class QuotationPdfService {
           doc.rect(tableX, currentY + rowH - 0.5, contentWidth, 0.5).fill('#F1F5F9');
 
           // #
-          doc.font('Helvetica').fontSize(7.5).fillColor(textMuted).text(String(globalDishIndex), colX0, currentY + 5, {
+          doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#475569').text(String(globalDishIndex), colX0, currentY + 5, {
             width: colW0,
             align: 'center',
           });
 
-          // Title & Subtitle
-          doc.font('Helvetica-Bold').fontSize(8).fillColor(textDark).text(title, colX1, currentY + 5, {
+          // Title & Subtitle (Harder, bolder, darker #050814)
+          doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#050814').text(title, colX1, currentY + 4.5, {
             width: isPerPerson ? 340 : colW1,
             ellipsis: true,
           });
@@ -446,16 +446,16 @@ export class QuotationPdfService {
             doc
               .font('Helvetica-Oblique')
               .fontSize(7)
-              .fillColor(textMuted)
+              .fillColor('#475569')
               .text(subtitle, colX1, currentY + 14.5, { width: isPerPerson ? 340 : colW1, ellipsis: true });
           }
 
           if (!isPerPerson) {
-            doc.font('Helvetica').fontSize(8).fillColor('#334155');
+            doc.font('Helvetica-Bold').fontSize(8).fillColor('#0F172A');
             const qtyText = formatFoodMenuQtyAndUnit(qty, unit);
             doc.text(qtyText, colX2, currentY + 5, { width: colW2, align: 'center' });
             doc.text(unitPrice > 0 ? fmtInr(unitPrice) : '—', colX3, currentY + 5, { width: colW3, align: 'right' });
-            doc.font('Helvetica-Bold').fillColor(primaryNavy).text(amount > 0 ? fmtInr(amount) : 'Included', colX4, currentY + 5, {
+            doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#050814').text(amount > 0 ? fmtInr(amount) : 'Included', colX4, currentY + 5, {
               width: colW4,
               align: 'right',
             });
@@ -543,31 +543,31 @@ export class QuotationPdfService {
           }
           doc.rect(tableX, sCurrentY + rowH - 0.5, contentWidth, 0.5).fill('#F1F5F9');
 
-          doc.font('Helvetica').fontSize(7.5).fillColor(textMuted).text(String(idx + 1), colX0, sCurrentY + 5, {
+          doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#475569').text(String(idx + 1), colX0, sCurrentY + 5, {
             width: colW0,
             align: 'center',
           });
-          doc.font('Helvetica-Bold').fontSize(8).fillColor(textDark).text(title, colX1, sCurrentY + 5, {
+          doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#050814').text(title, colX1, sCurrentY + 4.5, {
             width: colW1,
             ellipsis: true,
           });
 
           if (subtitle) {
-            doc.font('Helvetica-Oblique').fontSize(7).fillColor(textMuted).text(subtitle, colX1, sCurrentY + 14.5, {
+            doc.font('Helvetica-Oblique').fontSize(7).fillColor('#475569').text(subtitle, colX1, sCurrentY + 14.5, {
               width: colW1,
               ellipsis: true,
             });
           }
 
-          doc.font('Helvetica').fontSize(8).fillColor('#334155').text(`${qty} ${unit}`, colX2, sCurrentY + 5, {
+          doc.font('Helvetica-Bold').fontSize(8).fillColor('#0F172A').text(`${qty} ${unit}`, colX2, sCurrentY + 5, {
             width: colW2,
             align: 'center',
           });
-          doc.font('Helvetica').fontSize(8).fillColor('#334155').text(price > 0 ? fmtInr(price) : '—', colX3, sCurrentY + 5, {
+          doc.font('Helvetica-Bold').fontSize(8).fillColor('#0F172A').text(price > 0 ? fmtInr(price) : '—', colX3, sCurrentY + 5, {
             width: colW3,
             align: 'right',
           });
-          doc.font('Helvetica-Bold').fillColor(primaryNavy).text(tot > 0 ? fmtInr(tot) : 'Included', colX4, sCurrentY + 5, {
+          doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#050814').text(tot > 0 ? fmtInr(tot) : 'Included', colX4, sCurrentY + 5, {
             width: colW4,
             align: 'right',
           });
