@@ -62,30 +62,35 @@ function formatFoodMenuQtyAndUnit(qty: number, rawUnit?: string | null): string 
   if (u === 'cup' || u === 'cups') {
     return `${qty} ${qty === 1 ? 'Cup' : 'Cups'}`;
   }
-  if (u === 'piece' || u === 'pieces' || u === 'pcs') {
-    return `${qty} Pcs`;
-  }
-  if (u === 'bowl' || u === 'bowls') {
-    return `${qty} ${qty === 1 ? 'Bowl' : 'Bowls'}`;
-  }
-  if (u === 'scoop' || u === 'scoops') {
-    return `${qty} ${qty === 1 ? 'Scoop' : 'Scoops'}`;
-  }
-  if (u === 'plate' || u === 'plates') {
-    return `${qty} ${qty === 1 ? 'Plate' : 'Plates'}`;
-  }
-  // Default for food dishes, per-head lines, kg, gm, person, pax, guests, etc.
+  // All catering food dishes, breads (porotta, appam, chappathi), dosas,
+  // snacks, pieces, plates, bowls, scoops, kg, gm, person, pax, etc. display as Guests!
   return `${qty} ${guestLabel}`;
 }
 
 function isServiceItem(name: string, category?: string): boolean {
-  const combined = `${name || ''} ${category || ''}`.toLowerCase();
+  const catLower = (category || '').toLowerCase().trim();
+  const nameLower = (name || '').toLowerCase().trim();
+
+  // Any item in a culinary, snack, bread, tiffin, curry, beverage, or dessert category
+  // is strictly part of the Catering Food Menu, never Decor / Rentals!
+  const foodCategoryKeywords = [
+    'snack', 'bread', 'curry', 'rice', 'salad', 'soup', 'chicken', 'mutton', 'beef',
+    'fish', 'dosa', 'dessert', 'beverage', 'drink', 'starter', 'appetizer', 'thattukada',
+    'tiffin', 'breakfast', 'main course', 'veg dishes', 'non-veg', 'arabian', 'chinese',
+    'malabar', 'sweet', 'ice cream', 'pudding', 'halwa', 'payasam', 'mandhi', 'biriyani',
+    'roast', 'fry', 'meals', 'sadhya', 'sadya', 'gravy'
+  ];
+  if (foodCategoryKeywords.some((fk) => catLower.includes(fk))) {
+    return false;
+  }
+
+  const combined = `${nameLower} ${catLower}`;
   const serviceKeywords = [
     'decor', 'stage', 'floral', 'arch', 'pathway', 'backdrop', 'flower', 'sofa',
     'sound', 'audio', 'light', 'genset', 'generator', 'pyro', 'fog', 'dry ice', 'melam', 'band',
-    'rental', 'chair', 'table', 'crockery', 'buffet', 'gazebo', 'counter', 'linen', 'cutlery',
-    'staff', 'boy', 'captain', 'chef', 'crew', 'clean', 'waiter', 'service crew',
-    'stall', 'tea shop', 'juice counter', 'pooja', 'ceremonial', 'mala', 'nirapara',
+    'rental', 'chair', 'table', 'crockery', 'buffet counter', 'gazebo', 'linen', 'cutlery',
+    'staff', 'serving boy', 'captain', 'chef', 'crew', 'cleaning', 'waiter', 'service crew',
+    'pooja', 'ceremonial', 'garland', 'varmala', 'sweekarana', 'nirapara', 'nilavilakku',
   ];
   return serviceKeywords.some((kw) => combined.includes(kw));
 }

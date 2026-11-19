@@ -885,7 +885,6 @@ export function CustomerPortalPage() {
         let foodUnit = 'Guests';
         if (rawU === 'glass' || rawU === 'glasses') foodUnit = 'Glass';
         else if (rawU === 'cup' || rawU === 'cups') foodUnit = 'Cup';
-        else if (rawU === 'piece' || rawU === 'pieces' || rawU === 'pcs') foodUnit = 'Piece';
 
         return {
           itemId: item.id,

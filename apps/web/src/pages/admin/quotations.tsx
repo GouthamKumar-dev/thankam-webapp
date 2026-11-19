@@ -281,11 +281,22 @@ function sanitizeUnit(u?: string | null): string {
     r === 'person' ||
     r === 'pax' ||
     r === 'guests' ||
-    r === 'guest'
+    r === 'guest' ||
+    r === 'piece' ||
+    r === 'pieces' ||
+    r === 'pcs' ||
+    r === 'bowl' ||
+    r === 'bowls' ||
+    r === 'scoop' ||
+    r === 'scoops' ||
+    r === 'unit' ||
+    r === 'units'
   ) {
     return 'Guests';
   }
-  return ALLOWED_UNITS.includes(r) ? r : 'Guests';
+  if (r === 'glass' || r === 'glasses') return 'Glass';
+  if (r === 'cup' || r === 'cups') return 'Cup';
+  return 'Guests';
 }
 
 function computeTotals(

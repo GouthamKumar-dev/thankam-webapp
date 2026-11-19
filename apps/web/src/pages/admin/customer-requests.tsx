@@ -200,12 +200,21 @@ const normalizeUnit = (u?: string | null) => {
     r === 'person' ||
     r === 'pax' ||
     r === 'guests' ||
-    r === 'guest'
+    r === 'guest' ||
+    r === 'piece' ||
+    r === 'pieces' ||
+    r === 'pcs' ||
+    r === 'bowl' ||
+    r === 'bowls' ||
+    r === 'scoop' ||
+    r === 'scoops' ||
+    r === 'unit' ||
+    r === 'units'
   ) {
     return 'Guests';
   }
-  if (r === 'pcs') return 'piece';
-  if (ALLOWED_UNITS.includes(r as any)) return r;
+  if (r === 'glass' || r === 'glasses') return 'Glass';
+  if (r === 'cup' || r === 'cups') return 'Cup';
   return 'Guests';
 };
 

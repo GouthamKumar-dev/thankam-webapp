@@ -488,6 +488,20 @@ export function isEventServiceItem(item: {
   const c = (item.categoryName || '').toLowerCase();
   const u = (item.unit || '').toLowerCase();
 
+  // Any item in a culinary, snack, bread, tiffin, curry, beverage, or dessert category
+  // is strictly part of the Catering Food Menu, never Decor / Rentals!
+  const foodKeywords = [
+    'snack', 'bread', 'curry', 'rice', 'salad', 'soup', 'chicken', 'mutton', 'beef',
+    'fish', 'dosa', 'dessert', 'beverage', 'drink', 'starter', 'appetizer', 'thattukada',
+    'tiffin', 'breakfast', 'main course', 'veg dishes', 'non-veg', 'arabian', 'chinese',
+    'malabar', 'sweet', 'ice cream', 'pudding', 'halwa', 'payasam', 'mandhi', 'biriyani',
+    'roast', 'fry', 'meals', 'sadhya', 'sadya', 'gravy', 'porotta', 'parotta', 'appam',
+    'chappathi', 'chapati', 'pathiri', 'pakoda', 'cutlet', 'samosa'
+  ];
+  if (foodKeywords.some((k) => c.includes(k) || n.includes(k))) {
+    return false;
+  }
+
   // Known service keywords
   const serviceKeywords = [
     'decor',
