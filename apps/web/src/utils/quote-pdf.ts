@@ -254,6 +254,18 @@ export function generateQuoteHtml(q: PdfQuoteInput): string {
   const grandTotal = Number(q.grandTotal || subTotal);
   const hasGst = gst > 0 && Number(q.gstPercent || 0) > 0;
 
+  const defaultLogoUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/assets/img/Thankam_Logo.png`
+    : '/assets/img/Thankam_Logo.png';
+  let resolvedLogo = (q.companyLogoUrl || '').trim();
+  if (!resolvedLogo) {
+    resolvedLogo = defaultLogoUrl;
+  } else if (!resolvedLogo.startsWith('http') && !resolvedLogo.startsWith('data:')) {
+    resolvedLogo = typeof window !== 'undefined'
+      ? `${window.location.origin}${resolvedLogo.startsWith('/') ? '' : '/'}${resolvedLogo}`
+      : resolvedLogo;
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -265,6 +277,25 @@ export function generateQuoteHtml(q: PdfQuoteInput): string {
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+::-webkit-scrollbar {
+  width: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 body, .quote-body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #1E293B;
@@ -285,18 +316,33 @@ body, .quote-body {
 .header-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   padding-bottom: 12px;
   border-bottom: 1px solid #E2E8F0;
   margin-bottom: 12px;
 }
 .co-info-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   flex: 1;
-  max-width: 62%;
+  max-width: 66%;
+}
+.co-logo-img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: block;
+}
+.co-text-wrap {
+  flex: 1;
+  min-width: 0;
 }
 .co-name {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
   color: #0F1B3C;
   letter-spacing: -0.2px;
@@ -308,7 +354,7 @@ body, .quote-body {
   color: #B8860B;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 .co-addr {
   font-size: 7.5px;
@@ -770,9 +816,12 @@ body, .quote-body {
 
 <div class="header-row">
   <div class="co-info-left">
-    <div class="co-name">${q.companyName ?? 'Thankam Events Management'}</div>
-    <div class="co-tag">${q.companyTagline ?? 'CELEBRATIONS CRAFTED'}</div>
-    <div class="co-addr">Central Kitchen: Chinnakkada, Kollam, Kerala | Phone: +91 97456 84766 / +91 92076 06150 &bull; Web: https://thankamevents.in</div>
+    ${resolvedLogo ? `<img src="${resolvedLogo}" alt="Thankam Events" class="co-logo-img" crossorigin="anonymous" onerror="this.style.display='none'"/>` : ''}
+    <div class="co-text-wrap">
+      <div class="co-name">${q.companyName ?? 'Thankam Events Management'}</div>
+      <div class="co-tag">${q.companyTagline ?? 'CELEBRATIONS CRAFTED'}</div>
+      <div class="co-addr">Central Kitchen: Chinnakkada, Kollam, Kerala &bull; Phone: +91 97456 84766 / +91 92076 06150 &bull; Web: https://thankamevents.in</div>
+    </div>
   </div>
   <div class="q-meta-right">
     <div class="gold-divider-v"></div>

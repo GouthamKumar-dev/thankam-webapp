@@ -50,6 +50,16 @@ export function QuotationPreviewModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Prevent background page scrolling when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
   // Reset copied state when share menu opens
   useEffect(() => {
     if (!shareMenuOpen) setCopied(false);
@@ -168,14 +178,14 @@ _Celebrations Crafted • Central Kitchen, Kollam_`;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-1.5 sm:p-3 overflow-hidden"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-4 sm:my-8 text-slate-800 flex flex-col max-h-[94vh]">
+      <div className="relative w-full max-w-5xl xl:max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 flex flex-col h-[98vh] max-h-[98vh]">
         {/* Modal Controls Bar */}
-        <div className="print:hidden flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 bg-white border-b border-slate-200 text-slate-900 z-20">
+        <div className="print:hidden shrink-0 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-white border-b border-slate-200 text-slate-900 z-20">
           {/* Title & Metadata */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shadow-2xs">
@@ -294,13 +304,13 @@ _Celebrations Crafted • Central Kitchen, Kollam_`;
         </div>
 
         {/* Modal Body - Paper Canvas with Iframe */}
-        <div className="bg-slate-100 p-2 sm:p-5 overflow-y-auto flex-1 flex justify-center">
-          <div className="w-full max-w-[820px] bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200">
+        <div className="bg-slate-100 p-2 sm:p-3 overflow-hidden flex-1 min-h-0 flex justify-center items-stretch">
+          <div className="w-full max-w-[880px] bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200/90 h-full flex flex-col">
             <iframe
               ref={iframeRef}
               srcDoc={quoteHtml}
               title={`Quotation Preview ${quotationNumber}`}
-              className="w-full min-h-[780px] h-[78vh] border-0 block"
+              className="w-full h-full border-0 block flex-1"
             />
           </div>
         </div>

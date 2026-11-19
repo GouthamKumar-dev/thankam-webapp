@@ -510,7 +510,7 @@ export function CustomerTrackPage() {
       rejectionHistory: rejectionHistory.length > 0 ? rejectionHistory : undefined,
       companyName: company?.name,
       companyTagline: company?.tagline,
-      companyLogoUrl: company?.logoUrl,
+      companyLogoUrl: company?.logoUrl || '/assets/img/Thankam_Logo.png',
     };
   }, [selected, billing, items, lookup, rejectionHistory, company]);
 

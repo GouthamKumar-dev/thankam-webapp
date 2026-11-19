@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type * as PDFKitTypes from 'pdfkit';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PDFDocument: typeof PDFKitTypes = require('pdfkit');
@@ -130,6 +132,22 @@ export class QuotationPdfService {
       const margin = 36;
       const contentWidth = pageWidth - margin * 2; // 523.28
 
+      // Locate Thankam Logo on filesystem
+      const candidateLogoPaths = [
+        path.resolve(process.cwd(), 'apps/web/public/assets/img/Thankam_Logo.png'),
+        path.resolve(process.cwd(), '../web/public/assets/img/Thankam_Logo.png'),
+        path.resolve(process.cwd(), 'public/assets/img/Thankam_Logo.png'),
+        path.resolve(__dirname, '../../../../web/public/assets/img/Thankam_Logo.png'),
+        path.resolve(__dirname, '../../../../../apps/web/public/assets/img/Thankam_Logo.png'),
+      ];
+      const foundLogoPath = candidateLogoPaths.find((p) => {
+        try {
+          return fs.existsSync(p);
+        } catch {
+          return false;
+        }
+      });
+
       // Column Geometry: 5 pixel-perfect aligned columns
       const tableX = margin;
       const colX0 = tableX; // 36
@@ -200,16 +218,25 @@ export class QuotationPdfService {
 
       const drawRunningHeader = () => {
         doc.rect(margin, 18, contentWidth, 2.5).fill(primaryNavy);
+        let headerLeft = margin;
+        if (foundLogoPath) {
+          try {
+            doc.image(foundLogoPath, margin, 24, { fit: [20, 20] });
+            headerLeft = margin + 26;
+          } catch {
+            // fallback
+          }
+        }
         doc
           .font('Times-Bold')
           .fontSize(9)
           .fillColor(primaryNavy)
-          .text(company?.name ?? 'Thankam Events Management', margin, 26);
+          .text(company?.name ?? 'Thankam Events Management', headerLeft, 26);
         doc
           .font('Helvetica')
           .fontSize(7.5)
           .fillColor(textMuted)
-          .text('Catering Quotation Proposal', margin, 38);
+          .text('Catering Quotation Proposal', headerLeft, 38);
 
         doc
           .font('Helvetica-Bold')
@@ -246,18 +273,28 @@ export class QuotationPdfService {
       doc.rect(margin, 20, contentWidth, 3.5).fill(primaryNavy);
       doc.y = 32;
 
+      let p1HeaderLeft = margin;
+      if (foundLogoPath) {
+        try {
+          doc.image(foundLogoPath, margin, 26, { fit: [42, 42] });
+          p1HeaderLeft = margin + 50;
+        } catch {
+          // fallback
+        }
+      }
+
       // Company info (Left)
       doc
         .font('Times-Bold')
         .fontSize(20)
         .fillColor(primaryNavy)
-        .text('Thankam Events Management', margin, 28);
+        .text('Thankam Events Management', p1HeaderLeft, 28);
 
       doc
         .font('Helvetica-Bold')
         .fontSize(7.5)
         .fillColor(goldColor)
-        .text('CELEBRATIONS CRAFTED', margin, 50, { characterSpacing: 1.2 });
+        .text('CELEBRATIONS CRAFTED', p1HeaderLeft, 50, { characterSpacing: 1.2 });
 
       doc
         .font('Helvetica')
@@ -265,8 +302,9 @@ export class QuotationPdfService {
         .fillColor(textMuted)
         .text(
           'Central Kitchen: Chinnakkada, Kollam, Kerala | Phone: +91 97456 84766 / +91 92076 06150 • Web: https://thankamevents.in',
-          margin,
+          p1HeaderLeft,
           62,
+          { width: margin + 344 - p1HeaderLeft },
         );
 
       // Quote details (Right)

@@ -835,7 +835,7 @@ export function QuotationsPage() {
 
   /* ── PDF preview ── */
   const onPdf = async () => {
-    const logoBase64 = await fetchImageBase64(company?.logoUrl);
+    const logoBase64 = (await fetchImageBase64(company?.logoUrl)) || (await fetchImageBase64('/assets/img/Thankam_Logo.png'));
     const totals = computeTotals(lines, services, form, mode, ppRate);
     const isPP = mode === 'PER_PERSON';
     const input = {
