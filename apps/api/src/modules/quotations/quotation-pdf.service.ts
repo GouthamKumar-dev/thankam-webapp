@@ -186,25 +186,25 @@ export class QuotationPdfService {
         doc.rect(tableX, yPos + 18.5, contentWidth, 1.5).fill(goldColor);
         doc.font('Helvetica-Bold').fontSize(8).fillColor('#FFFFFF');
         doc.text('#', colX0, yPos + 6, { width: colW0, align: 'center' });
-        doc.text('Dish Description', colX1, yPos + 6, { width: colW1, align: 'left' });
+        doc.text('DISH DESCRIPTION', colX1, yPos + 6, { width: colW1, align: 'left' });
 
         if (!isPerPerson) {
-          doc.text('Quantity', colX2, yPos + 6, { width: colW2, align: 'center' });
-          doc.text('Rate', colX3, yPos + 6, { width: colW3, align: 'right' });
-          doc.text('Amount', colX4, yPos + 6, { width: colW4, align: 'right' });
+          doc.text('QUANTITY', colX2, yPos + 6, { width: colW2, align: 'center' });
+          doc.text('RATE', colX3, yPos + 6, { width: colW3, align: 'right' });
+          doc.text('AMOUNT', colX4, yPos + 6, { width: colW4, align: 'right' });
         } else {
-          doc.text('Course Allocation', colX2, yPos + 6, { width: colW2 + colW3 + colW4, align: 'right' });
+          doc.text('COURSE ALLOCATION', colX2, yPos + 6, { width: colW2 + colW3 + colW4, align: 'right' });
         }
         return yPos + 20;
       };
 
       const drawRunningHeader = () => {
-        doc.rect(margin, 18, contentWidth, 2.5).fill(goldColor);
+        doc.rect(margin, 18, contentWidth, 2.5).fill(primaryNavy);
         doc
-          .font('Helvetica-Bold')
-          .fontSize(8.5)
+          .font('Times-Bold')
+          .fontSize(9)
           .fillColor(primaryNavy)
-          .text(company?.name ?? 'THANKAM EVENTS MANAGEMENT', margin, 26);
+          .text(company?.name ?? 'Thankam Events Management', margin, 26);
         doc
           .font('Helvetica')
           .fontSize(7.5)
@@ -243,120 +243,137 @@ export class QuotationPdfService {
       };
 
       // ── 1. Top Accent & Header Bar ──────────────────────────────
-      doc.rect(margin, 20, contentWidth, 3.5).fill(goldColor);
+      doc.rect(margin, 20, contentWidth, 3.5).fill(primaryNavy);
       doc.y = 32;
 
       // Company info (Left)
       doc
-        .font('Helvetica-Bold')
-        .fontSize(18)
+        .font('Times-Bold')
+        .fontSize(20)
         .fillColor(primaryNavy)
-        .text(company?.name ?? 'THANKAM EVENTS MANAGEMENT', margin, 30);
+        .text('Thankam Events Management', margin, 28);
 
       doc
         .font('Helvetica-Bold')
-        .fontSize(8)
+        .fontSize(7.5)
         .fillColor(goldColor)
-        .text(company?.tagline ?? 'CELEBRATIONS CRAFTED • KOLLAM CENTRAL KITCHEN', margin, 52);
+        .text('CELEBRATIONS CRAFTED', margin, 50, { characterSpacing: 1.2 });
 
       doc
         .font('Helvetica')
         .fontSize(7.5)
         .fillColor(textMuted)
-        .text('Central Kitchen: Chinnakkada, Kollam, Kerala | Phone: +91 97456 84766 / +91 92076 06150', margin, 64);
+        .text(
+          'Central Kitchen: Chinnakkada, Kollam, Kerala | Phone: +91 97456 84766 / +91 92076 06150 • Web: https://thankamevents.in',
+          margin,
+          62,
+        );
 
       // Quote details (Right)
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor(goldColor)
-        .text('QUOTATION ESTIMATE', margin + 280, 30, { width: contentWidth - 280, align: 'right' });
+      doc.rect(margin + 348, 28, 2, 42).fill(goldColor);
 
       doc
         .font('Helvetica-Bold')
-        .fontSize(13)
+        .fontSize(8.5)
+        .fillColor(goldColor)
+        .text('QUOTATION ESTIMATE', margin + 358, 28, { width: contentWidth - 358, align: 'right' });
+
+      doc
+        .font('Times-Bold')
+        .fontSize(16)
         .fillColor(primaryNavy)
-        .text(quotation.quotationNumber, margin + 280, 44, { width: contentWidth - 280, align: 'right' });
+        .text(quotation.quotationNumber, margin + 358, 42, { width: contentWidth - 358, align: 'right' });
 
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor(textMuted)
-        .text(`Date: ${fmtDate(quotation.createdAt)}`, margin + 280, 62, { width: contentWidth - 280, align: 'right' });
+        .text(`Issued: ${fmtDate(quotation.createdAt)}`, margin + 358, 62, { width: contentWidth - 358, align: 'right' });
+
+      // Hairline divider below header
+      doc.rect(margin, 76, contentWidth, 0.75).fill('#E2DDD5');
 
       // ── 2. Customer & Event Details Box ────────────────────────
-      doc.y = 80;
-      const boxY = doc.y;
-      const boxH = 68;
-      doc.roundedRect(margin, boxY, contentWidth, boxH, 6).fill(warmBoxBg).stroke(warmBorder);
+      const boxY = 84;
+      const headerH = 18;
+      const bodyH = 50;
+      const totalBoxH = headerH + bodyH;
 
+      // Header row
+      doc.rect(margin, boxY, contentWidth, headerH).fill(primaryNavy);
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#FFFFFF');
+      doc.text('CUSTOMER DETAILS', margin + 12, boxY + 5.5);
+      doc.text('EVENT SPECIFICATIONS', margin + 265, boxY + 5.5);
+
+      // Box body
+      doc.rect(margin, boxY + headerH, contentWidth, bodyH).fill('#FFFFFF');
+      doc.rect(margin, boxY, contentWidth, totalBoxH).stroke(primaryNavy);
       // Vertical dividing line down the middle of the box
-      doc.rect(margin + 261, boxY + 8, 0.75, boxH - 16).fill(warmBorder);
+      doc.rect(margin + 255, boxY + headerH, 0.5, bodyH).fill('#E2DDD5');
 
       // Left Column: Customer Details
       doc
         .font('Helvetica-Bold')
-        .fontSize(7.5)
-        .fillColor(goldColor)
-        .text('CUSTOMER DETAILS', margin + 14, boxY + 10);
-
-      doc
-        .font('Helvetica-Bold')
         .fontSize(10.5)
         .fillColor(primaryNavy)
-        .text(quotation.customerName || 'Valued Guest', margin + 14, boxY + 22);
+        .text(quotation.customerName || 'Valued Guest', margin + 12, boxY + headerH + 7);
 
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor(textDark)
-        .text(`Phone: ${quotation.customerPhone || '—'}`, margin + 14, boxY + 36);
+        .text(`Phone: ${quotation.customerPhone || '—'}`, margin + 12, boxY + headerH + 22);
 
       if (quotation.customerEmail) {
-        doc.text(`Email: ${quotation.customerEmail}`, margin + 14, boxY + 48, { width: 235, ellipsis: true });
+        doc.text(`Email: ${quotation.customerEmail}`, margin + 12, boxY + headerH + 34, { width: 235, ellipsis: true });
       } else if (quotation.customerAddress) {
-        doc.text(`Location: ${quotation.customerAddress}`, margin + 14, boxY + 48, { width: 235, ellipsis: true });
+        doc.text(`Location: ${quotation.customerAddress}`, margin + 12, boxY + headerH + 34, { width: 235, ellipsis: true });
       } else {
-        doc.text('Location: Kollam, Kerala', margin + 14, boxY + 48, { width: 235, ellipsis: true });
+        doc.text('Location: Kollam, Kerala', margin + 12, boxY + headerH + 34, { width: 235, ellipsis: true });
       }
 
       // Right Column: Event Specifications
-      const rightColX = margin + 275;
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(7.5)
-        .fillColor(goldColor)
-        .text('EVENT SPECIFICATIONS', rightColX, boxY + 10);
-
+      const rightColX = margin + 265;
       doc
         .font('Helvetica-Bold')
         .fontSize(10)
         .fillColor(primaryNavy)
-        .text(quotation.eventType || 'Catering Event', rightColX, boxY + 22);
+        .text(quotation.eventType || 'Catering Event', rightColX, boxY + headerH + 7);
 
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor(textDark)
-        .text(`Date: ${fmtDate(quotation.eventDate)}   •   Guests: ${quotation.guestCount || '—'}`, rightColX, boxY + 36);
+        .text(`Event Date: ${fmtDate(quotation.eventDate)}   •   Guests: ${quotation.guestCount || '—'}`, rightColX, boxY + headerH + 22);
 
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor(textDark)
-        .text(`Venue: ${quotation.venue || 'To be specified'}`, rightColX, boxY + 48, { width: 235, ellipsis: true });
+        .text(`Venue: ${quotation.venue || 'To be specified'}`, rightColX, boxY + headerH + 34, { width: 245, ellipsis: true });
 
-      doc.y = boxY + boxH + 14;
+      doc.y = boxY + totalBoxH + 14;
 
       // ── 3. Section Title: Food Menu ────────────────────────────
       ensureSpace(40);
       doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor(goldColor)
+        .font('Times-Bold')
+        .fontSize(11)
+        .fillColor(primaryNavy)
         .text('1. CATERING FOOD MENU' + (isPerPerson ? ' (INCLUDED IN PACKAGE)' : ''), margin, doc.y);
 
-      doc.y += 6;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .fillColor(goldColor)
+        .text(
+          `${foodItems.length} CURATED DISHES • ${quotation.guestCount || '—'} GUESTS`,
+          margin + 200,
+          doc.y + 2,
+          { width: contentWidth - 200, align: 'right' },
+        );
+
+      doc.y += 18;
 
       // Dishes Table Header
       let currentY = doc.y;
@@ -577,13 +594,13 @@ export class QuotationPdfService {
       doc.roundedRect(leftCardX, cardY, leftCardW, cardH, 5).fill('#FBFBFA').stroke('#E8E4DD');
 
       // Card Header
-      doc.rect(leftCardX, cardY, leftCardW, 22).fill('#F4EFE6');
-      doc.rect(leftCardX, cardY, 3, 22).fill(goldColor);
+      doc.rect(leftCardX, cardY, leftCardW, 20).fill(primaryNavy);
+      doc.rect(leftCardX, cardY + 18.5, leftCardW, 1.5).fill(goldColor);
       doc
         .font('Helvetica-Bold')
         .fontSize(7.5)
-        .fillColor(primaryNavy)
-        .text('PAYMENT MILESTONES & CATERING STANDARDS', leftCardX + 10, cardY + 7);
+        .fillColor('#FFFFFF')
+        .text('PAYMENT MILESTONES & CATERING STANDARDS', leftCardX + 10, cardY + 6);
 
       let lcy = cardY + 28;
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(primaryNavy).text('1. Advance Deposit (50%):', leftCardX + 10, lcy);
@@ -672,6 +689,7 @@ export class QuotationPdfService {
       ensureSpace(115);
       const termsY = doc.y;
       doc.roundedRect(margin, termsY, contentWidth, 40, 4).fill('#FBFBFA').stroke('#E8E4DD');
+      doc.rect(margin, termsY, 3, 40).fill(goldColor);
       doc
         .font('Helvetica-Bold')
         .fontSize(7.5)
@@ -694,7 +712,7 @@ export class QuotationPdfService {
 
       // Client Acceptance Card (Left)
       doc.roundedRect(margin, sigY, sigBoxW, 52, 4).fill('#FFFFFF').stroke('#E2E8F0');
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(goldColor).text('CLIENT ACCEPTANCE & APPROVAL', margin + 10, sigY + 6);
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(primaryNavy).text('CLIENT ACCEPTANCE & APPROVAL', margin + 10, sigY + 6);
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(textDark).text('Client: ' + (quotation.customerName || 'Valued Guest'), margin + 10, sigY + 18);
       doc.font('Helvetica').fontSize(7).fillColor(textMuted).text('Signature: ................................................................', margin + 10, sigY + 31);
       doc.font('Helvetica').fontSize(7).fillColor(textMuted).text('Date: ........................................', margin + 10, sigY + 41);
@@ -702,7 +720,7 @@ export class QuotationPdfService {
       // Authorized Signatory Card (Right)
       const compSigX = margin + 271;
       doc.roundedRect(compSigX, sigY, sigBoxW, 52, 4).fill('#FFFFFF').stroke('#E2E8F0');
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(goldColor).text('AUTHORIZED SIGNATORY', compSigX + 10, sigY + 6);
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(primaryNavy).text('AUTHORIZED SIGNATORY', compSigX + 10, sigY + 6);
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(primaryNavy).text('Thankam Events Management', compSigX + 10, sigY + 18);
       doc.font('Helvetica').fontSize(7).fillColor(textMuted).text('Seal & Signature: ........................................................', compSigX + 10, sigY + 31);
       doc.font('Helvetica').fontSize(7).fillColor(textMuted).text('Central Kitchen Fleet • Kollam, Kerala', compSigX + 10, sigY + 41);
@@ -739,9 +757,11 @@ export class QuotationPdfService {
             align: 'right',
             lineBreak: false,
           });
-
-        doc.page.margins.bottom = oldBottom;
       }
+
+      // Keep bottom margin 0 and reset doc.y to prevent PDFKit trailing overflow blank page
+      doc.page.margins.bottom = 0;
+      doc.y = 100;
 
       doc.end();
     });
@@ -1035,9 +1055,11 @@ export class QuotationPdfService {
             align: 'right',
             lineBreak: false,
           });
-
-        doc.page.margins.bottom = oldBottom;
       }
+
+      // Keep bottom margin 0 and reset doc.y to prevent PDFKit trailing overflow blank page
+      doc.page.margins.bottom = 0;
+      doc.y = 100;
 
       doc.end();
     });

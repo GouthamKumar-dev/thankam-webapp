@@ -41,6 +41,7 @@ import { playNotificationSound } from '@/features/notifications/notification-sou
 import { formatInr } from '@/utils/currency';
 import { toMediaUrl } from '@/utils/media-url';
 import { openQuotePdf } from '@/utils/quote-pdf';
+import { quotationsService } from '@/features/quotations/quotations.service';
 import { toUiRequestStatus } from '@/utils/request-status';
 import { isVegDish } from '@/utils/dietary';
 import {
@@ -856,7 +857,19 @@ export function CustomerTrackPage() {
                         return (
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={async () => {
+                              if (selected?.id) {
+                                try {
+                                  await quotationsService.downloadPortalPdf(
+                                    selected.id,
+                                    `Quotation-${selected.quotationNumber}.pdf`,
+                                  );
+                                  toast.success('Official PDF proposal downloaded');
+                                  return;
+                                } catch (e) {
+                                  console.warn('Customer direct PDF download fallback to client', e);
+                                }
+                              }
                               openQuotePdf({
                                 quotationNumber: selected.quotationNumber,
                                 createdAt: selected.createdAt,
@@ -897,8 +910,8 @@ export function CustomerTrackPage() {
                                 companyName: company?.name,
                                 companyTagline: company?.tagline,
                                 companyLogoUrl: company?.logoUrl,
-                              })
-                            }
+                              });
+                            }}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
                           >
                             <Download size={13} className="text-[#B8860B]" />

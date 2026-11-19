@@ -48,22 +48,36 @@ export type PdfQuoteInput = {
 
 function fmt(d?: string) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  try {
+    return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return d;
+  }
 }
 
 function inr(n?: number | null) {
-  if (!n || n === 0) return '—';
+  if (n === undefined || n === null || n === 0) return '—';
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(n);
 }
 
-function inrFull(n: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(n);
+function inrFull(n?: number | null) {
+  const val = Number(n || 0);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(val);
 }
 
-const ALLOWED_UNITS = ['plate', 'bowl', 'glass', 'piece', 'scoop'];
-function safeUnit(u?: string | null) {
-  const r = (u ?? '').toLowerCase().trim();
-  return ALLOWED_UNITS.includes(r) ? r : 'plate';
+function formatFoodMenuQtyAndUnit(qty: number, rawUnit?: string | null): string {
+  const u = (rawUnit || '').toLowerCase().trim();
+  const guestLabel = qty === 1 ? 'Guest' : 'Guests';
+
+  if (u === 'glass' || u === 'glasses') {
+    return `${qty} ${qty === 1 ? 'Glass' : 'Glasses'}`;
+  }
+  if (u === 'cup' || u === 'cups') {
+    return `${qty} ${qty === 1 ? 'Cup' : 'Cups'}`;
+  }
+  // All catering food dishes, breads (porotta, appam, chappathi), dosas,
+  // snacks, pieces, plates, bowls, scoops, kg, gm, person, pax, etc. display as Guests!
+  return `${qty} ${guestLabel}`;
 }
 
 export function generateQuoteHtml(q: PdfQuoteInput): string {
@@ -106,129 +120,139 @@ export function generateQuoteHtml(q: PdfQuoteInput): string {
     serviceGroups[meta.group].lines.push(l);
   }
 
-  const thumb = (url?: string | null) => url
-    ? `<img src="${url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid #EDE8DF;display:block" alt=""/>`
-    : `<div style="width:36px;height:36px;background:#f5f0e8;border-radius:6px;border:1px solid #EDE8DF"></div>`;
-
   let tableHtml = '';
 
   /* ── 1. Food Menu Section ── */
   if (foodLines.length > 0 || isPP) {
-    if (isPP) {
-      const rows = Object.entries(foodGroups).map(([cat, lines]) => `
-        <tr><td colspan="3" class="cat-row">${cat}</td></tr>
-        ${lines.map((l, i) => {
-          const { title, subtitle } = formatServiceLineTitle(l.name);
-          return `
-          <tr>
-            <td style="width:44px;padding:6px 8px">${thumb(l.imageUrl)}</td>
-            <td class="right" style="width:32px;color:#aaa;font-size:11px">${i + 1}</td>
-            <td>
-              <div style="font-weight:600;color:#1A202C">${title}</div>
-              ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+    let globalIndex = 1;
+    const catRows = Object.entries(foodGroups).map(([cat, lines]) => {
+      const categoryHeader = `
+        <tr class="cat-header-tr">
+          <td colspan="5" class="cat-cell">
+            <div class="cat-content">
+              <span class="cat-title">${cat.toUpperCase()}</span>
+              <span class="cat-count">${lines.length} ${lines.length === 1 ? 'ITEM' : 'ITEMS'}</span>
+            </div>
+          </td>
+        </tr>`;
+
+      const itemRows = lines.map((l) => {
+        const { title, subtitle } = formatServiceLineTitle(l.name);
+        const qty = Number(l.quantity || 1);
+        const unit = l.unit || 'plate';
+        const unitPrice = Number(l.unitPrice || 0);
+        const amount = Number(l.amount ?? qty * unitPrice);
+        const rowNum = globalIndex++;
+
+        return `
+          <tr class="dish-row ${rowNum % 2 === 0 ? 'even-row' : ''}">
+            <td class="col-num">${rowNum}</td>
+            <td class="col-desc">
+              <div class="dish-title">${title}</div>
+              ${subtitle ? `<div class="dish-sub">${subtitle}</div>` : ''}
             </td>
+            <td class="col-qty">${formatFoodMenuQtyAndUnit(qty, unit)}</td>
+            <td class="col-rate">${unitPrice > 0 ? inr(unitPrice) : '—'}</td>
+            <td class="col-amount">${amount > 0 ? inr(amount) : '<span class="incl-text">Included</span>'}</td>
           </tr>`;
-        }).join('')}
-      `).join('');
+      }).join('');
 
+      return categoryHeader + itemRows;
+    }).join('');
+
+    tableHtml += `
+      <div class="menu-sec-header">
+        <div class="sec-title-main">1. CATERING FOOD MENU ${isPP ? '(INCLUDED IN PACKAGE)' : ''}</div>
+        <div class="sec-title-meta">${foodLines.length} CURATED DISHES &bull; ${q.guestCount || '—'} GUESTS</div>
+      </div>
+      <table class="luxury-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-desc">DISH DESCRIPTION</th>
+            <th class="col-qty">QUANTITY</th>
+            <th class="col-rate">RATE</th>
+            <th class="col-amount">AMOUNT</th>
+          </tr>
+        </thead>
+        <tbody>${catRows}</tbody>
+      </table>`;
+
+    if (isPP && q.perPersonRate && q.perPersonGuests) {
       tableHtml += `
-        <div class="sec-title" style="margin-bottom:8px">1. Food Menu</div>
-        <table>
-          <thead><tr><th style="width:44px"></th><th style="width:32px">#</th><th>Dishes Included</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-
-        <div class="pp-banner" style="margin-top:10px;margin-bottom:18px">
-          <div class="pp-label">Rate / Person</div>
+        <div class="pp-banner">
+          <div class="pp-label">PACKAGE PRICING CALCULATION</div>
           <div class="pp-calc">
-            ${q.perPersonGuests} guests
-            &nbsp;×&nbsp;
-            <strong>${inrFull(q.perPersonRate!)}</strong>
-            &nbsp;=&nbsp;
-            <span class="pp-total">${inrFull((q.perPersonRate ?? 0) * (q.perPersonGuests ?? 0))}</span>
+            <span>${q.perPersonGuests} Guests &nbsp;&times;&nbsp; <strong>${inrFull(q.perPersonRate)}</strong> / Person &nbsp;=&nbsp;</span>
+            <span class="pp-total">${inrFull(q.perPersonRate * q.perPersonGuests)}</span>
           </div>
         </div>`;
-    } else {
-      const rows = Object.entries(foodGroups).map(([cat, lines]) => `
-        <tr><td colspan="4" class="cat-row">${cat}</td></tr>
-        ${lines.map(l => {
-          const { title, subtitle } = formatServiceLineTitle(l.name);
-          return `
-          <tr>
-            <td style="width:44px;padding:6px 8px">${thumb(l.imageUrl)}</td>
-            <td>
-              <div style="font-weight:600;color:#1A202C">${title}</div>
-              ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
-            </td>
-            <td class="right">${inr(l.unitPrice ?? undefined)}</td>
-            <td class="right">${inr(l.amount ?? undefined)}</td>
-          </tr>`;
-        }).join('')}
-      `).join('');
-
-      tableHtml += `
-        <div class="sec-title" style="margin-bottom:8px">1. Food Menu</div>
-        <table>
-          <thead><tr><th style="width:44px"></th><th>Item</th><th class="right">Rate</th><th class="right">Total</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>`;
     }
   }
 
   /* ── 2. Event Decor, Production & Rentals Section ── */
   if (serviceLines.length > 0) {
-    const sRows = Object.entries(serviceGroups).map(([groupName, { icon, lines }]) => `
-      <tr>
-        <td colspan="4" class="cat-row" style="background:#FAF8F5;color:#8B6F20;font-weight:700;letter-spacing:0.04em">
-          <span style="font-size:13px;margin-right:6px">${icon}</span> ${groupName.toUpperCase()}
-        </td>
-      </tr>
-      ${lines.map((l, i) => {
-        const { title, subtitle } = formatServiceLineTitle(l.name);
-        return `
-        <tr>
-          <td class="right" style="width:32px;color:#aaa;font-size:11px">${i + 1}</td>
-          <td>
-            <div style="font-weight:600;color:#1A202C">${title}</div>
-            ${subtitle ? `<div style="font-size:10.5px;color:#666;font-style:italic;margin-top:2px;line-height:1.3">${subtitle}</div>` : ''}
+    let serviceIndex = 1;
+    const sRows = Object.entries(serviceGroups).map(([groupName, { icon, lines }]) => {
+      const gHeader = `
+        <tr class="cat-header-tr">
+          <td colspan="5" class="cat-cell service-cat">
+            <div class="cat-content">
+              <span class="cat-title">${icon ? icon + ' ' : ''}${groupName.toUpperCase()}</span>
+              <span class="cat-count">${lines.length} ${lines.length === 1 ? 'ITEM' : 'ITEMS'}</span>
+            </div>
           </td>
-          <td class="right" style="width:110px">${inr(l.unitPrice ?? undefined)}</td>
-          <td class="right" style="width:110px;font-weight:700;color:#1A202C">${inr(l.amount ?? (l.quantity * (l.unitPrice ?? 0)))}</td>
         </tr>`;
-      }).join('')}
-    `).join('');
+
+      const items = lines.map(l => {
+        const { title, subtitle } = formatServiceLineTitle(l.name);
+        const qty = Number(l.quantity || 1);
+        const unit = l.unit || 'unit';
+        const price = Number(l.unitPrice || 0);
+        const tot = Number(l.amount ?? qty * price);
+        const rowNum = serviceIndex++;
+
+        return `
+          <tr class="dish-row ${rowNum % 2 === 0 ? 'even-row' : ''}">
+            <td class="col-num">${rowNum}</td>
+            <td class="col-desc">
+              <div class="dish-title">${title}</div>
+              ${subtitle ? `<div class="dish-sub">${subtitle}</div>` : ''}
+            </td>
+            <td class="col-qty">${qty} ${unit}</td>
+            <td class="col-rate">${price > 0 ? inr(price) : '—'}</td>
+            <td class="col-amount">${tot > 0 ? inr(tot) : '<span class="incl-text">Included</span>'}</td>
+          </tr>`;
+      }).join('');
+
+      return gHeader + items;
+    }).join('');
 
     tableHtml += `
-      <div class="sec-title" style="margin-top:24px;margin-bottom:8px">2. Decor, Production &amp; Event Rentals</div>
-      <table>
+      <div class="menu-sec-header" style="margin-top:16px;">
+        <div class="sec-title-main gold-sec">2. DECOR, PRODUCTION &amp; EVENT RENTALS</div>
+      </div>
+      <table class="luxury-table">
         <thead>
           <tr>
-            <th class="right" style="width:32px">#</th>
-            <th>Service / Production Item</th>
-            <th class="right" style="width:110px">Rate</th>
-            <th class="right" style="width:110px">Total</th>
+            <th class="col-num">#</th>
+            <th class="col-desc">SERVICE / PRODUCTION DELIVERABLE</th>
+            <th class="col-qty">QUANTITY</th>
+            <th class="col-rate">RATE</th>
+            <th class="col-amount">TOTAL</th>
           </tr>
         </thead>
         <tbody>${sRows}</tbody>
       </table>`;
   }
 
-  /* ── Totals ──────────────────────────────────────────────── */
-  const hasGst = Number(q.gstAmount ?? 0) > 0 && Number(q.gstPercent ?? 0) > 0;
-  const totalsRows = [
-    q.subTotal           ? `<div class="t-row"><span>Sub Total</span><span>${inr(q.subTotal)}</span></div>` : '',
-    q.discountAmount     ? `<div class="t-row"><span>Discount</span><span class="neg">− ${inr(q.discountAmount)}</span></div>` : '',
-    q.extraChargesAmount ? `<div class="t-row"><span>Extra Charges</span><span>+ ${inr(q.extraChargesAmount)}</span></div>` : '',
-    hasGst
-      ? `<div class="t-row"><span>GST (${q.gstPercent}%)</span><span>${inr(q.gstAmount)}</span></div>`
-      : `<div class="t-row" style="color:#718096"><span>GST</span><span style="font-size:11px;font-weight:600">Not Applicable (0%)</span></div>`,
-    `<div class="t-row grand"><span>Grand Total</span><span class="gold">${inr(q.grandTotal)}</span></div>`,
-  ].join('');
-
-  /* ── Full HTML ───────────────────────────────────────────── */
-  const logoHtml = q.companyLogoUrl
-    ? `<img src="${q.companyLogoUrl}" alt="${q.companyName ?? ''}" style="height:60px;width:auto;object-fit:contain;display:block;margin-bottom:10px" />`
-    : '';
+  /* ── Totals Calculation ── */
+  const subTotal = Number(q.subTotal || q.grandTotal || 0);
+  const discount = Number(q.discountAmount || 0);
+  const extra = Number(q.extraChargesAmount || 0);
+  const gst = Number(q.gstAmount || 0);
+  const grandTotal = Number(q.grandTotal || subTotal);
+  const hasGst = gst > 0 && Number(q.gstPercent || 0) > 0;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -238,98 +262,639 @@ export function generateQuoteHtml(q: PdfQuoteInput): string {
 <title>Quotation ${q.quotationNumber}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body, .quote-body{font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#fff;padding:36px 40px;font-size:13px;line-height:1.5}
-@media screen and (max-width:680px){
-  body{padding:16px 12px}
-  .header{flex-direction:column;gap:12px;align-items:flex-start}
-  .q-meta{text-align:left}
-  .info-grid{grid-template-columns:1fr}
-  table{min-width:480px;display:block;overflow-x:auto}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body, .quote-body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1E293B;
+  background: #ffffff;
+  padding: 30px 36px;
+  font-size: 8.5px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
 }
-.header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #B8860B;margin-bottom:24px}
-.co-name{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;color:#0F1B3C;letter-spacing:-0.3px}
-.co-tag{font-size:11px;color:#999;margin-top:3px}
-.q-meta{text-align:right}
-.q-num{font-size:20px;font-weight:900;color:#B8860B}
-.q-date{font-size:11px;color:#888;margin-top:4px}
-.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#B8860B;margin:20px 0 8px}
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#FFFDF7;border:1px solid #EDE8DF;border-radius:8px;padding:14px;margin-bottom:4px}
-.info-item label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;display:block;margin-bottom:2px}
-.info-item span{font-size:13px;font-weight:600;color:#0F1B3C}
-table{width:100%;border-collapse:collapse;margin-top:4px}
-th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;padding:8px 12px;background:#FFFDF7;text-align:left;border-bottom:2px solid #EDE8DF}
-th.right,td.right{text-align:right}
-td{padding:9px 12px;border-bottom:1px solid #f5f0e8;vertical-align:middle}
-.cat-row{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#B8860B;background:#FDF3D0;padding:5px 12px}
-/* Per Person pricing banner */
-.pp-banner{margin-top:16px;border:1.5px solid #B8860B;border-radius:10px;overflow:hidden}
-.pp-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#B8860B;background:#FDF3D0;padding:6px 16px;border-bottom:1px solid #EDE8DF}
-.pp-calc{padding:14px 16px;font-size:15px;color:#444;background:#FFFDF7}
-.pp-calc strong{color:#0F1B3C;font-weight:700}
-.pp-total{font-size:18px;font-weight:900;color:#B8860B}
-/* Totals */
-.totals{margin-top:18px;padding-top:12px;border-top:2px solid #EDE8DF;max-width:300px;margin-left:auto}
-.t-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#555;border-bottom:1px solid #f5f0e8}
-.t-row.grand{font-size:16px;font-weight:900;color:#0F1B3C;border-top:2px solid #0F1B3C;border-bottom:none;margin-top:6px;padding-top:10px}
-.gold{color:#B8860B}.neg{color:#e53e3e}
-/* Revision history */
-.rev-section{margin-top:24px}
-.rev-table{width:100%;border-collapse:collapse;margin-top:4px}
-.rev-table th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;padding:8px 12px;background:#fff5f5;text-align:left;border-bottom:2px solid #fecaca}
-.rev-table td{padding:9px 12px;border-bottom:1px solid #fff0f0;vertical-align:top}
-.rev-num{width:36px;font-size:10px;font-weight:800;color:#ef4444;text-align:center}
-.rev-date{width:160px;font-size:11px;color:#888}
-.rev-reason{font-size:13px;color:#3d1515}
-.rev-badge{display:inline-block;background:#fee2e2;color:#b91c1c;border-radius:999px;font-size:9px;font-weight:700;padding:2px 8px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.footer{margin-top:48px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #EDE8DF;padding-top:16px}
-@media print{body{padding:0}@page{margin:14mm}button{display:none}}
+
+/* ── Top Header ── */
+.top-bar-navy {
+  height: 3.5px;
+  background: #0F1B3C;
+  width: 100%;
+  margin-bottom: 14px;
+}
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #E2E8F0;
+  margin-bottom: 12px;
+}
+.co-info-left {
+  flex: 1;
+  max-width: 62%;
+}
+.co-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 21px;
+  font-weight: 700;
+  color: #0F1B3C;
+  letter-spacing: -0.2px;
+  line-height: 1.15;
+}
+.co-tag {
+  font-size: 8px;
+  font-weight: 700;
+  color: #B8860B;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.co-addr {
+  font-size: 7.5px;
+  color: #64748B;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.q-meta-right {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  text-align: right;
+}
+.gold-divider-v {
+  width: 2px;
+  background: #B8860B;
+  border-radius: 1px;
+}
+.q-meta-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.q-meta-lbl {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #B8860B;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.q-meta-num {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F1B3C;
+  margin-top: 2px;
+}
+.q-meta-date {
+  font-size: 8px;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+/* ── Customer Details Box ── */
+.details-box {
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #FFFFFF;
+}
+.details-header {
+  background: #0F1B3C;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 5px 12px;
+}
+.details-col-title {
+  font-size: 8px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.details-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+}
+.details-left {
+  padding: 8px 12px;
+  border-right: 1px solid #E2E8F0;
+}
+.details-right {
+  padding: 8px 12px;
+}
+.d-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0F1B3C;
+  margin-bottom: 3px;
+}
+.d-text {
+  font-size: 8px;
+  color: #334155;
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+/* ── Section Titles ── */
+.menu-sec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  margin-top: 10px;
+}
+.sec-title-main {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0F1B3C;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.sec-title-main.gold-sec {
+  color: #B8860B;
+}
+.sec-title-meta {
+  font-size: 8px;
+  font-weight: 700;
+  color: #B8860B;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Table Styling ── */
+.luxury-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.luxury-table thead tr {
+  background: #0F1B3C;
+  border-bottom: 1.5px solid #B8860B;
+}
+.luxury-table th {
+  padding: 6px 8px;
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.col-num { width: 28px; text-align: center; }
+.col-desc { text-align: left; }
+.col-qty { width: 85px; text-align: center; }
+.col-rate { width: 65px; text-align: right; }
+.col-amount { width: 75px; text-align: right; }
+
+.cat-header-tr {
+  page-break-after: avoid;
+}
+.cat-cell {
+  background: #FBF9F5;
+  border-left: 3px solid #B8860B;
+  border-bottom: 1px solid #EAE5DC;
+  padding: 4px 8px;
+}
+.cat-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cat-title {
+  font-size: 8px;
+  font-weight: 700;
+  color: #0F1B3C;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cat-count {
+  font-size: 7.5px;
+  color: #64748B;
+  font-weight: 500;
+}
+.dish-row {
+  border-bottom: 1px solid #F1F5F9;
+  page-break-inside: avoid;
+}
+.dish-row.even-row {
+  background: #FAFAFA;
+}
+.dish-row td {
+  padding: 5px 8px;
+  vertical-align: middle;
+}
+.dish-row .col-num {
+  font-size: 7.5px;
+  color: #64748B;
+}
+.dish-title {
+  font-size: 8px;
+  font-weight: 700;
+  color: #1E293B;
+}
+.dish-sub {
+  font-size: 7px;
+  font-style: italic;
+  color: #64748B;
+  margin-top: 1px;
+}
+.dish-row .col-qty {
+  font-size: 8px;
+  color: #334155;
+}
+.dish-row .col-rate {
+  font-size: 8px;
+  color: #334155;
+}
+.dish-row .col-amount {
+  font-size: 8px;
+  font-weight: 700;
+  color: #0F1B3C;
+}
+.incl-text {
+  color: #0F1B3C;
+  font-weight: 700;
+}
+
+/* ── Per Person Banner ── */
+.pp-banner {
+  border: 1px solid #B8860B;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0 12px 0;
+  page-break-inside: avoid;
+}
+.pp-label {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #B8860B;
+  background: #FDF3D0;
+  padding: 4px 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pp-calc {
+  padding: 8px 10px;
+  font-size: 9px;
+  background: #FBFBF9;
+  color: #1E293B;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pp-total {
+  font-size: 11px;
+  font-weight: 800;
+  color: #B8860B;
+}
+
+/* ── Side-by-Side Summary Cards ── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  margin-bottom: 10px;
+  page-break-inside: avoid;
+}
+.card {
+  border-radius: 4px;
+  overflow: hidden;
+}
+.left-card {
+  border: 1px solid #E8E4DD;
+  background: #FBFBFA;
+}
+.right-card {
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+}
+.card-header {
+  background: #0F1B3C;
+  border-bottom: 1.5px solid #B8860B;
+  padding: 5px 10px;
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.card-body {
+  padding: 8px 10px;
+}
+.milestone-item {
+  font-size: 7.5px;
+  color: #1E293B;
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+.milestone-item strong {
+  color: #0F1B3C;
+}
+.card-divider-dotted {
+  border-top: 1px dotted #CBD5E1;
+  margin: 6px 0;
+}
+.quality-badge {
+  text-align: center;
+  font-size: 7px;
+  font-weight: 700;
+  color: #B8860B;
+  letter-spacing: 0.04em;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+.summary-line .val-bold {
+  font-weight: 700;
+  color: #1E293B;
+}
+.summary-line.discount-line {
+  color: #DC2626;
+}
+.summary-line.discount-line .val-bold {
+  color: #DC2626;
+}
+.card-divider-solid {
+  border-top: 1px solid #E2E8F0;
+  margin: 6px 0;
+}
+.total-banner {
+  background: #0F1B3C;
+  border-left: 3px solid #B8860B;
+  border-radius: 3px;
+  padding: 5px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.total-lbl {
+  color: #FFFFFF;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.total-val {
+  color: #F3CA52;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── General Booking Conditions ── */
+.notes-box {
+  border: 1px solid #E8E4DD;
+  border-left: 3px solid #B8860B;
+  border-radius: 3px;
+  background: #FBFBFA;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+  page-break-inside: avoid;
+}
+.notes-title {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #B8860B;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.notes-content {
+  font-size: 7px;
+  color: #334155;
+  line-height: 1.4;
+}
+
+/* ── Dual Signatures Block ── */
+.sig-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  page-break-inside: avoid;
+}
+.sig-card {
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  background: #FFFFFF;
+  padding: 6px 10px;
+}
+.sig-title {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #0F1B3C;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.sig-line {
+  border-bottom: 1px solid #CBD5E1;
+  margin-bottom: 4px;
+}
+.sig-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7px;
+  color: #334155;
+}
+
+/* ── Footer ── */
+.doc-footer {
+  border-top: 0.5px solid #CBD5E1;
+  padding-top: 6px;
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 7px;
+  color: #64748B;
+  page-break-inside: avoid;
+}
+
+/* ── Revision History ── */
+.rev-section {
+  margin-top: 14px;
+  page-break-inside: avoid;
+}
+.rev-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+.rev-table th {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #999;
+  padding: 5px 8px;
+  background: #fff5f5;
+  text-align: left;
+  border-bottom: 1.5px solid #fecaca;
+}
+.rev-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #fff0f0;
+  font-size: 7.5px;
+}
+.rev-num { width: 28px; text-align: center; color: #ef4444; font-weight: 800; }
+.rev-badge {
+  display: inline-block;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 999px;
+  font-size: 7px;
+  font-weight: 700;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+@media print {
+  body { padding: 0; }
+  @page { margin: 8mm 10mm; }
+}
 </style>
 </head>
 <body>
-<div class="header">
-  <div style="display:flex;align-items:center;gap:16px">
-    ${logoHtml}
-    <div>
-      <div class="co-name">${q.companyName ?? 'Thankam Events'}</div>
-      <div class="co-tag">${q.companyTagline ?? 'Premier Catering &amp; Event Management · Kollam, Kerala'}</div>
+<div class="top-bar-navy"></div>
+
+<div class="header-row">
+  <div class="co-info-left">
+    <div class="co-name">${q.companyName ?? 'Thankam Events Management'}</div>
+    <div class="co-tag">${q.companyTagline ?? 'CELEBRATIONS CRAFTED'}</div>
+    <div class="co-addr">Central Kitchen: Chinnakkada, Kollam, Kerala | Phone: +91 97456 84766 / +91 92076 06150 &bull; Web: https://thankamevents.in</div>
+  </div>
+  <div class="q-meta-right">
+    <div class="gold-divider-v"></div>
+    <div class="q-meta-content">
+      <div class="q-meta-lbl">QUOTATION ESTIMATE</div>
+      <div class="q-meta-num">${q.quotationNumber}</div>
+      <div class="q-meta-date">Issued: ${fmt(q.createdAt)}</div>
     </div>
   </div>
-  <div class="q-meta">
-    <div class="q-num">${q.quotationNumber}</div>
-    <div class="q-date">Date: ${fmt(q.createdAt)}</div>
+</div>
+
+<div class="details-box">
+  <div class="details-header">
+    <span class="details-col-title">CUSTOMER DETAILS</span>
+    <span class="details-col-title">EVENT SPECIFICATIONS</span>
+  </div>
+  <div class="details-body">
+    <div class="details-left">
+      <div class="d-name">${q.customerName}</div>
+      <div class="d-text">Phone: ${q.customerPhone || '—'}</div>
+      <div class="d-text">Email: ${q.customerEmail || '—'}</div>
+    </div>
+    <div class="details-right">
+      <div class="d-name">${q.eventType || 'Catering Event'}</div>
+      <div class="d-text">Event Date: ${fmt(q.eventDate)} &nbsp;&bull;&nbsp; Guests: ${q.guestCount || '—'}</div>
+      <div class="d-text">Venue: ${q.venue || 'To be specified'}</div>
+    </div>
   </div>
 </div>
 
-<div class="sec">Customer &amp; Event Details</div>
-<div class="info-grid">
-  <div class="info-item"><label>Customer</label><span>${q.customerName}</span></div>
-  <div class="info-item"><label>Phone</label><span>${q.customerPhone ?? '—'}</span></div>
-  <div class="info-item"><label>Email</label><span>${q.customerEmail ?? '—'}</span></div>
-  <div class="info-item"><label>Event Type</label><span>${q.eventType ?? '—'}</span></div>
-  <div class="info-item"><label>Event Date</label><span>${fmt(q.eventDate)}</span></div>
-  <div class="info-item"><label>Venue</label><span>${q.venue ?? '—'}</span></div>
-  <div class="info-item"><label>Guests</label><span>${q.guestCount ?? '—'}</span></div>
-</div>
-
-<div class="sec">${isPP ? 'Included Items' : 'Items'}</div>
 ${tableHtml}
 
-<div class="totals">${totalsRows}</div>
+<div class="cards-grid">
+  <!-- Left Card: Milestones & Catering Standards -->
+  <div class="card left-card">
+    <div class="card-header">PAYMENT MILESTONES &amp; CATERING STANDARDS</div>
+    <div class="card-body">
+      <div class="milestone-item">
+        <strong>1. Advance Deposit (50%):</strong>
+        <span>Required to confirm date &amp; reserve kitchen slot.</span>
+      </div>
+      <div class="milestone-item">
+        <strong>2. Balance Settlement (50%):</strong>
+        <span>Due on event date upon banquet delivery.</span>
+      </div>
+      <div class="milestone-item">
+        <strong>3. Guest Count Policy:</strong>
+        <span>Final head count must be locked 72 hrs prior.</span>
+      </div>
+      <div class="card-divider-dotted"></div>
+      <div class="quality-badge">&check; 100% Pure Cow Ghee &bull; Cold-Pressed Oils &bull; Master Chefs</div>
+    </div>
+  </div>
+
+  <!-- Right Card: Commercial Estimate Summary -->
+  <div class="card right-card">
+    <div class="card-header">COMMERCIAL ESTIMATE SUMMARY</div>
+    <div class="card-body">
+      <div class="summary-line">
+        <span>Sub Total (Menu Items):</span>
+        <span class="val-bold">${inrFull(subTotal)}</span>
+      </div>
+      ${discount > 0 ? `
+      <div class="summary-line discount-line">
+        <span>Discount Privilege (&minus;):</span>
+        <span class="val-bold">&minus; ${inrFull(discount)}</span>
+      </div>` : ''}
+      ${extra > 0 ? `
+      <div class="summary-line">
+        <span>Extra Services / Logistics (+):</span>
+        <span class="val-bold">+ ${inrFull(extra)}</span>
+      </div>` : ''}
+      <div class="summary-line">
+        <span>GST:</span>
+        <span>${hasGst ? inrFull(q.gstAmount) : 'Not Applicable (0%)'}</span>
+      </div>
+      <div class="card-divider-solid"></div>
+      <div class="total-banner">
+        <span class="total-lbl">TOTAL AMOUNT:</span>
+        <span class="total-val">${inrFull(grandTotal)}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Conditions & Execution Notes -->
+<div class="notes-box">
+  <div class="notes-title">GENERAL BOOKING CONDITIONS &amp; EXECUTION NOTES</div>
+  <div class="notes-content">
+    1. 50% advance payment required upon quote acceptance to confirm booking.<br/>
+    2. Final guest count must be locked 72 hours prior to the event.<br/>
+    3. Pure cow ghee and certified culinary ingredients used in all preparations.<br/>
+    4. Host venue must provide uninterrupted running water, power, and setup access.
+  </div>
+</div>
+
+<!-- Dual Signatures Block -->
+<div class="sig-grid">
+  <div class="sig-card">
+    <div class="sig-title">CLIENT ACCEPTANCE &amp; APPROVAL</div>
+    <div class="sig-line"></div>
+    <div class="sig-footer">
+      <span>Client: <strong>${q.customerName}</strong></span>
+      <span>Date: ________________</span>
+    </div>
+  </div>
+  <div class="sig-card">
+    <div class="sig-title">AUTHORIZED SIGNATORY</div>
+    <div class="sig-line"></div>
+    <div class="sig-footer">
+      <span>Thankam Events Management</span>
+      <span style="color:#64748B;">Central Kitchen Fleet, Kollam</span>
+    </div>
+  </div>
+</div>
 
 ${q.rejectionHistory && q.rejectionHistory.length > 0 ? `
 <div class="rev-section">
-  <div class="sec">Revision History &nbsp;<span style="font-size:11px;font-weight:600;color:#888">(${q.rejectionHistory.length} decline${q.rejectionHistory.length > 1 ? 's' : ''})</span></div>
+  <div class="sec-title-main" style="margin-bottom:4px">Revision History &nbsp;<span style="font-size:8px;font-weight:600;color:#888">(${q.rejectionHistory.length} decline${q.rejectionHistory.length > 1 ? 's' : ''})</span></div>
   <table class="rev-table">
-    <thead><tr><th class="rev-num">#</th><th class="rev-date">Date</th><th class="rev-reason">Customer's Reason</th></tr></thead>
+    <thead><tr><th class="rev-num">#</th><th>Date</th><th>Customer's Reason</th></tr></thead>
     <tbody>
       ${q.rejectionHistory.map((e, i) => `
         <tr>
           <td class="rev-num">${i + 1}</td>
-          <td class="rev-date">${new Date(e.date).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-          <td class="rev-reason">
+          <td style="width:130px;color:#64748B">${new Date(e.date).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+          <td>
             <div class="rev-badge">Declined</div><br/>${e.reason}
           </td>
         </tr>`).join('')}
@@ -337,10 +902,9 @@ ${q.rejectionHistory && q.rejectionHistory.length > 0 ? `
   </table>
 </div>` : ''}
 
-<div class="footer">
-  Thank you for choosing ${q.companyName ?? 'Thankam Events'}.<br/>
-  This is a computer-generated quotation.
-  ${q.rejectionHistory && q.rejectionHistory.length > 0 ? `<br/><span style="color:#e53e3e">This is Quote Attempt #${q.rejectionHistory.length + 1}</span>` : ''}
+<div class="doc-footer">
+  <span>Thankam Events Management &bull; Celebrations Crafted &bull; Central Kitchen: Chinnakkada, Kollam &bull; https://thankamevents.in</span>
+  <span>Official Quotation Proposal</span>
 </div>
 </body>
 </html>`;
@@ -394,7 +958,7 @@ export async function downloadQuotePdf(q: PdfQuoteInput): Promise<void> {
     const opt = {
       margin: 8,
       filename: `Quotation-${q.quotationNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.92 },
+      image: { type: 'jpeg' as const, quality: 0.95 },
       html2canvas: {
         scale: 2,
         useCORS: true,
@@ -466,7 +1030,7 @@ export async function generateQuotePdfBase64(q: PdfQuoteInput): Promise<string> 
     const opt = {
       margin: 8,
       filename: `Quotation-${q.quotationNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.92 },
+      image: { type: 'jpeg' as const, quality: 0.95 },
       html2canvas: {
         scale: 2,
         useCORS: true,

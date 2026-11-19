@@ -2091,7 +2091,19 @@ export function CustomerRequestsPage() {
             {/* PDF Preview Trigger */}
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                if (detail?.id) {
+                  try {
+                    await quotationsService.downloadPdf(
+                      detail.id,
+                      `Quotation-${detail.quotationNumber}.pdf`,
+                    );
+                    toast.success('Official PDF proposal downloaded');
+                    return;
+                  } catch (e) {
+                    console.warn('Direct PDF download fallback to client generation', e);
+                  }
+                }
                 const p = buildPdfInput();
                 if (p) openQuotePdf(p);
               }}
