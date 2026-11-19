@@ -19,8 +19,9 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { useAppDispatch, useAppSelector } from '@/hooks/store';
 import { Button } from '@/components/ui/button';
@@ -134,7 +135,9 @@ export function DashboardLayout() {
 
   const [branding, setBranding] = useState<CompanyBranding>(defaultCompanyBranding);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notificationItems, setNotificationItems] = useState<AdminNotificationItem[]>([]);
+  const [notificationItems, setNotificationItems] = useState<AdminNotificationItem[]>(() =>
+    readAdminNotifications(),
+  );
   const [socketStatus, setSocketStatus] = useState<
     'idle' | 'connecting' | 'connected' | 'disconnected'
   >('idle');
@@ -145,17 +148,33 @@ export function DashboardLayout() {
   );
 
   const markAllNotificationsRead = () => {
-    setNotificationItems((prev) => prev.map((item) => ({ ...item, read: true })));
+    setNotificationItems((prev) => {
+      const updated = prev.map((item) => ({ ...item, read: true }));
+      writeAdminNotifications(updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+      }
+      return updated;
+    });
   };
 
   const clearNotifications = () => {
     setNotificationItems([]);
+    writeAdminNotifications([]);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+    }
   };
 
   const markNotificationRead = (id: string) => {
-    setNotificationItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, read: true } : item)),
-    );
+    setNotificationItems((prev) => {
+      const updated = prev.map((item) => (item.id === id ? { ...item, read: true } : item));
+      writeAdminNotifications(updated);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+      }
+      return updated;
+    });
   };
 
   useEffect(() => {
@@ -165,7 +184,16 @@ export function DashboardLayout() {
   }, []);
 
   useEffect(() => {
-    setNotificationItems(readAdminNotifications());
+    if (typeof window === 'undefined') return;
+    const handleSync = () => {
+      setNotificationItems(readAdminNotifications());
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('thankam:admin-notifications-updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('thankam:admin-notifications-updated', handleSync);
+    };
   }, []);
 
   useEffect(() => {
@@ -222,7 +250,12 @@ export function DashboardLayout() {
     document.head.appendChild(link);
   }, [branding.faviconUrl, branding.name]);
 
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     writeAdminNotifications(notificationItems);
   }, [notificationItems]);
 
@@ -258,7 +291,7 @@ export function DashboardLayout() {
         });
         if (isDuplicate) return prev;
 
-        return [
+        const next = [
           {
             id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
             title,
@@ -270,8 +303,33 @@ export function DashboardLayout() {
           },
           ...prev,
         ];
+        writeAdminNotifications(next);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+        }
+        return next;
       });
-      playNotificationSound();
+
+      if (
+        typeof window !== 'undefined' &&
+        localStorage.getItem('admin_notifications_sound_muted') !== 'true'
+      ) {
+        void playNotificationSound('admin');
+      }
+
+      toast.info(title, {
+        description: subtitle,
+        duration: 8000,
+        action:
+          quotationId || quotationNumber
+            ? {
+                label: 'View',
+                onClick: () => {
+                  navigate(resolveNotificationRoute(title, quotationId));
+                },
+              }
+            : undefined,
+      });
     };
 
     socket.on('connect', () => setSocketStatus('connected'));
@@ -332,10 +390,22 @@ export function DashboardLayout() {
 
     socket.on('workflow:quotation.status', (payload: WorkflowEventPayload) => {
       broadcastEvent('workflow:quotation.status', payload);
+      pushNotification(
+        `Quotation Status: ${payload.quotationNumber}`,
+        withTime(`Status updated to ${payload.status || 'Active'}`),
+        payload.quotationId,
+        payload.quotationNumber,
+      );
     });
 
     socket.on('workflow:agreement.initiated', (payload: WorkflowEventPayload) => {
       broadcastEvent('workflow:agreement.initiated', payload);
+      pushNotification(
+        `Agreement Sent: ${payload.quotationNumber}`,
+        withTime('Catering agreement created and awaiting customer review'),
+        payload.quotationId,
+        payload.quotationNumber,
+      );
     });
 
     socket.on('workflow:agreement.feedback', (payload: WorkflowEventPayload) => {

@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   Check,
+  CheckCheck,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -50,7 +51,11 @@ import { Skeleton } from "@/components/common/skeleton";
 import { CategoryNode } from "@/features/categories/categories.service";
 import { QuotationPayload } from "@/features/quotations/quotations.service";
 import { customerPortalService } from "@/features/customer-portal/customer-portal.service";
-import { createWorkflowSocket } from "@/features/quotations/workflow-socket";
+import {
+  createWorkflowSocket,
+  type WorkflowEventPayload,
+} from "@/features/quotations/workflow-socket";
+import { playNotificationSound } from "@/features/notifications/notification-sound";
 import { formatInr } from "@/utils/currency";
 import { cn } from "@/utils/cn";
 import { isVegDish } from "@/utils/dietary";
@@ -109,6 +114,28 @@ const CUSTOMER_PORTAL_TOKEN_KEY = "customer_portal_token";
 const CUSTOMER_PORTAL_PROFILE_KEY = "customer_portal_profile";
 const CUSTOMER_PORTAL_CART_KEY = "customer_portal_cart";
 const CUSTOMER_PORTAL_NOTIFICATIONS_KEY = "customer_portal_notifications";
+const CUSTOMER_READ_NOTIFICATIONS_KEY = "customer_read_notification_ids";
+
+function readCustomerReadNotificationIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(CUSTOMER_READ_NOTIFICATIONS_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCustomerReadNotificationIds(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CUSTOMER_READ_NOTIFICATIONS_KEY, JSON.stringify(Array.from(ids)));
+  } catch {
+    /* silent */
+  }
+}
 
 const EVENT_TYPE_OPTIONS = [
   "Grand Wedding (Vivaham)",
@@ -341,6 +368,9 @@ export function CustomerPortalPage() {
   const [resendCooldown, setResendCooldown] = useState(() => getRemainingResendCooldown());
   const [notificationItems, setNotificationItems] = useState<NotificationItem[]>([]);
   const [liveQuotations, setLiveQuotations] = useState<any[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() =>
+    readCustomerReadNotificationIds(),
+  );
   const [quotationsLoading, setQuotationsLoading] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
@@ -668,7 +698,7 @@ export function CustomerPortalPage() {
     }
   }, [notificationsOpen]);
 
-  /* Real-time WebSocket Status Sync & Polling */
+  /* Real-time WebSocket Status Sync & Toast Alerts */
   useEffect(() => {
     if (typeof window === "undefined") return;
     const token = localStorage.getItem(CUSTOMER_PORTAL_TOKEN_KEY);
@@ -682,19 +712,82 @@ export function CustomerPortalPage() {
       }, 300);
     };
 
-    socket.on("workflow:request.created", handleUpdate);
-    socket.on("workflow:request.updated", handleUpdate);
-    socket.on("workflow:request.status", handleUpdate);
-    socket.on("workflow:quotation.status", handleUpdate);
-    socket.on("workflow:agreement.initiated", handleUpdate);
-    socket.on("workflow:agreement.feedback", handleUpdate);
+    socket.on("workflow:request.created", (payload: WorkflowEventPayload) => {
+      handleUpdate();
+      void playNotificationSound("customer");
+      toast.success(`Request Submitted: ${payload.quotationNumber || ''}`, {
+        description: "Your catering proposal request has been received by our culinary team.",
+        action: { label: "Track", onClick: () => navigate("/customer/track") },
+        duration: 7000,
+      });
+    });
+
+    socket.on("workflow:request.updated", (payload: WorkflowEventPayload) => {
+      handleUpdate();
+      void playNotificationSound("customer");
+      toast.info(`Quotation Updated: ${payload.quotationNumber || ''}`, {
+        description: "Your catering quotation details have been updated.",
+        action: { label: "View", onClick: () => navigate("/customer/track") },
+        duration: 6000,
+      });
+    });
+
+    socket.on("workflow:request.status", (payload: WorkflowEventPayload) => {
+      handleUpdate();
+      void playNotificationSound("customer");
+      const st = payload.requestStatus;
+      const desc =
+        st === "CONVERTED"
+          ? "Your quotation has been confirmed and booking accepted!"
+          : st === "CLOSED_REJECTED"
+            ? "Your quotation status was marked closed."
+            : `Status changed to ${st || 'updated'}.`;
+      toast.info(`Quotation Status: ${payload.quotationNumber || ''}`, {
+        description: desc,
+        action: { label: "Track", onClick: () => navigate("/customer/track") },
+        duration: 7000,
+      });
+    });
+
+    socket.on("workflow:quotation.status", (payload: WorkflowEventPayload) => {
+      handleUpdate();
+      void playNotificationSound("customer");
+      toast.success(`Quotation Ready: ${payload.quotationNumber || ''}`, {
+        description: "Your catering quotation estimate is ready for review.",
+        action: { label: "Review Quote", onClick: () => navigate("/customer/track") },
+        duration: 8000,
+      });
+    });
+
+    socket.on("workflow:agreement.initiated", (payload: WorkflowEventPayload) => {
+      handleUpdate();
+      void playNotificationSound("customer");
+      toast.success(`Agreement Ready: ${payload.quotationNumber || ''}`, {
+        description: "Your catering agreement has been initiated and is awaiting your signature.",
+        action: { label: "Sign Now", onClick: () => navigate("/customer/track") },
+        duration: 8000,
+      });
+    });
+
+    socket.on("workflow:agreement.feedback", (payload: WorkflowEventPayload) => {
+      handleUpdate();
+      void playNotificationSound("customer");
+      toast.info(`Agreement ${payload.status === "ACCEPTED" ? "Signed" : "Feedback"}: ${payload.quotationNumber || ''}`, {
+        description:
+          payload.status === "ACCEPTED"
+            ? "Thank you! Your agreement has been recorded."
+            : "Your feedback has been shared with our team.",
+        action: { label: "Track", onClick: () => navigate("/customer/track") },
+      });
+    });
+
     socket.on("quotation:statusChanged", handleUpdate);
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       socket.disconnect();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   /* Normalized quotation updates with rich data */
   const displayUpdates = useMemo(() => {
@@ -756,10 +849,40 @@ export function CustomerPortalPage() {
     });
   }, [liveQuotations, notificationItems]);
 
-  const unreadNotificationCount = useMemo(
-    () => displayUpdates.length,
-    [displayUpdates],
-  );
+  const markAllCustomerNotificationsRead = () => {
+    setReadNotificationIds((prev) => {
+      const next = new Set(prev);
+      for (const item of displayUpdates) {
+        const key = `${item.id}_${item.status || ''}_${item.requestStatus || ''}_${item.agreementStatus || ''}`;
+        next.add(key);
+      }
+      writeCustomerReadNotificationIds(next);
+      return next;
+    });
+  };
+
+  const markCustomerNotificationRead = (item: {
+    id: string;
+    status?: string;
+    requestStatus?: string;
+    agreementStatus?: string;
+  }) => {
+    const key = `${item.id}_${item.status || ''}_${item.requestStatus || ''}_${item.agreementStatus || ''}`;
+    setReadNotificationIds((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      writeCustomerReadNotificationIds(next);
+      return next;
+    });
+  };
+
+  const unreadNotificationCount = useMemo(() => {
+    if (!isAuthenticated || displayUpdates.length === 0) return 0;
+    return displayUpdates.filter((item) => {
+      const key = `${item.id}_${item.status || ''}_${item.requestStatus || ''}_${item.agreementStatus || ''}`;
+      return !readNotificationIds.has(key);
+    }).length;
+  }, [isAuthenticated, displayUpdates, readNotificationIds]);
 
   const openCartWithLoginGuard = () => {
     if (!isAuthenticated) {
@@ -2486,6 +2609,32 @@ export function CustomerPortalPage() {
         bodyClassName="p-4 sm:p-5"
       >
         <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+          {displayUpdates.length > 0 && (
+            <div className="flex items-center justify-between gap-2 px-1 pb-1">
+              <span className="text-xs font-semibold text-slate-500">
+                {unreadNotificationCount > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 text-amber-800 font-bold">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    {unreadNotificationCount} unread update{unreadNotificationCount > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
+                    <CheckCheck size={14} className="text-emerald-600" />
+                    All caught up
+                  </span>
+                )}
+              </span>
+              {unreadNotificationCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllCustomerNotificationsRead}
+                  className="text-xs font-bold text-[#B8860B] hover:text-[#080C14] hover:underline cursor-pointer"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+          )}
           {quotationsLoading && displayUpdates.length === 0 ? (
             <div className="space-y-3 py-2">
               <div className="h-28 animate-pulse rounded-2xl bg-slate-100 border border-slate-200" />
@@ -2514,15 +2663,23 @@ export function CustomerPortalPage() {
               const isQuoted = item.uiStatus === "QUOTED" || item.uiStatus === "ACCEPTED" || item.status === "FINALIZED";
               const isAccepted = item.uiStatus === "ACCEPTED";
               const hasAgreement = item.agreementStatus && item.agreementStatus !== "NOT_INITIATED";
+              const itemKey = `${item.id}_${item.status || ''}_${item.requestStatus || ''}_${item.agreementStatus || ''}`;
+              const isUnread = !readNotificationIds.has(itemKey);
 
               return (
                 <div
                   key={item.id}
                   onClick={() => {
+                    markCustomerNotificationRead(item);
                     setNotificationsOpen(false);
                     navigate("/customer/track");
                   }}
-                  className="group relative rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 hover:border-[#D4AF37] hover:shadow-md transition-all cursor-pointer space-y-3"
+                  className={cn(
+                    "group relative rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer space-y-3",
+                    isUnread
+                      ? "border-[#D4AF37] bg-amber-50/20 shadow-xs ring-1 ring-[#D4AF37]/30"
+                      : "border-slate-200/90 bg-white hover:border-[#D4AF37] hover:shadow-md",
+                  )}
                 >
                   {/* Top Bar: Quotation Number + Status Badge */}
                   <div className="flex items-center justify-between gap-2">
@@ -2531,9 +2688,16 @@ export function CustomerPortalPage() {
                         <Crown size={14} />
                       </div>
                       <div>
-                        <span className="font-mono text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#B8860B] transition-colors">
-                          {item.quotationNumber}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#B8860B] transition-colors">
+                            {item.quotationNumber}
+                          </span>
+                          {isUnread && (
+                            <span className="rounded-full bg-rose-600 px-1.5 py-0.2 text-[9px] font-black uppercase text-white shadow-xs">
+                              New
+                            </span>
+                          )}
+                        </div>
                         {item.createdAt && (
                           <p className="text-[10px] text-slate-400">
                             Requested {new Date(item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
@@ -2647,6 +2811,7 @@ export function CustomerPortalPage() {
             <Button
               type="button"
               onClick={() => {
+                markAllCustomerNotificationsRead();
                 setNotificationsOpen(false);
                 navigate("/customer/track");
               }}

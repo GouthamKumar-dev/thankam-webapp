@@ -52,9 +52,14 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
 
     const portalPayload = await this.verifyPortalToken(token);
     if (portalPayload?.phone) {
-      const room = this.customerRoom(this.normalizePhone(portalPayload.phone));
-      await client.join(room);
-      client.emit('workflow:connected', { role: 'customer', room });
+      const rooms = this.customerRooms(portalPayload.phone);
+      for (const room of rooms) {
+        await client.join(room);
+      }
+      this.logger.log(
+        `Customer connected (${portalPayload.phone}) -> joined rooms: ${rooms.join(', ')}`,
+      );
+      client.emit('workflow:connected', { role: 'customer', rooms });
       return;
     }
 
@@ -91,6 +96,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     customerPhone: string;
     requestStatus?: string | null;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -98,9 +104,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:request.created', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:request.created', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:request.created', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:request.created', eventPayload);
@@ -112,6 +116,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     customerPhone: string;
     requestStatus?: string | null;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -119,9 +124,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:request.updated', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:request.updated', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:request.updated', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:request.updated', eventPayload);
@@ -133,20 +136,18 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     customerPhone: string;
     requestStatus: string;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
       customerPhone,
       updatedAt: new Date().toISOString(),
     };
-    // Notify customer + quotation room + admin
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:request.status', eventPayload);
+    this.server.to('admin').emit('workflow:request.status', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:request.status', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:request.status', eventPayload);
-    this.server.to('admin').emit('workflow:request.status', eventPayload);
   }
 
   emitQuotationStatusUpdated(payload: {
@@ -155,6 +156,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     customerPhone: string;
     status: string;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -162,9 +164,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:quotation.status', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:quotation.status', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:quotation.status', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:quotation.status', eventPayload);
@@ -175,6 +175,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     quotationNumber: string;
     customerPhone: string;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -182,15 +183,14 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:agreement.initiated', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:agreement.initiated', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:agreement.initiated', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:agreement.initiated', eventPayload);
   }
 
   emitCustomerOtpVerified(payload: { customerPhone: string; existingCustomer: boolean }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -198,9 +198,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:customer.otpVerified', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:customer.otpVerified', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:customer.otpVerified', eventPayload);
   }
 
   emitAgreementFeedback(payload: {
@@ -210,6 +208,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     status: 'ACCEPTED' | 'REJECTED';
     reason?: string;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -217,9 +216,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:agreement.feedback', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:agreement.feedback', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:agreement.feedback', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:agreement.feedback', eventPayload);
@@ -231,6 +228,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     customerPhone: string;
     reason?: string;
   }) {
+    if (!this.server) return;
     const customerPhone = this.normalizePhone(payload.customerPhone);
     const eventPayload = {
       ...payload,
@@ -238,9 +236,7 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
       updatedAt: new Date().toISOString(),
     };
     this.server.to('admin').emit('workflow:customer.interested', eventPayload);
-    this.server
-      .to(this.customerRoom(customerPhone))
-      .emit('workflow:customer.interested', eventPayload);
+    this.emitToCustomer(payload.customerPhone, 'workflow:customer.interested', eventPayload);
     this.server
       .to(this.quotationRoom(payload.quotationId))
       .emit('workflow:customer.interested', eventPayload);
@@ -250,12 +246,38 @@ export class QuotationsWorkflowGateway implements OnGatewayConnection {
     return `customer:${phone}`;
   }
 
+  private customerRooms(phone?: string | null): string[] {
+    if (!phone) return [];
+    const normalized = this.normalizePhone(phone);
+    const rawClean = phone.replace(/[^\d+]/g, '').trim();
+    const rooms = new Set<string>();
+    if (normalized) {
+      rooms.add(this.customerRoom(normalized));
+      rooms.add(this.customerRoom(`+91${normalized}`));
+      rooms.add(this.customerRoom(`91${normalized}`));
+    }
+    if (rawClean) {
+      rooms.add(this.customerRoom(rawClean));
+    }
+    return Array.from(rooms);
+  }
+
+  private emitToCustomer(phone: string, event: string, payload: any) {
+    if (!this.server) return;
+    const rooms = this.customerRooms(phone);
+    for (const room of rooms) {
+      this.server.to(room).emit(event, payload);
+    }
+  }
+
   private quotationRoom(quotationId: string) {
     return `quotation:${quotationId}`;
   }
 
-  private normalizePhone(phone: string) {
-    return phone.replace(/[^\d+]/g, '').trim();
+  private normalizePhone(phone?: string | null): string {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    return digits.length > 10 ? digits.slice(-10) : digits;
   }
 
   private extractBearer(authorization?: string | string[]) {

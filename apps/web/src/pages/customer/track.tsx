@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CategoryNode } from '@/features/categories/categories.service';
 import { customerPortalService } from '@/features/customer-portal/customer-portal.service';
 import { createWorkflowSocket } from '@/features/quotations/workflow-socket';
+import { playNotificationSound } from '@/features/notifications/notification-sound';
 import { formatInr } from '@/utils/currency';
 import { toMediaUrl } from '@/utils/media-url';
 import { openQuotePdf } from '@/utils/quote-pdf';
@@ -350,6 +351,13 @@ export function CustomerTrackPage() {
     const socket = createWorkflowSocket({ token });
 
     const onWorkflowEvent = (payload: any) => {
+      void playNotificationSound('customer');
+      if (payload?.quotationNumber) {
+        toast.info(`Quotation Update: ${payload.quotationNumber}`, {
+          description: 'Live status synced with catering team.',
+          duration: 5000,
+        });
+      }
       // Re-fetch all quotations list to pick up any new quote or status change
       void customerPortalService
         .myQuotations(token)
@@ -400,6 +408,18 @@ export function CustomerTrackPage() {
     try {
       const detail = await customerPortalService.myQuotationById(token, id);
       setSelected(detail);
+      // Mark viewed in customer read notifications so badge clears
+      try {
+        const raw = localStorage.getItem('customer_read_notification_ids');
+        const set = new Set(raw ? JSON.parse(raw) : []);
+        if (detail) {
+          const key = `${detail.id}_${detail.status || ''}_${detail.requestStatus || ''}_${detail.agreementStatus || ''}`;
+          set.add(key);
+          localStorage.setItem('customer_read_notification_ids', JSON.stringify(Array.from(set)));
+        }
+      } catch {
+        /* silent */
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? 'Failed to load quotation detail');
     }

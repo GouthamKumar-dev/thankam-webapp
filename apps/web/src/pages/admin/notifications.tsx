@@ -127,9 +127,11 @@ export function AdminNotificationsPage() {
     const sync = () => setItems(readAdminNotifications());
     window.addEventListener('storage', sync);
     window.addEventListener('focus', sync);
+    window.addEventListener('thankam:admin-notifications-updated', sync);
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('focus', sync);
+      window.removeEventListener('thankam:admin-notifications-updated', sync);
     };
   }, []);
 
@@ -195,6 +197,9 @@ export function AdminNotificationsPage() {
     const next = items.map((item) => ({ ...item, read: true }));
     setItems(next);
     writeAdminNotifications(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+    }
     toast.success('All notifications marked as read');
   };
 
@@ -205,6 +210,9 @@ export function AdminNotificationsPage() {
     );
     setItems(next);
     writeAdminNotifications(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+    }
   };
 
   const removeOne = (id: string, e?: React.MouseEvent) => {
@@ -212,6 +220,9 @@ export function AdminNotificationsPage() {
     const next = items.filter((item) => item.id !== id);
     setItems(next);
     writeAdminNotifications(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+    }
     toast.success('Notification removed');
   };
 
@@ -226,6 +237,9 @@ export function AdminNotificationsPage() {
 
     setItems([]);
     writeAdminNotifications([]);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('thankam:admin-notifications-updated'));
+    }
     toast.success('All notifications cleared');
   };
 
