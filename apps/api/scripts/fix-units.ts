@@ -25,8 +25,8 @@ const prisma = new PrismaClient();
 const isDry  = process.argv.includes('--dry-run');
 
 /* ─── Allowed units ─────────────────────────────────────────────────────── */
-type Unit = 'plate' | 'bowl' | 'glass' | 'piece' | 'scoop';
-const ALLOWED: Unit[] = ['plate', 'bowl', 'glass', 'piece', 'scoop'];
+type Unit = 'guest' | 'plate' | 'bowl' | 'glass' | 'piece' | 'scoop' | 'set' | 'person' | 'day' | 'project' | 'sqft';
+const ALLOWED: Unit[] = ['guest', 'plate', 'bowl', 'glass', 'piece', 'scoop', 'set', 'person', 'day', 'project', 'sqft'];
 
 /* ─── Keyword rules ─────────────────────────────────────────────────────── */
 // Each entry: [keyword (lowercase substring), unit]
