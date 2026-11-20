@@ -717,24 +717,28 @@ export function QuotationsPage() {
         });
       });
     void menusService.list().then(setMenus);
-    void settingsService
-      .list()
-      .then((rows) => {
-        const co = rows.find((r) => r.key === 'company')?.value ?? {};
-        setCompany({
-          name: String((co as any).name ?? "THANKAM catering&event's"),
-          tagline: String(
-            (co as any).tagline ??
-              'Premier Catering & Event Management · Kollam, Kerala',
-          ),
-          logoUrl: (co as any).logoUrl
-            ? toMediaUrl(String((co as any).logoUrl))
-            : undefined,
-          phone: String((co as any).contact ?? '9745684766'),
-          address: String((co as any).address ?? 'Kollam, Kerala'),
-        });
-      })
-      .catch(() => null);
+    const loadCompany = () => {
+      void settingsService
+        .list()
+        .then((rows) => {
+          const co = rows.find((r) => r.key === 'company')?.value ?? {};
+          setCompany({
+            name: String((co as any).name ?? "THANKAM catering&event's"),
+            tagline: String(
+              (co as any).tagline ??
+                'Premier Catering & Event Management · Kollam, Kerala',
+            ),
+            logoUrl: (co as any).logoUrl
+              ? toMediaUrl(String((co as any).logoUrl))
+              : undefined,
+            phone: String((co as any).contact ?? '9745684766'),
+            address: String((co as any).address ?? 'Kollam, Kerala'),
+          });
+        })
+        .catch(() => null);
+    };
+    loadCompany();
+    window.addEventListener('thankam:settings-updated', loadCompany);
 
     // Event-Driven Real-Time WebSocket updates (Debounced, Zero Polling)
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -749,6 +753,7 @@ export function QuotationsPage() {
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener('thankam:quotation-event', handleWorkflowEvent);
+      window.removeEventListener('thankam:settings-updated', loadCompany);
     };
   }, [refresh]);
 

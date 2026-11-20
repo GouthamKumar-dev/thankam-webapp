@@ -678,17 +678,28 @@ export function CustomerRequestsPage() {
   }, [selectedIdFromUrl]);
 
   useEffect(() => {
-    void settingsService
-      .list()
-      .then((rows) => {
-        const co = (rows.find((r) => r.key === 'company')?.value ?? {}) as any;
-        setCompany({
-          name: String(co.name ?? 'Thankam Events'),
-          tagline: String(co.tagline ?? 'Premier Catering & Event Management · Kollam, Kerala'),
-          logoUrl: co.logoUrl ? toMediaUrl(String(co.logoUrl)) : undefined,
-        });
-      })
-      .catch(() => null);
+    let active = true;
+    const loadCompany = () => {
+      void settingsService
+        .list()
+        .then((rows) => {
+          if (!active) return;
+          const co = (rows.find((r) => r.key === 'company')?.value ?? {}) as any;
+          setCompany({
+            name: String(co.name ?? 'Thankam Events'),
+            tagline: String(co.tagline ?? 'Premier Catering & Event Management · Kollam, Kerala'),
+            logoUrl: co.logoUrl ? toMediaUrl(String(co.logoUrl)) : undefined,
+          });
+        })
+        .catch(() => null);
+    };
+
+    loadCompany();
+    window.addEventListener('thankam:settings-updated', loadCompany);
+    return () => {
+      active = false;
+      window.removeEventListener('thankam:settings-updated', loadCompany);
+    };
   }, []);
 
   useEffect(() => {

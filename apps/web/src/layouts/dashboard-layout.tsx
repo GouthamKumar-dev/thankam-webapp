@@ -209,27 +209,33 @@ export function DashboardLayout() {
 
   useEffect(() => {
     let active = true;
-    void settingsService
-      .list()
-      .then((rows) => {
-        if (!active) return;
-        const company = rows.find((row) => row.key === 'company');
-        const value = company?.value ?? {};
-        setBranding({
-          name: String(value.name || 'Thankam Events'),
-          logoName: String(value.logoName || 'Thankam Events'),
-          logoUrl: toMediaUrl(String(value.logoUrl ?? '')) || '/assets/img/Thankam_Logo.png',
-          faviconUrl: toMediaUrl(String(value.faviconUrl ?? '')) || '/assets/img/favicon.png',
-          tagline: String(value.tagline || 'Celebrations Crafted • Kollam'),
+    const loadBranding = () => {
+      void settingsService
+        .list()
+        .then((rows) => {
+          if (!active) return;
+          const company = rows.find((row) => row.key === 'company');
+          const value = company?.value ?? {};
+          setBranding({
+            name: String(value.name || 'Thankam Events'),
+            logoName: String(value.logoName || 'Thankam Events'),
+            logoUrl: toMediaUrl(String(value.logoUrl ?? '')) || '/assets/img/Thankam_Logo.png',
+            faviconUrl: toMediaUrl(String(value.faviconUrl ?? '')) || '/assets/img/favicon.png',
+            tagline: String(value.tagline || 'Celebrations Crafted • Kollam'),
+          });
+        })
+        .catch(() => {
+          if (!active) return;
+          setBranding(defaultCompanyBranding);
         });
-      })
-      .catch(() => {
-        if (!active) return;
-        setBranding(defaultCompanyBranding);
-      });
+    };
+
+    loadBranding();
+    window.addEventListener('thankam:settings-updated', loadBranding);
 
     return () => {
       active = false;
+      window.removeEventListener('thankam:settings-updated', loadBranding);
     };
   }, []);
 
