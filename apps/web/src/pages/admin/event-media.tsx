@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   Check,
   Edit3,
   Eye,
@@ -26,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useConfirmModal } from '@/hooks/use-confirm-modal';
 import { toMediaUrl } from '@/utils/media-url';
+import { cn } from '@/utils/cn';
 import { galleryService, MediaRow } from '@/features/gallery/gallery.service';
 import {
   websiteReviewService,
@@ -37,15 +39,18 @@ import { CardGridSkeleton, KpiGridSkeleton } from '@/components/common/skeleton'
 
 type Tab = 'gallery' | 'testimonials';
 type GalleryFilter = 'all' | 'IMAGE' | 'VIDEO' | 'FEATURED';
+type TestimonialFilter = 'all' | 'FEATURED' | 'FIVE_STAR';
 
 const SECTION_META: Record<Tab, { title: string; subtitle: string }> = {
   gallery: {
     title: 'Event Media & Gallery Showcase',
-    subtitle: 'Upload high-resolution photography and cinematic video reels displayed in the customer gallery and portfolio.',
+    subtitle:
+      'Upload high-resolution photography and cinematic video reels displayed in the customer gallery and public portfolio.',
   },
   testimonials: {
     title: 'Client Stories & Testimonials',
-    subtitle: 'Manage authentic 5-star customer reviews, ratings, and quotes showcased on the public landing page.',
+    subtitle:
+      'Manage authentic customer reviews, 5-star ratings, and celebration quotes showcased on the public website.',
   },
 };
 
@@ -67,7 +72,7 @@ function StarRow({ rating, size = 13 }: { rating: number; size?: number }) {
           className={
             rating >= n
               ? 'fill-amber-400 text-amber-400'
-              : 'fill-slate-700 text-slate-700'
+              : 'fill-slate-100 text-slate-300'
           }
         />
       ))}
@@ -95,11 +100,11 @@ function StarSelector({
           className="transition-transform hover:scale-115 active:scale-95"
         >
           <Star
-            size={24}
+            size={22}
             className={
               (hover || value) >= n
-                ? 'fill-amber-400 text-amber-400 drop-shadow-sm'
-                : 'fill-slate-800 text-slate-600'
+                ? 'fill-amber-400 text-amber-400 drop-shadow-xs'
+                : 'fill-slate-100 text-slate-300'
             }
           />
         </button>
@@ -113,16 +118,17 @@ function MediaModal({ src, onClose }: { src: string; onClose: () => void }) {
     /\.(mp4|mov|webm|ogg|avi)(\?|$)/i.test(src) || src.includes('video');
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-4xl rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-4xl rounded-3xl overflow-hidden bg-black border border-white/10 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/70 border border-white/20 text-white hover:bg-black transition-colors"
+          className="absolute right-3.5 top-3.5 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/70 border border-white/20 text-white hover:bg-black transition-colors"
+          title="Close Preview"
         >
           <X size={16} />
         </button>
@@ -252,32 +258,32 @@ function GalleryUploadDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
       onClick={() => {
         if (!uploading) onClose();
       }}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-3xl bg-[#0c121e] border border-amber-500/30 shadow-2xl text-white"
+        className="w-full max-w-lg overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between bg-[#080C14] border-b border-amber-900/30 px-6 py-4">
+        <div className="flex items-center justify-between bg-slate-50/80 border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#F3CA52]">
-              <Upload size={16} />
+            <div className="h-8 w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shadow-2xs">
+              <Upload size={15} />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#F3CA52]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
                 Showcase Management
               </p>
-              <p className="text-sm font-black text-white">Upload Media to Gallery</p>
+              <p className="text-sm font-bold text-slate-900">Upload Media to Gallery</p>
             </div>
           </div>
           <button
             onClick={onClose}
             disabled={uploading}
-            className="grid h-8 w-8 place-items-center rounded-xl border border-amber-500/20 bg-[#0c121e] text-slate-400 hover:text-white disabled:opacity-50"
+            className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             <X size={14} />
           </button>
@@ -286,18 +292,19 @@ function GalleryUploadDialog({
         <div className="max-h-[75vh] space-y-4 overflow-y-auto p-6 text-xs">
           {previews.length === 0 ? (
             <button
+              type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-amber-500/30 bg-[#080C14] py-12 transition-all hover:border-[#D4AF37] hover:bg-amber-500/5 disabled:opacity-60"
+              className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/20 py-10 transition-all hover:border-amber-400 hover:bg-amber-50/40 disabled:opacity-60"
             >
-              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500/10 text-[#F3CA52] border border-amber-500/30">
-                <Upload size={24} />
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs">
+                <Upload size={20} />
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-white">
+              <div className="text-center px-4">
+                <p className="text-xs font-bold text-slate-800">
                   Click to select photos or videos
                 </p>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-[11px] text-slate-400">
                   Up to {maxFiles} files per batch &bull; Max {maxFileSizeMb} MB each
                 </p>
               </div>
@@ -308,7 +315,7 @@ function GalleryUploadDialog({
                 {previews.map((p, i) => (
                   <div
                     key={i}
-                    className="relative aspect-square overflow-hidden rounded-xl border border-amber-500/20 bg-black group"
+                    className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-900 group shadow-2xs"
                   >
                     {p.type.startsWith('video/') ? (
                       <video src={p.url} className="h-full w-full object-cover" />
@@ -323,7 +330,7 @@ function GalleryUploadDialog({
                     >
                       <X size={12} />
                     </button>
-                    <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-mono text-white">
+                    <span className="absolute bottom-1 left-1 rounded bg-black/70 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-mono text-white">
                       {p.type.startsWith('video/') ? 'VIDEO' : 'IMAGE'}
                     </span>
                   </div>
@@ -332,10 +339,10 @@ function GalleryUploadDialog({
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-amber-500/30 bg-[#080C14] text-slate-400 hover:text-white hover:border-[#D4AF37] transition-all"
+                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-800 hover:border-amber-400 hover:bg-amber-50/30 transition-all"
                   >
                     <Plus size={18} />
-                    <span className="text-[10px] font-semibold">+ Add more</span>
+                    <span className="text-[10px] font-bold">+ Add more</span>
                   </button>
                 )}
               </div>
@@ -353,25 +360,25 @@ function GalleryUploadDialog({
 
           {/* Title input */}
           <div>
-            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Media Caption / Event Title (optional)
             </label>
-            <Input
+            <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Royal Wedding Feast at Raviz Resort"
-              className="h-10 border-amber-500/20 bg-[#080C14] text-xs text-white placeholder:text-slate-500 focus:border-[#D4AF37]"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:bg-white transition-all"
             />
           </div>
 
           {/* Featured on landing toggle */}
-          <div className="flex items-center justify-between rounded-xl border border-amber-900/30 bg-[#080C14] px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
             <div>
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Star size={13} className="text-amber-400 fill-amber-400" />
+              <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Star size={13} className="text-amber-500 fill-amber-500" />
                 <span>Feature on Public Showcase</span>
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 mt-0.5">
                 Highlights these items on the front landing page carousel
               </p>
             </div>
@@ -379,11 +386,11 @@ function GalleryUploadDialog({
               type="button"
               onClick={() => setFeatured((p) => !p)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isFeatured ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3CA52]' : 'bg-slate-800'
+                isFeatured ? 'bg-gradient-to-r from-amber-500 to-[#fc8019]' : 'bg-slate-300'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 rounded-full bg-slate-950 transition-transform ${
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform shadow-xs ${
                   isFeatured ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -392,13 +399,13 @@ function GalleryUploadDialog({
 
           {uploading && (
             <div className="space-y-1.5">
-              <div className="flex justify-between text-[11px] text-slate-400 font-mono">
+              <div className="flex justify-between text-[11px] text-slate-500 font-mono">
                 <span>Uploading assets…</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-amber-500 to-[#fc8019] transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -407,21 +414,21 @@ function GalleryUploadDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2.5 border-t border-amber-900/30 bg-[#080C14] px-6 py-4">
+        <div className="flex justify-end gap-2.5 border-t border-slate-100 bg-slate-50/80 px-6 py-4">
           <button
             onClick={onClose}
             disabled={uploading}
-            className="rounded-xl border border-amber-500/20 bg-[#0c121e] px-4 py-2 text-xs font-bold text-slate-300 hover:text-white"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs"
           >
             Cancel
           </button>
           <button
             onClick={() => void handleUpload()}
             disabled={uploading || !files.length}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] hover:brightness-110 px-5 py-2 text-xs font-bold text-slate-950 shadow-md disabled:opacity-50 transition-all"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-5 py-2 text-xs font-bold text-white shadow-2xs hover:brightness-105 disabled:opacity-50 transition-all"
           >
             {uploading ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : (
               <Upload size={14} />
             )}
@@ -503,30 +510,30 @@ function TestimonialModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-3xl bg-[#0c121e] border border-amber-500/30 shadow-2xl text-white"
+        className="w-full max-w-lg overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between bg-[#080C14] border-b border-amber-900/30 px-6 py-4">
+        <div className="flex items-center justify-between bg-slate-50/80 border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#F3CA52]">
-              <MessageSquare size={16} />
+            <div className="h-8 w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shadow-2xs">
+              <MessageSquare size={15} />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#F3CA52]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
                 Customer Reviews
               </p>
-              <p className="text-sm font-black text-white">
+              <p className="text-sm font-bold text-slate-900">
                 {(initial as any).id ? 'Edit Testimonial' : 'Add Client Story'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-xl border border-amber-500/20 bg-[#0c121e] text-slate-400 hover:text-white"
+            className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <X size={14} />
           </button>
@@ -534,7 +541,7 @@ function TestimonialModal({
 
         <div className="max-h-[80vh] space-y-4 overflow-y-auto p-6 text-xs">
           <div>
-            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Client Photo or Video Reel (optional)
             </label>
             {preview ? (
@@ -542,7 +549,7 @@ function TestimonialModal({
                 {form.mediaType === 'VIDEO' ? (
                   <video
                     src={preview}
-                    className="h-28 w-36 rounded-xl border border-amber-500/30 bg-black object-cover"
+                    className="h-28 w-36 rounded-xl border border-slate-200 bg-black object-cover shadow-2xs"
                     muted
                     controls
                   />
@@ -550,7 +557,7 @@ function TestimonialModal({
                   <img
                     src={preview}
                     alt=""
-                    className="h-28 w-36 rounded-xl border border-amber-500/30 object-cover"
+                    className="h-28 w-36 rounded-xl border border-slate-200 object-cover shadow-2xs"
                   />
                 )}
                 <button
@@ -567,7 +574,7 @@ function TestimonialModal({
                       void uploadService.deleteFile(toDelete);
                     }
                   }}
-                  className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-rose-600 text-white hover:bg-rose-500 shadow-md"
+                  className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-rose-600 text-white hover:bg-rose-500 shadow-md transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -577,9 +584,9 @@ function TestimonialModal({
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="flex items-center gap-2 rounded-xl border border-dashed border-amber-500/30 bg-[#080C14] px-4 py-3 text-xs text-slate-300 transition-colors hover:border-[#D4AF37] hover:text-white disabled:opacity-60"
+                className="flex items-center gap-2 rounded-xl border border-dashed border-amber-300 bg-amber-50/20 px-4 py-3 text-xs text-slate-700 transition-colors hover:border-amber-400 hover:bg-amber-50/40 disabled:opacity-60"
               >
-                <ImagePlus size={16} className="text-[#F3CA52]" />
+                <ImagePlus size={16} className="text-amber-600" />
                 <span>{uploading ? 'Uploading…' : 'Attach Photo or Video Reel'}</span>
               </button>
             )}
@@ -594,35 +601,35 @@ function TestimonialModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Client Name *
               </label>
-              <Input
+              <input
                 value={form.clientName ?? ''}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, clientName: e.target.value }))
                 }
                 placeholder="e.g. Dr. Thomas Kurian"
-                className="h-10 border-amber-500/20 bg-[#080C14] text-xs text-white placeholder:text-slate-500 focus:border-[#D4AF37]"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:bg-white transition-all"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Event Type / Designation
               </label>
-              <Input
+              <input
                 value={form.title ?? ''}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, title: e.target.value }))
                 }
                 placeholder="e.g. Wedding at Raviz Resort"
-                className="h-10 border-amber-500/20 bg-[#080C14] text-xs text-white placeholder:text-slate-500 focus:border-[#D4AF37]"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:bg-white transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Star Rating
             </label>
             <StarSelector
@@ -632,27 +639,27 @@ function TestimonialModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Client Review &amp; Words *
             </label>
-            <Textarea
+            <textarea
               value={form.testimonial ?? ''}
               onChange={(e) =>
                 setForm((p) => ({ ...p, testimonial: e.target.value }))
               }
               rows={4}
               placeholder="The catering and floral stage setup exceeded our expectations. Every guest praised the Kerala Sadhya and chicken roast…"
-              className="border-amber-500/20 bg-[#080C14] text-xs text-white placeholder:text-slate-500 focus:border-[#D4AF37]"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-amber-500 focus:bg-white transition-all resize-none"
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-amber-900/30 bg-[#080C14] px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
             <div>
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Star size={13} className="text-[#F3CA52]" />
+              <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Star size={13} className="text-amber-500 fill-amber-500" />
                 <span>Feature on Public Landing Page</span>
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 mt-0.5">
                 Displays prominently in the client testimonials carousel
               </p>
             </div>
@@ -662,11 +669,11 @@ function TestimonialModal({
                 setForm((p) => ({ ...p, isFeatured: !p.isFeatured }))
               }
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                form.isFeatured ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3CA52]' : 'bg-slate-800'
+                form.isFeatured ? 'bg-gradient-to-r from-amber-500 to-[#fc8019]' : 'bg-slate-300'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 rounded-full bg-slate-950 transition-transform ${
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform shadow-xs ${
                   form.isFeatured ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -674,20 +681,20 @@ function TestimonialModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-amber-900/30 bg-[#080C14] px-6 py-4">
+        <div className="flex justify-end gap-2.5 border-t border-slate-100 bg-slate-50/80 px-6 py-4">
           <button
             onClick={onClose}
-            className="rounded-xl border border-amber-500/20 bg-[#0c121e] px-4 py-2 text-xs font-bold text-slate-300 hover:text-white"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs"
           >
             Cancel
           </button>
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] hover:brightness-110 px-5 py-2 text-xs font-bold text-slate-950 shadow-md disabled:opacity-50 transition-all"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-5 py-2 text-xs font-bold text-white shadow-2xs hover:brightness-105 disabled:opacity-50 transition-all"
           >
             {saving ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : (
               <Plus size={14} />
             )}
@@ -718,6 +725,7 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
   const [loading, setLoading] = useState(true);
   const [viewImg, setViewImg] = useState<string | null>(null);
   const [galleryFilter, setGalleryFilter] = useState<GalleryFilter>('all');
+  const [testimonialFilter, setTestimonialFilter] = useState<TestimonialFilter>('all');
   const [search, setSearch] = useState('');
   const [testimonialModal, setTestimonialModal] = useState<
     (CreateReviewPayload & { id?: string }) | null
@@ -827,15 +835,20 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
   const testimonialsFiveStarCount = testimonials.filter((t) => (t.rating ?? 5) === 5).length;
 
   const filteredTestimonials = useMemo(() => {
-    if (!search.trim()) return testimonials;
-    const q = search.trim().toLowerCase();
-    return testimonials.filter(
-      (t) =>
-        t.clientName?.toLowerCase().includes(q) ||
-        t.title?.toLowerCase().includes(q) ||
-        t.testimonial?.toLowerCase().includes(q),
-    );
-  }, [testimonials, search]);
+    return testimonials.filter((t) => {
+      if (testimonialFilter === 'FEATURED' && !t.isFeatured) return false;
+      if (testimonialFilter === 'FIVE_STAR' && (t.rating ?? 5) < 5) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        return (
+          t.clientName?.toLowerCase().includes(q) ||
+          t.title?.toLowerCase().includes(q) ||
+          t.testimonial?.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [testimonials, testimonialFilter, search]);
 
   return (
     <PageShell
@@ -861,22 +874,28 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
         />
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Navigation Tabs Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-900/20 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => navigate('/admin/event-media/gallery')}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+              className={cn(
+                'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-2xs',
                 tab === 'gallery'
-                  ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] text-slate-950 font-black shadow-md'
-                  : 'border border-amber-500/20 bg-[#080C14] text-slate-300 hover:text-white hover:border-amber-500/40'
-              }`}
+                  ? 'bg-slate-900 text-white font-bold'
+                  : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+              )}
             >
               <GalleryHorizontal size={14} />
               <span>Gallery &amp; Showcase</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${tab === 'gallery' ? 'bg-slate-950 text-[#F3CA52]' : 'bg-slate-800 text-slate-400'}`}>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                  tab === 'gallery' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600',
+                )}
+              >
                 {galleryItems.length}
               </span>
             </button>
@@ -884,15 +903,21 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
             <button
               type="button"
               onClick={() => navigate('/admin/event-media/testimonials')}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+              className={cn(
+                'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-2xs',
                 tab === 'testimonials'
-                  ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] text-slate-950 font-black shadow-md'
-                  : 'border border-amber-500/20 bg-[#080C14] text-slate-300 hover:text-white hover:border-amber-500/40'
-              }`}
+                  ? 'bg-slate-900 text-white font-bold'
+                  : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+              )}
             >
               <MessageSquare size={14} />
               <span>Client Testimonials</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${tab === 'testimonials' ? 'bg-slate-950 text-[#F3CA52]' : 'bg-slate-800 text-slate-400'}`}>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                  tab === 'testimonials' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600',
+                )}
+              >
                 {testimonials.length}
               </span>
             </button>
@@ -901,9 +926,9 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
           <button
             onClick={() => void refresh()}
             title="Refresh Records"
-            className="grid h-9 w-9 place-items-center rounded-xl border border-amber-500/20 bg-[#080C14] text-slate-400 hover:text-white hover:border-amber-500/40 transition-colors shadow-md"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-colors shadow-2xs"
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin text-[#D4AF37]' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin text-amber-600' : ''} />
           </button>
         </div>
 
@@ -911,161 +936,203 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
         {loading ? (
           <KpiGridSkeleton count={4} />
         ) : tab === 'gallery' ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#0c121e] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">Total Media</span>
-                <span className="h-8 w-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#F3CA52]">
-                  <GalleryHorizontal size={16} />
-                </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Media</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{galleryItems.length}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-white">{galleryItems.length}</p>
-              <p className="mt-1 text-[11px] text-slate-400">Photos and videos</p>
+              <span className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                <GalleryHorizontal size={15} />
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-sky-500/20 bg-gradient-to-br from-[#0c1520] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-sky-400">Photographs</span>
-                <span className="h-8 w-8 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
-                  <ImageIcon size={16} />
-                </span>
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700/80 block">Photographs</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{galleryPhotoCount}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-sky-400">{galleryPhotoCount}</p>
-              <p className="mt-1 text-[11px] text-slate-400">High-resolution stills</p>
+              <span className="h-8 w-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shrink-0">
+                <ImageIcon size={15} />
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-[#160c20] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-purple-400">Cinematic Reels</span>
-                <span className="h-8 w-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                  <Film size={16} />
-                </span>
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700/80 block">Cinematic Reels</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{galleryVideoCount}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-purple-400">{galleryVideoCount}</p>
-              <p className="mt-1 text-[11px] text-slate-400">Event highlight clips</p>
+              <span className="h-8 w-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
+                <Film size={15} />
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#181308] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#F3CA52]">Featured Showcase</span>
-                <span className="h-8 w-8 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#F3CA52]">
-                  <Star size={16} className="fill-[#F3CA52]" />
-                </span>
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 block">Featured Showcase</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-amber-700">{galleryFeaturedCount}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-[#F3CA52]">{galleryFeaturedCount}</p>
-              <p className="mt-1 text-[11px] text-slate-400">Landing page highlight reel</p>
+              <span className="h-8 w-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                <Star size={15} className="fill-amber-500 text-amber-500" />
+              </span>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#0c121e] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">Total Stories</span>
-                <span className="h-8 w-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#F3CA52]">
-                  <MessageSquare size={16} />
-                </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Stories</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{testimonials.length}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-white">{testimonials.length}</p>
-              <p className="mt-1 text-[11px] text-slate-400">Client reviews published</p>
+              <span className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                <MessageSquare size={15} />
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-[#181308] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-amber-300">5-Star Ratings</span>
-                <span className="h-8 w-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
-                  <Star size={16} className="fill-amber-300" />
-                </span>
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 block">5-Star Ratings</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-amber-700">{testimonialsFiveStarCount}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-amber-300">{testimonialsFiveStarCount}</p>
-              <p className="mt-1 text-[11px] text-slate-400">Flawless celebrations</p>
+              <span className="h-8 w-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                <Star size={15} className="fill-amber-500 text-amber-500" />
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-[#081812] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-emerald-400">On Landing Page</span>
-                <span className="h-8 w-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Eye size={16} />
-                </span>
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80 block">On Landing Page</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-emerald-700">{testimonialsFeaturedCount}</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-emerald-400">{testimonialsFeaturedCount}</p>
-              <p className="mt-1 text-[11px] text-slate-400">Featured in client carousel</p>
+              <span className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                <Eye size={15} />
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#121620] to-[#080C14] p-4 text-white shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#F3CA52]">Customer Satisfaction</span>
-                <span className="h-8 w-8 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#F3CA52]">
-                  <Quote size={16} />
-                </span>
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 block">Client Satisfaction</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">100%</p>
               </div>
-              <p className="mt-3 font-serif text-2xl font-black text-[#F3CA52]">100%</p>
-              <p className="mt-1 text-[11px] text-slate-400">Verified Kerala events</p>
+              <span className="h-8 w-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800 shrink-0">
+                <Quote size={15} />
+              </span>
             </div>
           </div>
         )}
 
         {/* ── TOOLBAR: Filter & Search ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 p-3 shadow-xl backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
           {tab === 'gallery' ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setUploadDialog(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] hover:brightness-110 px-4 py-2 text-xs font-bold text-slate-950 shadow-md transition-all active:scale-95"
-              >
-                <Upload size={14} />
-                <span>Upload Media</span>
-              </button>
-
-              <div className="inline-flex rounded-xl border border-amber-500/20 bg-[#080C14] p-1">
-                {[
-                  { key: 'all' as GalleryFilter, label: 'All', count: galleryItems.length },
-                  { key: 'IMAGE' as GalleryFilter, label: 'Photos', count: galleryPhotoCount },
-                  { key: 'VIDEO' as GalleryFilter, label: 'Videos', count: galleryVideoCount },
-                  { key: 'FEATURED' as GalleryFilter, label: 'Featured', count: galleryFeaturedCount },
-                ].map((f) => (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { key: 'all' as GalleryFilter, label: 'All Media', count: galleryItems.length },
+                { key: 'IMAGE' as GalleryFilter, label: 'Photos', count: galleryPhotoCount },
+                { key: 'VIDEO' as GalleryFilter, label: 'Videos', count: galleryVideoCount },
+                { key: 'FEATURED' as GalleryFilter, label: 'Featured', count: galleryFeaturedCount },
+              ].map((f) => {
+                const isActive = galleryFilter === f.key;
+                return (
                   <button
                     key={f.key}
                     type="button"
                     onClick={() => setGalleryFilter(f.key)}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
-                      galleryFilter === f.key
-                        ? 'bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] text-slate-950 font-black shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50',
+                    )}
                   >
                     <span>{f.label}</span>
-                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${galleryFilter === f.key ? 'bg-slate-950 text-[#F3CA52]' : 'bg-slate-800 text-slate-400'}`}>
+                    <span
+                      className={cn(
+                        'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600',
+                      )}
+                    >
                       {f.count}
                     </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           ) : (
-            <button
-              onClick={() => setTestimonialModal({ ...EMPTY_FORM })}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] hover:brightness-110 px-4 py-2 text-xs font-bold text-slate-950 shadow-md transition-all active:scale-95"
-            >
-              <Plus size={14} />
-              <span>Add Client Story</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { key: 'all' as const, label: 'All Stories', count: testimonials.length },
+                { key: 'FEATURED' as const, label: 'On Landing Page', count: testimonialsFeaturedCount },
+                { key: 'FIVE_STAR' as const, label: '5-Star Ratings', count: testimonialsFiveStarCount },
+              ].map((f) => {
+                const isActive = testimonialFilter === f.key;
+                return (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setTestimonialFilter(f.key)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50',
+                    )}
+                  >
+                    <span>{f.label}</span>
+                    <span
+                      className={cn(
+                        'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600',
+                      )}
+                    >
+                      {f.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           )}
 
-          <div className="relative min-w-[260px] flex-1 sm:max-w-sm">
-            <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={tab === 'gallery' ? 'Search media title…' : 'Search client name, venue, review…'}
-              className="h-10 w-full rounded-xl border border-amber-500/20 bg-[#080C14] pl-9 pr-8 text-xs text-white placeholder:text-slate-500 outline-none focus:border-[#D4AF37]"
-            />
-            {search && (
+          <div className="flex items-center gap-2 flex-1 sm:max-w-md justify-end">
+            <div className="relative flex-1">
+              <Search
+                size={13}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={tab === 'gallery' ? 'Search media by title...' : 'Search by client, title, quote...'}
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-7 text-xs text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {tab === 'gallery' ? (
               <button
                 type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-white"
+                onClick={() => setUploadDialog(true)}
+                className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-3.5 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all shrink-0"
               >
-                <X size={13} />
+                <Upload size={14} />
+                <span>Upload Media</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setTestimonialModal({ ...EMPTY_FORM })}
+                className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-3.5 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all shrink-0"
+              >
+                <Plus size={14} />
+                <span>Add Client Story</span>
               </button>
             )}
           </div>
@@ -1079,15 +1146,18 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
             {loading ? (
               <CardGridSkeleton count={8} columns="grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
             ) : filteredGalleryItems.length === 0 ? (
-              <div className="rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 p-16 text-center shadow-xl">
-                <GalleryHorizontal size={40} className="mx-auto mb-3 text-slate-600" />
-                <p className="text-base font-bold text-white">No gallery items found</p>
+              <div className="rounded-xl border border-slate-200/80 bg-white p-12 text-center shadow-2xs">
+                <GalleryHorizontal size={36} className="mx-auto mb-3 text-slate-300" />
+                <p className="text-sm font-bold text-slate-800">No gallery media found</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  {search ? 'Try clearing your search query.' : 'Upload photos and videos to showcase Thankam events.'}
+                  {search || galleryFilter !== 'all'
+                    ? 'Try clearing your search query or media filter.'
+                    : 'Upload photography and cinematic reels to showcase Thankam events.'}
                 </p>
                 <button
+                  type="button"
                   onClick={() => setUploadDialog(true)}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] px-4 py-2 text-xs font-bold text-slate-950 shadow-md"
+                  className="mt-3.5 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:brightness-105"
                 >
                   <Upload size={13} />
                   <span>Upload Media Now</span>
@@ -1098,9 +1168,10 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
                 {filteredGalleryItems.map((m) => (
                   <div
                     key={m.id}
-                    className="overflow-hidden rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 shadow-xl backdrop-blur-md transition-all hover:border-amber-500/40 group"
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.09)] hover:border-amber-400/80 transition-all duration-150"
                   >
-                    <div className="relative aspect-square w-full overflow-hidden bg-black">
+                    {/* Media Thumbnail Container */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-900">
                       {m.type === 'IMAGE' ? (
                         <img
                           src={toMediaUrl(m.url)}
@@ -1124,54 +1195,70 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
                         />
                       )}
 
-                      {/* Featured Badge */}
-                      <div className="absolute right-2 top-2 flex gap-1">
+                      {/* Badges on Media */}
+                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                        {m.type === 'VIDEO' ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-black/70 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white border border-white/20">
+                            <Film size={11} /> Reel
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-black/70 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white border border-white/20">
+                            <ImageIcon size={11} /> Photo
+                          </span>
+                        )}
+
                         {m.isFeatured && (
-                          <span className="rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] px-2.5 py-0.5 text-[10px] font-black text-slate-950 shadow-md">
-                            ★ Featured
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white px-2.5 py-0.5 text-[10px] font-bold shadow-xs">
+                            <Star size={10} className="fill-white" /> Featured
                           </span>
                         )}
                       </div>
 
-                      {/* Video Indicator */}
-                      {m.type === 'VIDEO' && (
-                        <div className="absolute bottom-2 left-2">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white border border-white/20">
-                            <Video size={10} /> REEL
-                          </span>
-                        </div>
-                      )}
+                      {/* Quick Preview Hover Overlay */}
+                      <button
+                        type="button"
+                        onClick={() => setViewImg(toMediaUrl(m.url))}
+                        className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-xs px-3 py-1.5 text-xs font-bold text-slate-900 shadow-md transform translate-y-1 group-hover:translate-y-0 transition-transform">
+                          <Eye size={13} /> View Full
+                        </span>
+                      </button>
                     </div>
 
-                    <div className="p-3.5 space-y-2.5">
+                    {/* Details & Action Row */}
+                    <div className="p-3.5 flex flex-col justify-between flex-1 space-y-3">
                       <div>
-                        <p className="truncate text-xs font-bold text-white" title={m.title || 'Event Media'}>
+                        <p className="font-bold text-xs text-slate-900 truncate" title={m.title || 'Untitled Event Media'}>
                           {m.title || 'Untitled Event Media'}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 font-mono">
+                          <CalendarDays size={11} />
                           {fmt(m.createdAt)}
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-1.5 pt-1 border-t border-amber-900/20">
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => void featureMedia(m.id, m.isFeatured)}
-                          className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold transition-all ${
+                          className={cn(
+                            'flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-bold transition-all shadow-2xs',
                             m.isFeatured
-                              ? 'bg-amber-500/20 text-[#F3CA52] border border-amber-500/30'
-                              : 'bg-[#080C14] text-slate-400 hover:text-white border border-amber-500/10'
-                          }`}
+                              ? 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                              : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                          )}
+                          title={m.isFeatured ? 'Remove from featured showcase' : 'Add to featured showcase'}
                         >
-                          <Star size={12} className={m.isFeatured ? 'fill-[#F3CA52]' : ''} />
+                          <Star size={12} className={m.isFeatured ? 'fill-amber-500 text-amber-500' : 'text-slate-400'} />
                           <span>{m.isFeatured ? 'Featured' : 'Feature'}</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => setViewImg(toMediaUrl(m.url))}
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-[#080C14] text-slate-400 hover:text-white border border-amber-500/10"
-                          title="View Media"
+                          className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-2xs"
+                          title="Preview Media"
                         >
                           <Eye size={13} />
                         </button>
@@ -1179,8 +1266,8 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
                         <button
                           type="button"
                           onClick={() => void deleteMedia(m.id)}
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
-                          title="Delete"
+                          className="grid h-8 w-8 place-items-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors shadow-2xs"
+                          title="Delete media"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -1201,15 +1288,18 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
             {loading ? (
               <CardGridSkeleton count={6} columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" />
             ) : filteredTestimonials.length === 0 ? (
-              <div className="rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 p-16 text-center shadow-xl">
-                <MessageSquarePlus size={40} className="mx-auto mb-3 text-slate-600" />
-                <p className="text-base font-bold text-white">No testimonials found</p>
+              <div className="rounded-xl border border-slate-200/80 bg-white p-12 text-center shadow-2xs">
+                <MessageSquarePlus size={36} className="mx-auto mb-3 text-slate-300" />
+                <p className="text-sm font-bold text-slate-800">No testimonials found</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  {search ? 'Try clearing your search query.' : 'Add your first customer review or client story.'}
+                  {search || testimonialFilter !== 'all'
+                    ? 'Try clearing your search query or filter.'
+                    : 'Add your first customer review or celebration testimonial.'}
                 </p>
                 <button
+                  type="button"
                   onClick={() => setTestimonialModal({ ...EMPTY_FORM })}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] px-4 py-2 text-xs font-bold text-slate-950 shadow-md"
+                  className="mt-3.5 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:brightness-105"
                 >
                   <Plus size={13} />
                   <span>Add First Testimonial</span>
@@ -1220,121 +1310,126 @@ export function EventMediaPage({ section = 'gallery' }: { section?: Tab }) {
                 {filteredTestimonials.map((t) => (
                   <div
                     key={t.id}
-                    className="overflow-hidden rounded-2xl border border-amber-900/20 bg-[#0c121e]/90 shadow-xl backdrop-blur-md transition-all hover:border-amber-500/40 flex flex-col justify-between"
+                    className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.09)] hover:border-amber-400/80 transition-all duration-150 space-y-4"
                   >
-                    <div>
-                      {/* Media Banner */}
-                      <div className="relative flex h-44 items-center justify-center bg-gradient-to-br from-[#080C14] to-[#121927] overflow-hidden">
-                        {t.mediaUrl && t.mediaType === 'VIDEO' ? (
-                          <video
-                            src={toMediaUrl(t.mediaUrl)}
-                            className="h-full w-full object-cover"
-                            muted
-                            loop
-                            playsInline
-                            onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play()}
-                            onMouseLeave={(e) => {
-                              const v = e.currentTarget as HTMLVideoElement;
-                              v.pause();
-                              v.currentTime = 0;
-                            }}
-                          />
-                        ) : t.mediaUrl ? (
-                          <img
-                            src={toMediaUrl(t.mediaUrl)}
-                            alt={t.clientName ?? ''}
-                            className="h-full w-full cursor-pointer object-cover transition-transform duration-300 hover:scale-105"
-                            onClick={() => setViewImg(toMediaUrl(t.mediaUrl!))}
-                          />
-                        ) : (
-                          <span className="font-serif text-5xl font-black text-amber-500/10">
-                            {(t.clientName ?? 'CL')
-                              .split(' ')
-                              .map((w) => w[0])
-                              .join('')
-                              .slice(0, 2)
-                              .toUpperCase()}
+                    <div className="space-y-3">
+                      {/* Header with Client Avatar & Info */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {t.mediaUrl ? (
+                            <div
+                              className="relative h-12 w-12 rounded-full overflow-hidden border border-slate-200 shadow-2xs cursor-pointer shrink-0"
+                              onClick={() => setViewImg(toMediaUrl(t.mediaUrl!))}
+                            >
+                              {t.mediaType === 'VIDEO' ? (
+                                <video src={toMediaUrl(t.mediaUrl)} className="h-full w-full object-cover" muted />
+                              ) : (
+                                <img src={toMediaUrl(t.mediaUrl)} alt="" className="h-full w-full object-cover" />
+                              )}
+                            </div>
+                          ) : (
+                            <div className="h-12 w-12 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-bold flex items-center justify-center shrink-0 shadow-2xs text-sm">
+                              {(t.clientName ?? 'CL')
+                                .split(' ')
+                                .map((w) => w[0])
+                                .join('')
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-slate-900 truncate">
+                              {t.clientName || 'Anonymous Client'}
+                            </h4>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">
+                              {t.title || 'Wedding / Feast Celebration'}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              {fmt(t.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {t.isFeatured && (
+                          <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 shadow-2xs">
+                            ★ Landing Page
                           </span>
                         )}
-
-                        {/* Featured Badge */}
-                        <div className="absolute right-2 top-2">
-                          {t.isFeatured && (
-                            <span className="rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F3CA52] px-2.5 py-0.5 text-[10px] font-black text-slate-950 shadow-md">
-                              ★ On Landing Page
-                            </span>
-                          )}
-                        </div>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-bold text-white text-sm font-serif">
-                              {t.clientName || '—'}
-                            </p>
-                            <p className="text-[11px] text-slate-400">
-                              {t.title || 'Event Client'} &bull; {fmt(t.createdAt)}
-                            </p>
-                          </div>
-                          <StarRow rating={t.rating ?? 5} size={14} />
-                        </div>
-
-                        {t.testimonial && (
-                          <div className="relative pl-3 border-l-2 border-[#D4AF37]/50">
-                            <p className="text-xs italic text-slate-300 line-clamp-3 leading-relaxed">
-                              &ldquo;{t.testimonial}&rdquo;
-                            </p>
-                          </div>
-                        )}
+                      {/* Star Rating */}
+                      <div className="pt-1">
+                        <StarRow rating={t.rating ?? 5} size={15} />
                       </div>
+
+                      {/* Testimonial Quote */}
+                      {t.testimonial && (
+                        <div className="relative rounded-xl bg-slate-50/80 p-3.5 border border-slate-100">
+                          <Quote size={16} className="text-amber-500/80 mb-1" />
+                          <p className="text-xs italic text-slate-700 line-clamp-4 leading-relaxed">
+                            &ldquo;{t.testimonial}&rdquo;
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Attached Media Thumbnail Pill (if provided) */}
+                      {t.mediaUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setViewImg(toMediaUrl(t.mediaUrl!))}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          {t.mediaType === 'VIDEO' ? <Film size={12} /> : <ImageIcon size={12} />}
+                          <span>Preview Attached {t.mediaType === 'VIDEO' ? 'Reel' : 'Photo'}</span>
+                        </button>
+                      )}
                     </div>
 
-                    {/* Actions */}
-                    <div className="p-4 pt-0">
-                      <div className="flex items-center gap-1.5 pt-3 border-t border-amber-900/20">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTestimonialModal({
-                              id: t.id,
-                              clientName: t.clientName ?? '',
-                              title: t.title ?? '',
-                              testimonial: t.testimonial ?? '',
-                              rating: t.rating ?? 5,
-                              mediaUrl: t.mediaUrl ?? undefined,
-                              mediaType: t.mediaType ?? undefined,
-                              isFeatured: t.isFeatured,
-                            })
-                          }
-                          className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-amber-500/20 bg-[#080C14] py-1.5 text-[11px] font-bold text-slate-300 hover:text-white hover:border-amber-500/40 transition-all"
-                        >
-                          <Edit3 size={12} /> Edit
-                        </button>
+                    {/* Action Footer */}
+                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTestimonialModal({
+                            id: t.id,
+                            clientName: t.clientName ?? '',
+                            title: t.title ?? '',
+                            testimonial: t.testimonial ?? '',
+                            rating: t.rating ?? 5,
+                            mediaUrl: t.mediaUrl ?? undefined,
+                            mediaType: t.mediaType ?? undefined,
+                            isFeatured: t.isFeatured,
+                          })
+                        }
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all"
+                      >
+                        <Edit3 size={12} />
+                        <span>Edit</span>
+                      </button>
 
-                        <button
-                          type="button"
-                          onClick={() => void featureTestimonial(t.id, t.isFeatured)}
-                          className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold transition-all ${
-                            t.isFeatured
-                              ? 'bg-amber-500/20 text-[#F3CA52] border border-amber-500/30'
-                              : 'bg-[#080C14] text-slate-400 hover:text-white border border-amber-500/10'
-                          }`}
-                        >
-                          <Star size={12} className={t.isFeatured ? 'fill-[#F3CA52]' : ''} />
-                          <span>{t.isFeatured ? 'Featured' : 'Feature'}</span>
-                        </button>
+                      <button
+                        type="button"
+                        onClick={() => void featureTestimonial(t.id, t.isFeatured)}
+                        className={cn(
+                          'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-all shadow-2xs',
+                          t.isFeatured
+                            ? 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                        )}
+                      >
+                        <Star size={12} className={t.isFeatured ? 'fill-amber-500 text-amber-500' : 'text-slate-400'} />
+                        <span>{t.isFeatured ? 'Featured' : 'Feature'}</span>
+                      </button>
 
-                        <button
-                          type="button"
-                          onClick={() => void deleteTestimonial(t.id)}
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
-                          title="Delete"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void deleteTestimonial(t.id)}
+                        className="grid h-8 w-8 place-items-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors shadow-2xs"
+                        title="Delete testimonial"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
                 ))}
