@@ -63,6 +63,7 @@ import {
 } from '@/features/quotations/quotations.service';
 import { useAppSelector } from '@/hooks/store';
 import { formatInr } from '@/utils/currency';
+import { cn } from '@/utils/cn';
 import {
   isTerminalRequestStatus,
   requestStatusLabel,
@@ -252,6 +253,32 @@ function parseRejectionHistory(notes?: string | null): RejectionEntry[] {
       return m ? { date: m[1], reason: m[2].trim() } : null;
     })
     .filter((x): x is RejectionEntry => x !== null);
+}
+
+function parseCustomerCleanNotes(notes?: string | null): string {
+  if (!notes) return '';
+  return notes
+    .split('\n')
+    .filter(
+      (l) =>
+        !l.includes('[CUSTOMER_DECLINE]') &&
+        !l.includes('[Submitted from customer portal]') &&
+        !l.trim().startsWith('[SYSTEM_'),
+    )
+    .join('\n')
+    .trim();
+}
+
+function parseAddressAndMap(rawAddress?: string | null) {
+  if (!rawAddress) return { addressText: '', mapUrl: null };
+  const urlMatch = rawAddress.match(/(https?:\/\/[^\s]+)/);
+  const mapUrl = urlMatch ? urlMatch[0] : null;
+  const addressText = rawAddress
+    .replace(/Pinned Location:\s*https?:\/\/[^\s]+/i, '')
+    .replace(/(https?:\/\/[^\s]+)/, '')
+    .replace(/\|\s*$/, '')
+    .trim();
+  return { addressText, mapUrl };
 }
 
 type GroupedLine = { category: string; entries: Array<{ item: EditableLine; index: number }> };
@@ -1938,6 +1965,15 @@ export function CustomerRequestsPage() {
   const cleanPhone = (detail?.customerPhone ?? selectedRow?.customerPhone ?? '').replace(/[^\d]/g, '');
   const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
+  const parsedLocation = useMemo(
+    () => parseAddressAndMap(detail?.customerAddress),
+    [detail?.customerAddress],
+  );
+  const cleanCustomerNotes = useMemo(
+    () => parseCustomerCleanNotes(detail?.notes),
+    [detail?.notes],
+  );
+
   return (
     <PageShell
       title={`Inquiry #${detail?.quotationNumber || selectedRow?.quotationNumber}`}
@@ -1985,313 +2021,346 @@ export function CustomerRequestsPage() {
         ) : (
           <>
             {/* Hero Card: Customer Presentation + Metadata + Stepper */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-5">
-          {/* Main Title & Status Line */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-800 font-black text-lg shadow-2xs border border-amber-200">
-                {(detail?.customerName || selectedRow?.customerName || 'C').charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                    {detail?.customerName || selectedRow?.customerName}
-                  </h1>
-                  <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-bold ${STATUS_BADGE[st]}`}>
-                    <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${STATUS_DOT[st]} align-middle`} />
-                    {STATUS_LABELS[st] || requestStatusLabel(detail?.requestStatus || selectedRow?.requestStatus)}
-                  </span>
-                  {reQuoteMode && (
-                    <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800">
-                      Re-Quote Mode (Attempt #{reQuoteCount + 1})
-                    </span>
-                  )}
-                  {reviseMode && (
-                    <span className="rounded-full bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-[10px] font-extrabold text-sky-800">
-                      Editing Revision
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Quotation <span className="font-mono font-bold text-slate-900">#{detail?.quotationNumber || selectedRow?.quotationNumber}</span>
-                  {detail?.createdAt && (
-                    <> &bull; Received {new Date(detail.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Advance / Action Button */}
-            {!isLocked && nextAction && (
-              <button
-                type="button"
-                onClick={() => void onMoveStatus(detail?.id || '', nextAction.status)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-4 py-2 text-xs font-bold text-white shadow-2xs transition-all active:scale-95"
-              >
-                <span>Advance to &ldquo;{nextAction.label}&rdquo;</span>
-                <ArrowRight size={13} />
-              </button>
-            )}
-          </div>
-
-          {/* Event Key Details Grid */}
-          {detail && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {/* Phone */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                  <Phone size={15} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Phone</p>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`tel:${detail.customerPhone}`}
-                      className="truncate text-xs font-bold text-slate-900 hover:text-amber-700 hover:underline"
-                    >
-                      {detail.customerPhone || '—'}
-                    </a>
-                    {detail.customerPhone && (
-                      <a
-                        href={`https://wa.me/${waPhone}?text=Hello%20${encodeURIComponent(detail.customerName)},%20regarding%20your%20inquiry%20${detail.quotationNumber}%20with%20Thankam%20Events...`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-emerald-600 hover:text-emerald-700"
-                        title="WhatsApp"
-                      >
-                        <MessageCircle size={14} />
-                      </a>
-                    )}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-2xs space-y-5">
+              {/* Main Title & Status Line */}
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex flex-wrap items-center gap-3.5">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-800 font-serif font-black text-xl shadow-2xs border border-amber-200">
+                    {(detail?.customerName || selectedRow?.customerName || 'C').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-xl font-bold tracking-tight text-slate-900 font-serif">
+                        {detail?.customerName || selectedRow?.customerName}
+                      </h1>
+                      <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-bold ${STATUS_BADGE[st]}`}>
+                        <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${STATUS_DOT[st]} align-middle`} />
+                        {STATUS_LABELS[st] || requestStatusLabel(detail?.requestStatus || selectedRow?.requestStatus)}
+                      </span>
+                      {reQuoteMode && (
+                        <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800">
+                          Re-Quote Mode (Attempt #{reQuoteCount + 1})
+                        </span>
+                      )}
+                      {reviseMode && (
+                        <span className="rounded-full bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-[10px] font-extrabold text-sky-800">
+                          Editing Revision
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Quotation <span className="font-mono font-bold text-slate-900">#{detail?.quotationNumber || selectedRow?.quotationNumber}</span>
+                      {detail?.createdAt && (
+                        <> &bull; Received {new Date(detail.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</>
+                      )}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Customer Email */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                  <Mail size={15} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</p>
-                  {detail.customerEmail ? (
+                {/* Direct Contact Shortcuts */}
+                {detail?.customerPhone && (
+                  <div className="flex items-center gap-2">
                     <a
-                      href={`mailto:${detail.customerEmail}`}
-                      className="truncate text-xs font-bold text-slate-900 hover:text-amber-700 hover:underline block"
-                      title={detail.customerEmail}
+                      href={`https://wa.me/${waPhone}?text=Hello%20${encodeURIComponent(detail.customerName)},%20regarding%20your%20inquiry%20${detail.quotationNumber}%20with%20Thankam%20Events...`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-colors shadow-2xs"
+                      title="WhatsApp Client"
                     >
-                      {detail.customerEmail}
+                      <MessageCircle size={14} className="text-emerald-600" />
+                      <span>WhatsApp</span>
                     </a>
-                  ) : (
-                    <p className="truncate text-xs font-bold text-slate-400">Not provided</p>
-                  )}
-                </div>
+                    <a
+                      href={`tel:${detail.customerPhone}`}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-100 transition-colors shadow-2xs"
+                      title="Call Client"
+                    >
+                      <Phone size={13} className="text-sky-600" />
+                      <span>Call Client</span>
+                    </a>
+                  </div>
+                )}
               </div>
 
-              {/* Event Type */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                  <PartyPopper size={15} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Event</p>
-                  <p className="truncate text-xs font-bold text-slate-900" title={detail.eventType || 'Event'}>
-                    {detail.eventType || 'Catering Event'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Event Date */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                  <CalendarDays size={15} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Event Date</p>
-                  <p className="truncate text-xs font-bold text-slate-900">
-                    {new Date(detail.eventDate).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </p>
-                </div>
-              </div>
-
-              {/* Guests */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
-                  <Users size={15} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Guests</p>
-                  <p className="truncate text-xs font-bold text-slate-900">
-                    {detail.guestCount} Members
-                  </p>
-                </div>
-              </div>
-
-              {/* Venue */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 col-span-2 sm:col-span-1">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-50 text-rose-600 border border-rose-200">
-                  <MapPin size={15} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Venue &amp; Address</p>
-                  <p className="truncate text-xs font-bold text-slate-900" title={detail.customerAddress ? `${detail.venue || 'Venue'}: ${detail.customerAddress}` : (detail.venue || 'Venue TBD')}>
-                    {detail.venue || 'Venue TBD'}
-                    {detail.customerAddress && (
-                      <span className="block text-[11px] font-normal text-slate-600 truncate mt-0.5">
-                        {detail.customerAddress}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Customer Special Notes & Requests */}
-          {detail?.notes && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                <FileText size={13} className="text-amber-700" />
-                <span>Special Instructions &amp; Dietary Requests</span>
-              </div>
-              <p className="mt-1 text-slate-700 whitespace-pre-wrap text-[11px] leading-relaxed">
-                {detail.notes}
-              </p>
-            </div>
-          )}
-
-          {/* Customer Notification Email */}
-          {detail && (
-            <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5 text-xs shadow-2xs">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-blue-950">
-                  <Mail size={13} className="text-blue-600" />
-                  <span>Customer Notification Email</span>
-                </div>
-                <span className="text-[10px] text-blue-700 font-medium">Auto-delivers official PDF &amp; updates</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="email"
-                  placeholder="e.g. customer@gmail.com"
-                  value={notifyCustomerEmail}
-                  onChange={(e) => setNotifyCustomerEmail(e.target.value)}
-                  className="h-8 text-xs bg-white border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => void onManualSendEmail()}
-                  disabled={sendingEmail || !notifyCustomerEmail.trim()}
-                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-blue-300 bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-900 font-semibold text-xs transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
-                >
-                  <Send size={12} />
-                  <span>{sendingEmail ? 'Sending...' : 'Send Email Now'}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Workflow Status / Stepper Strip */}
-          {detail && (
-            <div>
-              {isDeclined && !reQuoteMode ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="grid h-7 w-7 place-items-center rounded-lg bg-rose-100 text-rose-600">
-                      <XCircle size={16} />
+              {/* Event Key Details Grid (Balanced 6-Card Layout) */}
+              {detail && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {/* 1. Phone */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                      <Phone size={15} />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-rose-800">
-                        Quotation Declined by Client
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Primary Contact Phone</p>
+                      <p className="truncate text-xs font-bold text-slate-900 font-mono mt-0.5">
+                        {detail.customerPhone ? `+91 ${detail.customerPhone}` : '—'}
                       </p>
-                      {rejectionHistory.length > 0 ? (
-                        <p className="text-[11px] text-rose-700">
-                          Feedback: <span className="font-semibold italic">&ldquo;{rejectionHistory[rejectionHistory.length - 1].reason}&rdquo;</span>
-                        </p>
+                    </div>
+                  </div>
+
+                  {/* 2. Customer Email */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                      <Mail size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Official Email</p>
+                      {detail.customerEmail ? (
+                        <a
+                          href={`mailto:${detail.customerEmail}`}
+                          className="truncate text-xs font-bold text-slate-900 hover:text-amber-700 hover:underline block mt-0.5"
+                          title={detail.customerEmail}
+                        >
+                          {detail.customerEmail}
+                        </a>
                       ) : (
-                        <p className="text-[11px] text-rose-700">
-                          The client requested pricing adjustments or menu alterations.
-                        </p>
+                        <p className="truncate text-xs font-semibold text-slate-400 mt-0.5">Not provided</p>
                       )}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setReQuoteMode(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors"
-                  >
-                    <RefreshCw size={12} />
-                    <span>Create Re-quote</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-                    {STATUS_FLOW.map((sKey, idx) => {
-                      const stepNum = idx + 1;
-                      const isCurrent = st === sKey;
-                      const isPassed = STATUS_FLOW.indexOf(st) > idx;
 
-                      return (
-                        <Fragment key={sKey}>
-                          {idx > 0 && <span className="text-slate-300">──</span>}
-                          <div
-                            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all ${
-                              isCurrent
-                                ? 'bg-slate-900 text-white font-bold shadow-2xs'
-                                : isPassed
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'text-slate-400'
-                            }`}
+                  {/* 3. Event Type */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                      <PartyPopper size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Event Specification</p>
+                      <p className="truncate text-xs font-bold text-slate-900 mt-0.5" title={detail.eventType || 'Event'}>
+                        {detail.eventType || 'Catering Event'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 4. Event Date */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                      <CalendarDays size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Event Date</p>
+                      <p className="truncate text-xs font-bold text-slate-900 mt-0.5">
+                        {new Date(detail.eventDate).toLocaleDateString('en-IN', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 5. Guests */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sky-50 text-sky-700 border border-sky-200">
+                      <Users size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Guest Count</p>
+                      <p className="truncate text-xs font-bold text-slate-900 font-mono mt-0.5">
+                        {detail.guestCount} Guests / Plates
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 6. Venue & Address */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
+                      <MapPin size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Venue &amp; Location</p>
+                      <p className="truncate text-xs font-bold text-slate-900 mt-0.5" title={detail.venue || 'Venue TBD'}>
+                        {detail.venue || 'Venue TBD'}
+                      </p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        {parsedLocation.addressText && (
+                          <span className="text-[11px] text-slate-600 truncate max-w-[180px]">
+                            {parsedLocation.addressText}
+                          </span>
+                        )}
+                        {parsedLocation.mapUrl && (
+                          <a
+                            href={parsedLocation.mapUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 hover:underline"
                           >
-                            <span
-                              className={`grid h-4 w-4 place-items-center rounded-full text-[10px] font-black ${
+                            <MapPin size={10} className="text-rose-500" />
+                            <span>Maps ↗</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Clean Special Notes & Requests */}
+              {cleanCustomerNotes && (
+                <div className="rounded-2xl border border-amber-200/90 bg-amber-50/60 p-4 text-xs space-y-1.5 shadow-2xs">
+                  <div className="flex items-center gap-2 font-bold text-amber-900">
+                    <FileText size={14} className="text-amber-700" />
+                    <span className="uppercase tracking-wider text-[11px]">Special Instructions &amp; Dietary Requests</span>
+                  </div>
+                  <p className="text-slate-800 text-xs leading-relaxed whitespace-pre-wrap font-medium pl-6">
+                    {cleanCustomerNotes}
+                  </p>
+                </div>
+              )}
+
+              {/* Client Revision & Negotiation History */}
+              {rejectionHistory.length > 0 && (
+                <div className="rounded-2xl border border-rose-200/90 bg-rose-50/50 p-4 text-xs space-y-2 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-rose-900">
+                      <XCircle size={14} className="text-rose-600" />
+                      <span className="uppercase tracking-wider text-[11px]">Client Revision &amp; Negotiation Notes</span>
+                    </div>
+                    {isDeclined && !reQuoteMode && (
+                      <button
+                        type="button"
+                        onClick={() => setReQuoteMode(true)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 px-3.5 py-1 text-xs font-bold text-white shadow-2xs transition-colors"
+                      >
+                        <RefreshCw size={12} />
+                        <span>Create Re-quote</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 pl-6">
+                    {rejectionHistory.map((entry, idx) => (
+                      <div key={idx} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                        <p className="text-slate-800 font-medium italic">
+                          &ldquo;{entry.reason}&rdquo;
+                        </p>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(entry.date).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Notification Email Dispatch */}
+              {detail && (
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-slate-700 border border-slate-200 shadow-2xs">
+                      <Mail size={14} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-xs">Client Notification Email</p>
+                      <p className="text-[10px] text-slate-500">Auto-delivers official quotation PDF &amp; booking updates</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Input
+                      type="email"
+                      placeholder="e.g. customer@gmail.com"
+                      value={notifyCustomerEmail}
+                      onChange={(e) => setNotifyCustomerEmail(e.target.value)}
+                      className="h-8.5 w-full sm:w-64 text-xs bg-white border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void onManualSendEmail()}
+                      disabled={sendingEmail || !notifyCustomerEmail.trim()}
+                      className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-bold text-xs transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
+                    >
+                      <Send size={12} />
+                      <span>{sendingEmail ? 'Sending...' : 'Send PDF'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Workflow Status / Stepper Strip */}
+              {detail && (
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+                      {STATUS_FLOW.map((sKey, idx) => {
+                        const stepNum = idx + 1;
+                        const isCurrent = st === sKey;
+                        const isPassed = STATUS_FLOW.indexOf(st) > idx;
+
+                        return (
+                          <Fragment key={sKey}>
+                            {idx > 0 && <span className="text-slate-300 font-bold">&rarr;</span>}
+                            <div
+                              className={cn(
+                                'flex items-center gap-2 rounded-xl px-3 py-1.5 transition-all text-xs',
                                 isCurrent
-                                  ? 'bg-amber-400 text-slate-950'
+                                  ? 'bg-slate-900 text-amber-300 font-bold shadow-xs border border-slate-900'
                                   : isPassed
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-slate-200 text-slate-500'
-                              }`}
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-bold'
+                                  : 'bg-white text-slate-400 border border-slate-200 font-medium',
+                              )}
                             >
-                              {isPassed ? '✓' : stepNum}
-                            </span>
-                            <span>{STATUS_LABELS[sKey]}</span>
-                          </div>
-                        </Fragment>
-                      );
-                    })}
+                              <span
+                                className={cn(
+                                  'grid h-4.5 w-4.5 place-items-center rounded-full text-[10px] font-black',
+                                  isCurrent
+                                    ? 'bg-amber-400 text-slate-950'
+                                    : isPassed
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-slate-100 text-slate-500',
+                                )}
+                              >
+                                {isPassed ? '✓' : stepNum}
+                              </span>
+                              <span>{STATUS_LABELS[sKey]}</span>
+                            </div>
+                          </Fragment>
+                        );
+                      })}
+                    </div>
+
+                    {/* Quick Advance / Action Button */}
+                    {!isLocked && nextAction && (
+                      <button
+                        type="button"
+                        onClick={() => void onMoveStatus(detail?.id || '', nextAction.status)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] hover:brightness-105 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all active:scale-95 shrink-0"
+                      >
+                        <span>Advance to &ldquo;{nextAction.label}&rdquo;</span>
+                        <ArrowRight size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        {detailLoading && !detail ? (
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-16 text-center shadow-xs">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" />
-            <p className="mt-3 text-sm font-semibold text-slate-600">Retrieving inquiry details…</p>
-          </div>
-        ) : detail ? (
-          <>
             {/* ── TABS (Only shown when Agreement is available) ── */}
-            {isAccepted ? (
-              <div className="flex items-center gap-2 border-b border-slate-200">
+            {isAccepted && (
+              <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 mb-4">
                 <button
                   type="button"
                   onClick={() => setActiveTab('quote')}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition-all ${
+                  className={cn(
+                    'flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all',
                     activeTab === 'quote'
-                      ? 'border-amber-600 text-amber-700 font-bold'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
+                      ? 'bg-slate-900 text-amber-300 shadow-xs border border-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 font-semibold shadow-2xs',
+                  )}
                 >
-                  <UtensilsCrossed size={14} />
+                  <UtensilsCrossed size={14} className={activeTab === 'quote' ? 'text-amber-400' : 'text-slate-400'} />
                   <span>Menu &amp; Quote Items</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-[10px] font-mono',
+                      activeTab === 'quote' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700',
+                    )}
+                  >
                     {editItems.length}
                   </span>
                 </button>
@@ -2299,20 +2368,21 @@ export function CustomerRequestsPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('agreement')}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition-all ${
+                  className={cn(
+                    'flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all',
                     activeTab === 'agreement'
-                      ? 'border-emerald-600 text-emerald-700 font-bold'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
+                      ? 'bg-slate-900 text-amber-300 shadow-xs border border-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 font-semibold shadow-2xs',
+                  )}
                 >
-                  <FileCheck2 size={14} />
+                  <FileCheck2 size={14} className={activeTab === 'agreement' ? 'text-amber-400' : 'text-slate-400'} />
                   <span>Agreement &amp; Contract</span>
-                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                     Signed
                   </span>
                 </button>
               </div>
-            ) : null}
+            )}
 
             {/* ── TAB 1: QUOTE BUILDER WORKSPACE ── */}
             {activeTab === 'quote' && (
@@ -2367,7 +2437,7 @@ export function CustomerRequestsPage() {
                       <div>
                         <p className="text-xs font-bold text-amber-900">Per Person Package Rate</p>
                         <p className="text-xs text-slate-600">
-                          Individual dishes will be served without individual item rates. Total = {detail.guestCount} Guests &times; Rate.
+                          Individual dishes will be served without individual item rates. Total = {guestsCount} Guests &times; Rate.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2977,7 +3047,7 @@ export function CustomerRequestsPage() {
 
                 {hasAgreement && (
                   <div className="rounded-xl border border-emerald-200 bg-white p-4 text-xs font-bold text-emerald-800 shadow-2xs">
-                    {detail.agreementStatus === 'ACCEPTED'
+                    {detail?.agreementStatus === 'ACCEPTED'
                       ? '✓ Customer accepted the final binding agreement'
                       : 'Agreement initiated — awaiting customer verification'}
                   </div>
@@ -3000,8 +3070,6 @@ export function CustomerRequestsPage() {
                 </div>
               </div>
             )}
-          </>
-        ) : null}
 
         {/* ── AGREEMENT FULLSCREEN MODAL ── */}
         {agOpen && (
