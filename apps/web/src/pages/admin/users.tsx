@@ -44,6 +44,45 @@ import { PageShell } from '@/layouts/page-shell';
 import { cn } from '@/utils/cn';
 import { formatInr } from '@/utils/currency';
 
+function renderAddressPreview(address?: string | null) {
+  if (!address) return null;
+  const mapMatch = address.match(/https?:\/\/maps\.google\.com\S+/i);
+  if (mapMatch) {
+    const mapUrl = mapMatch[0];
+    const cleanText = address
+      .replace(mapUrl, '')
+      .replace(/Pinned Location:\s*/i, '')
+      .replace(/^[|,\s]+|[|,\s]+$/g, '');
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
+        <a
+          href={mapUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md transition-colors shadow-2xs"
+          title="Open Google Maps location in new tab"
+        >
+          <MapPin size={11} className="text-amber-700" />
+          <span>Pinned Map Location</span>
+          <ExternalLink size={10} />
+        </a>
+        {cleanText && (
+          <span className="truncate max-w-[200px] text-slate-500 font-medium">
+            {cleanText}
+          </span>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+      <MapPin size={12} className="shrink-0 text-amber-700" />
+      <span className="truncate">{address}</span>
+    </div>
+  );
+}
+
 export function UsersPage() {
   const { confirm, confirmModal } = useConfirmModal();
   const navigate = useNavigate();
@@ -142,7 +181,9 @@ export function UsersPage() {
       const nameMatch = c.name.toLowerCase().includes(q);
       const phoneMatch = c.phone.includes(q);
       const addrMatch = (c.address ?? '').toLowerCase().includes(q);
-      const eventMatch = (c.lastEventType ?? '').toLowerCase().includes(q) || (c.lastVenue ?? '').toLowerCase().includes(q);
+      const eventMatch =
+        (c.lastEventType ?? '').toLowerCase().includes(q) ||
+        (c.lastVenue ?? '').toLowerCase().includes(q);
       return nameMatch || phoneMatch || addrMatch || eventMatch;
     });
   }, [customerRows, customerSearch, customerFilter]);
@@ -179,15 +220,15 @@ export function UsersPage() {
           const c = row.original;
           return (
             <div className="flex items-center gap-3 py-1">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#080C14] text-[#F3CA52] font-black text-xs border border-[#D4AF37]/30 shadow-xs">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-800 font-bold text-xs border border-amber-200 shadow-2xs">
                 {c.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0">
                 <p className="font-bold text-slate-900">{c.name}</p>
                 <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="font-mono">{c.phone}</span>
+                  <span className="font-mono text-slate-400">{c.phone}</span>
                   {c.address && (
-                    <span className="truncate max-w-[150px] text-slate-400">• {c.address}</span>
+                    <span className="truncate max-w-[180px] text-slate-400">• {c.address}</span>
                   )}
                 </div>
               </div>
@@ -204,7 +245,9 @@ export function UsersPage() {
             <div className="py-1">
               <p className="text-xs font-bold text-slate-800">
                 {c.totalBookings > 0 ? (
-                  <span className="text-emerald-700">{c.totalBookings} Confirmed Event{c.totalBookings > 1 ? 's' : ''}</span>
+                  <span className="text-emerald-700">
+                    {c.totalBookings} Confirmed Event{c.totalBookings > 1 ? 's' : ''}
+                  </span>
                 ) : (
                   <span className="text-amber-700">Inquiry / Quote</span>
                 )}
@@ -248,7 +291,7 @@ export function UsersPage() {
         Cell: ({ row }) => {
           const val = row.original.lifetimeValue;
           return (
-            <span className="font-mono text-xs font-bold text-[#B8860B]">
+            <span className="font-mono text-xs font-bold text-slate-900">
               {val > 0 ? formatInr(val) : '—'}
             </span>
           );
@@ -263,13 +306,16 @@ export function UsersPage() {
           return (
             <span
               className={cn(
-                'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border',
+                'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-2xs',
                 isConfirmed
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200',
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200',
               )}
             >
-              {isConfirmed ? 'Client Confirmed' : 'Lead / Quoted'}
+              <span
+                className={cn('h-1.5 w-1.5 rounded-full', isConfirmed ? 'bg-emerald-600' : 'bg-amber-500')}
+              />
+              {isConfirmed ? 'Client Confirmed' : 'Inquiry / Quoted'}
             </span>
           );
         },
@@ -283,7 +329,7 @@ export function UsersPage() {
             <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
-                className="h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-[#B8860B] flex items-center gap-1"
+                className="h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-amber-800 flex items-center gap-1 shadow-2xs"
                 onClick={() => setSelectedCustomer(c)}
               >
                 <Eye size={13} />
@@ -307,12 +353,12 @@ export function UsersPage() {
           const user = row.original;
           return (
             <div className="flex items-center gap-3 py-1">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 shadow-2xs">
                 {user.name.slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <p className="font-bold text-slate-900">{user.name}</p>
-                <p className="text-xs text-slate-500">{user.email}</p>
+                <p className="text-xs text-slate-400">{user.email}</p>
               </div>
             </div>
           );
@@ -335,13 +381,13 @@ export function UsersPage() {
           return (
             <span
               className={cn(
-                'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border',
+                'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs',
                 isAdmin
-                  ? 'bg-[#080C14] text-[#F3CA52] border-[#D4AF37]/40'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
                   : 'bg-sky-50 text-sky-700 border-sky-200',
               )}
             >
-              {isAdmin ? <ShieldCheck size={12} className="text-[#F3CA52]" /> : <User size={12} />}
+              {isAdmin ? <ShieldCheck size={12} className="text-amber-700" /> : <User size={12} />}
               {row.original.role}
             </span>
           );
@@ -352,11 +398,11 @@ export function UsersPage() {
         header: 'Status',
         Cell: ({ row }) =>
           row.original.isActive ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200 shadow-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-200 shadow-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> Inactive
             </span>
           ),
@@ -370,7 +416,7 @@ export function UsersPage() {
             <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:text-slate-900 shadow-2xs"
                 onClick={() => {
                   setSelectedUser(user);
                   setStaffForm({
@@ -389,7 +435,7 @@ export function UsersPage() {
               </Button>
               <Button
                 variant="danger"
-                className="h-8 w-8 p-0 rounded-lg"
+                className="h-8 w-8 p-0 rounded-lg shadow-2xs"
                 onClick={() => void onDeleteUser(user.id, user.name)}
                 title="Delete account"
               >
@@ -470,26 +516,26 @@ export function UsersPage() {
       subtitle="Manage internal event staff accounts and explore client customer profiles with complete booking timelines."
     >
       {/* 1. Main Navigation Tabs */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4 mb-6">
-        <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xs">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4 mb-6">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('customers')}
             className={cn(
-              'flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all',
+              'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-2xs',
               activeTab === 'customers'
-                ? 'bg-[#080C14] text-[#F3CA52] shadow-xs border border-[#D4AF37]/50'
-                : 'text-slate-600 hover:text-slate-900',
+                ? 'bg-slate-900 text-white font-bold'
+                : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900',
             )}
           >
-            <Users size={15} />
-            <span>Customers & Clients</span>
+            <Users size={14} />
+            <span>Customers &amp; Clients</span>
             <span
               className={cn(
-                'rounded-full px-2 py-0.5 text-[10px] font-black',
+                'rounded-full px-2 py-0.5 text-[10px] font-bold',
                 activeTab === 'customers'
-                  ? 'bg-[#F3CA52] text-[#080C14]'
-                  : 'bg-slate-100 text-slate-500',
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-100 text-slate-600',
               )}
             >
               {customerRows.length}
@@ -500,20 +546,20 @@ export function UsersPage() {
             type="button"
             onClick={() => setActiveTab('staff')}
             className={cn(
-              'flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all',
+              'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-2xs',
               activeTab === 'staff'
-                ? 'bg-[#080C14] text-[#F3CA52] shadow-xs border border-[#D4AF37]/50'
-                : 'text-slate-600 hover:text-slate-900',
+                ? 'bg-slate-900 text-white font-bold'
+                : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900',
             )}
           >
-            <ShieldCheck size={15} />
-            <span>Team & Staff</span>
+            <ShieldCheck size={14} />
+            <span>Team &amp; Staff</span>
             <span
               className={cn(
-                'rounded-full px-2 py-0.5 text-[10px] font-black',
+                'rounded-full px-2 py-0.5 text-[10px] font-bold',
                 activeTab === 'staff'
-                  ? 'bg-[#F3CA52] text-[#080C14]'
-                  : 'bg-slate-100 text-slate-500',
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-100 text-slate-600',
               )}
             >
               {staffRows.length}
@@ -538,15 +584,15 @@ export function UsersPage() {
                 setShowCreatePassword(false);
                 setCreateOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#080C14] px-4 py-2.5 text-xs font-bold text-[#F3CA52] border border-[#D4AF37] shadow-xs hover:bg-[#121927] transition-all"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all"
             >
-              <UserPlus size={15} />
+              <UserPlus size={14} />
               <span>Add Team Member</span>
             </button>
           ) : (
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-medium">
-                Clients automatically sync from event quotes & portal requests
+                Clients automatically sync from event quotes &amp; portal requests
               </span>
             </div>
           )}
@@ -555,146 +601,152 @@ export function UsersPage() {
 
       {/* 2. CUSTOMERS DIRECTORY TAB CONTENT */}
       {activeTab === 'customers' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Customer Metrics */}
           {loadingCustomers ? (
             <KpiGridSkeleton count={4} />
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Clients</span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
-                    <Users size={14} />
-                  </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Clients</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{customerMetrics.totalClients}</p>
                 </div>
-                <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.totalClients}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Unique customer profiles</p>
+                <span className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                  <Users size={15} />
+                </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Confirmed Events</span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                    <CheckCircle2 size={14} />
-                  </div>
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80 block">Confirmed Events</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-emerald-700">{customerMetrics.totalBookings}</p>
                 </div>
-                <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.totalBookings}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Bookings & signed contracts</p>
+                <span className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                  <CheckCircle2 size={15} />
+                </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Negotiation</span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-                    <Clock size={14} />
-                  </div>
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700/80 block">In Negotiation</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{customerMetrics.inNegotiation}</p>
                 </div>
-                <p className="mt-2 text-2xl font-black text-slate-900">{customerMetrics.inNegotiation}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Active quote discussions</p>
+                <span className="h-8 w-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shrink-0">
+                  <Clock size={15} />
+                </span>
               </div>
 
-              <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-br from-[#080C14] to-[#121927] p-4 text-white shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">Total Portfolio</span>
-                  <TrendingUp size={15} className="text-[#F3CA52]" />
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 block">Total Portfolio</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-amber-700">
+                    {formatInr(customerMetrics.totalValue)}
+                  </p>
                 </div>
-                <p className="mt-2 text-2xl font-black font-mono text-[#F3CA52]">
-                  {formatInr(customerMetrics.totalValue)}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Finalized contract value</p>
+                <span className="h-8 w-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                  <TrendingUp size={15} />
+                </span>
               </div>
             </div>
           )}
 
           {/* Search, Filter & View Mode Bar */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
-                placeholder="Search customers by name, phone (+91), venue, or event..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 shadow-xs outline-none transition focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
-              />
-              {customerSearch && (
-                <button
-                  onClick={() => setCustomerSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={14} />
-                </button>
-              )}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
+            {/* Filter tabs */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { key: 'ALL' as const, label: 'All Clients', count: customerRows.length },
+                {
+                  key: 'BOOKED' as const,
+                  label: 'Confirmed Clients',
+                  count: customerRows.filter((c) => c.totalBookings > 0).length,
+                },
+                {
+                  key: 'QUOTED' as const,
+                  label: 'Inquiries Only',
+                  count: customerRows.filter((c) => c.totalBookings === 0).length,
+                },
+              ].map((tab) => {
+                const isActive = customerFilter === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setCustomerFilter(tab.key)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50',
+                    )}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={cn(
+                        'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600',
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Filter tabs */}
-              <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
-                <button
-                  type="button"
-                  onClick={() => setCustomerFilter('ALL')}
-                  className={cn(
-                    'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
-                    customerFilter === 'ALL'
-                      ? 'bg-[#080C14] text-[#F3CA52]'
-                      : 'text-slate-500 hover:text-slate-900',
-                  )}
-                >
-                  All ({customerRows.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCustomerFilter('BOOKED')}
-                  className={cn(
-                    'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
-                    customerFilter === 'BOOKED'
-                      ? 'bg-[#080C14] text-[#F3CA52]'
-                      : 'text-slate-500 hover:text-slate-900',
-                  )}
-                >
-                  Confirmed Clients
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCustomerFilter('QUOTED')}
-                  className={cn(
-                    'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
-                    customerFilter === 'QUOTED'
-                      ? 'bg-[#080C14] text-[#F3CA52]'
-                      : 'text-slate-500 hover:text-slate-900',
-                  )}
-                >
-                  Inquiries Only
-                </button>
+            <div className="flex items-center gap-2 flex-1 sm:max-w-md justify-end">
+              <div className="relative flex-1">
+                <Search
+                  size={13}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Search by name, phone (+91), event, venue..."
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-7 text-xs text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                {customerSearch && (
+                  <button
+                    onClick={() => setCustomerSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    title="Clear search"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
               </div>
 
               {/* View mode toggle */}
-              <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
+              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setCustomerViewMode('grid')}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition-all',
+                    'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition-all',
                     customerViewMode === 'grid'
-                      ? 'bg-[#080C14] text-[#F3CA52]'
+                      ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-500 hover:text-slate-900',
                   )}
+                  title="Grid View"
                 >
-                  <LayoutGrid size={14} />
+                  <LayoutGrid size={13} />
                   <span className="hidden sm:inline">Grid</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setCustomerViewMode('table')}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition-all',
+                    'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition-all',
                     customerViewMode === 'table'
-                      ? 'bg-[#080C14] text-[#F3CA52]'
+                      ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-500 hover:text-slate-900',
                   )}
+                  title="Table View"
                 >
-                  <List size={14} />
+                  <List size={13} />
                   <span className="hidden sm:inline">Table</span>
                 </button>
               </div>
@@ -706,7 +758,7 @@ export function UsersPage() {
             customerViewMode === 'grid' ? (
               <CardGridSkeleton count={6} />
             ) : (
-              <Card className="p-4 border-slate-200">
+              <Card className="p-4 border-slate-200 shadow-2xs">
                 <TableSkeleton rows={8} cols={6} />
               </Card>
             )
@@ -722,8 +774,8 @@ export function UsersPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-                <Users size={32} className="mx-auto text-slate-300 mb-2" />
+              <div className="rounded-xl border border-slate-200/80 bg-white p-12 text-center shadow-2xs">
+                <Users size={36} className="mx-auto text-slate-300 mb-3" />
                 <h4 className="text-sm font-bold text-slate-800">No customers found</h4>
                 <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                   {customerSearch
@@ -733,7 +785,7 @@ export function UsersPage() {
               </div>
             )
           ) : (
-            <Card className="p-0 overflow-hidden border-slate-200">
+            <Card className="p-0 overflow-hidden border-slate-200/80 shadow-2xs">
               <DataTable columns={customerColumns} data={filteredCustomers} />
             </Card>
           )}
@@ -742,63 +794,102 @@ export function UsersPage() {
 
       {/* 3. TEAM & STAFF DIRECTORY TAB CONTENT */}
       {activeTab === 'staff' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Staff Metrics */}
           {loadingStaff ? (
             <KpiGridSkeleton count={4} />
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Staff</span>
-                <p className="mt-2 text-2xl font-black text-slate-900">{staffMetrics.total}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Registered accounts</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Staff</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{staffMetrics.total}</p>
+                </div>
+                <span className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                  <Users size={15} />
+                </span>
               </div>
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Administrators</span>
-                <p className="mt-2 text-2xl font-black text-[#B8860B]">{staffMetrics.admins}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Full admin control</p>
+
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 block">Administrators</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-amber-700">{staffMetrics.admins}</p>
+                </div>
+                <span className="h-8 w-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                  <ShieldCheck size={15} />
+                </span>
               </div>
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Coordinators</span>
-                <p className="mt-2 text-2xl font-black text-sky-700">{staffMetrics.staff}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Staff & operations</p>
+
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700/80 block">Operations Staff</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{staffMetrics.staff}</p>
+                </div>
+                <span className="h-8 w-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shrink-0">
+                  <User size={15} />
+                </span>
               </div>
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Accounts</span>
-                <p className="mt-2 text-2xl font-black text-emerald-600">{staffMetrics.active}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Currently enabled</p>
+
+              <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80 block">Active Accounts</span>
+                  <p className="mt-0.5 text-xl font-black font-mono text-emerald-700">{staffMetrics.active}</p>
+                </div>
+                <span className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                  <CheckCircle2 size={15} />
+                </span>
               </div>
             </div>
           )}
 
-          {/* Search bar */}
-          <div className="flex items-center justify-between gap-3">
+          {/* Search bar & Add Member Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
             <div className="relative flex-1 max-w-md">
-              <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={staffSearch}
                 onChange={(e) => setStaffSearch(e.target.value)}
                 placeholder="Search staff by name, email, or role..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs font-medium text-slate-800 placeholder-slate-400 shadow-xs outline-none focus:border-[#D4AF37]"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-7 text-xs text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
               />
               {staffSearch && (
                 <button
                   onClick={() => setStaffSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setStaffForm({
+                  name: '',
+                  email: '',
+                  phone: '',
+                  role: 'STAFF',
+                  password: '',
+                  isActiveVal: 'true',
+                });
+                setShowCreatePassword(false);
+                setCreateOpen(true);
+              }}
+              className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-3.5 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all shrink-0"
+            >
+              <UserPlus size={14} />
+              <span>Add Team Member</span>
+            </button>
           </div>
 
           {loadingStaff ? (
-            <Card className="p-4 border-slate-200">
+            <Card className="p-4 border-slate-200 shadow-2xs">
               <TableSkeleton rows={6} cols={5} />
             </Card>
           ) : (
-            <Card className="p-0 overflow-hidden border-slate-200">
+            <Card className="p-0 overflow-hidden border-slate-200/80 shadow-2xs">
               <DataTable columns={staffColumns} data={filteredStaff} />
             </Card>
           )}
@@ -893,7 +984,7 @@ export function UsersPage() {
             <button
               type="button"
               onClick={() => void onCreateUser()}
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-[#080C14] px-4 text-xs font-bold text-[#F3CA52] border border-[#D4AF37] hover:bg-[#121927]"
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all"
             >
               Create Account
             </button>
@@ -964,7 +1055,7 @@ export function UsersPage() {
             <button
               type="button"
               onClick={() => void onUpdateUser()}
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-[#080C14] px-4 text-xs font-bold text-[#F3CA52] border border-[#D4AF37] hover:bg-[#121927]"
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all"
             >
               Save Changes
             </button>
@@ -991,47 +1082,48 @@ function CustomerCard({
   const cleanPhone = customer.phone.replace(/\D/g, '');
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#D4AF37]/60 hover:shadow-md">
+    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.09)] hover:border-amber-400/80 transition-all duration-150">
       <div>
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#080C14] text-[#F3CA52] font-black text-xs border border-[#D4AF37]/40 shadow-xs">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-800 font-bold text-xs border border-amber-200 shadow-2xs">
               {customer.name.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-slate-900 text-sm group-hover:text-[#B8860B] transition-colors leading-tight truncate">
+              <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-700 transition-colors leading-tight truncate">
                 {customer.name}
               </h3>
-              <p className="font-mono text-xs text-slate-500 mt-0.5">{customer.phone}</p>
+              <p className="font-mono text-xs text-slate-400 mt-0.5">{customer.phone}</p>
             </div>
           </div>
 
           <span
             className={cn(
-              'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border',
+              'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-2xs',
               isBooked
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                : 'bg-amber-50 text-amber-800 border-amber-200',
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200',
             )}
           >
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                isBooked ? 'bg-emerald-600' : 'bg-amber-500',
+              )}
+            />
             {isBooked ? `${customer.totalBookings} Booked` : 'Inquiry'}
           </span>
         </div>
 
         {/* Location & Latest Event */}
-        <div className="mt-4 space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-          {customer.address && (
-            <div className="flex items-center gap-2 text-slate-500">
-              <MapPin size={13} className="shrink-0 text-[#B8860B]" />
-              <span className="truncate">{customer.address}</span>
-            </div>
-          )}
+        <div className="mt-3.5 space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+          {customer.address && renderAddressPreview(customer.address)}
 
           {customer.lastEventType && (
-            <div className="flex items-center gap-2 text-slate-700">
-              <Calendar size={13} className="shrink-0 text-slate-400" />
-              <span className="truncate font-medium">{customer.lastEventType}</span>
+            <div className="flex items-center gap-1.5 text-slate-700">
+              <Calendar size={12} className="shrink-0 text-slate-400" />
+              <span className="truncate font-semibold text-slate-800">{customer.lastEventType}</span>
               {customer.lastEventDate && (
                 <span className="text-[11px] text-slate-400 font-mono">
                   ({new Date(customer.lastEventDate).toLocaleDateString('en-IN', {
@@ -1044,15 +1136,15 @@ function CustomerCard({
           )}
         </div>
 
-        {/* Financial Value */}
-        <div className="mt-3.5 flex items-center justify-between rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+        {/* Financial Value Box */}
+        <div className="mt-3.5 flex items-center justify-between rounded-xl bg-slate-50/80 p-2.5 border border-slate-100">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Quotes</span>
             <span className="text-xs font-bold text-slate-800">{customer.totalQuotations} records</span>
           </div>
           <div className="text-right">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Lifetime Value</span>
-            <span className="text-xs font-mono font-black text-[#B8860B]">
+            <span className="text-xs font-mono font-bold text-slate-900">
               {customer.lifetimeValue > 0 ? formatInr(customer.lifetimeValue) : '—'}
             </span>
           </div>
@@ -1062,12 +1154,13 @@ function CustomerCard({
       {/* Action Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
         {/* Quick Contact Links */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {cleanPhone && (
             <>
               <a
                 href={`tel:${cleanPhone}`}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                onClick={(e) => e.stopPropagation()}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-2xs transition-colors"
                 title="Call client"
               >
                 <Phone size={12} />
@@ -1078,7 +1171,8 @@ function CustomerCard({
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                onClick={(e) => e.stopPropagation()}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 shadow-2xs transition-colors"
                 title="Message on WhatsApp"
               >
                 <MessageCircle size={12} />
@@ -1090,7 +1184,7 @@ function CustomerCard({
         <button
           type="button"
           onClick={onOpenProfile}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-[#B8860B] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 transition-colors"
         >
           <span>View Details</span>
           <ArrowRight size={13} />
@@ -1127,21 +1221,21 @@ function CustomerDetailsModal({
     >
       <div className="p-5 space-y-5">
         {/* 1. Customer Hero Banner */}
-        <div className="rounded-2xl bg-[#080C14] p-5 text-white border border-[#D4AF37]/30 shadow-xs">
+        <div className="rounded-2xl bg-slate-50/80 p-5 border border-slate-200 shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#121927] to-[#1e2a40] text-[#F3CA52] font-black text-xl border border-[#D4AF37]/40 shadow-sm">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-800 font-bold text-xl border border-amber-200 shadow-2xs">
                 {customer.name.slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <h4 className="text-lg font-black text-white">{customer.name}</h4>
-                <div className="flex items-center gap-2 text-xs text-slate-300 mt-1">
-                  <Phone size={12} className="text-[#F3CA52]" />
-                  <span className="font-mono">{customer.phone}</span>
+                <h4 className="text-lg font-bold text-slate-900">{customer.name}</h4>
+                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                  <Phone size={12} className="text-amber-700" />
+                  <span className="font-mono text-slate-700 font-semibold">{customer.phone}</span>
                   {customer.address && (
                     <>
                       <span>•</span>
-                      <MapPin size={12} className="text-[#D4AF37]" />
+                      <MapPin size={12} className="text-amber-700" />
                       <span>{customer.address}</span>
                     </>
                   )}
@@ -1159,14 +1253,14 @@ function CustomerDetailsModal({
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors"
                   >
                     <MessageCircle size={14} />
                     <span>WhatsApp</span>
                   </a>
                   <a
                     href={`tel:${cleanPhone}`}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white hover:bg-white/20 border border-white/20"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-colors"
                   >
                     <Phone size={14} />
                     <span>Call Client</span>
@@ -1177,26 +1271,26 @@ function CustomerDetailsModal({
           </div>
 
           {/* Quick Metrics Strip */}
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 border-t border-white/10 pt-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 border-t border-slate-200 pt-4">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Quotes</span>
-              <span className="text-sm font-bold text-white">{customer.totalQuotations} records</span>
+              <span className="text-sm font-bold text-slate-900">{customer.totalQuotations} records</span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Confirmed Events</span>
-              <span className="text-sm font-bold text-emerald-400">
+              <span className="text-sm font-bold text-emerald-700">
                 {customer.totalBookings} booked
               </span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#D4AF37] block">Lifetime Value</span>
-              <span className="text-sm font-mono font-black text-[#F3CA52]">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Lifetime Value</span>
+              <span className="text-sm font-mono font-bold text-amber-700">
                 {formatInr(customer.lifetimeValue)}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">First Contact</span>
-              <span className="text-xs font-mono text-slate-300">
+              <span className="text-xs font-mono text-slate-600">
                 {customer.firstContactAt
                   ? new Date(customer.firstContactAt).toLocaleDateString('en-IN', {
                       day: 'numeric',
@@ -1212,14 +1306,14 @@ function CustomerDetailsModal({
         {/* 2. Quotation & Booking History Timeline */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h5 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-              <FileText size={14} className="text-[#B8860B]" />
-              <span>Event Quotations & Contracts History ({customer.quotations.length})</span>
+            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <FileText size={14} className="text-amber-700" />
+              <span>Event Quotations &amp; Contracts History ({customer.quotations.length})</span>
             </h5>
           </div>
 
           {customer.quotations.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400">
+            <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl bg-white">
               No quotations recorded for this client.
             </div>
           ) : (
@@ -1232,21 +1326,21 @@ function CustomerDetailsModal({
                 return (
                   <div
                     key={q.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs hover:border-[#D4AF37]/50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs hover:border-amber-400/80 transition-all"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-black text-slate-900">
+                        <span className="font-mono text-xs font-bold text-slate-900">
                           {q.quotationNumber}
                         </span>
                         <span
                           className={cn(
-                            'rounded-full px-2 py-0.5 text-[10px] font-bold border',
+                            'rounded-full px-2 py-0.5 text-[10px] font-bold border shadow-2xs',
                             isAccepted
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : isFinalized
-                                ? 'bg-sky-50 text-sky-800 border-sky-200'
-                                : 'bg-slate-100 text-slate-700 border-slate-200',
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200',
                           )}
                         >
                           {isAccepted
@@ -1262,7 +1356,7 @@ function CustomerDetailsModal({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
                         <span className="font-semibold text-slate-800">{q.eventType}</span>
                         <span>•</span>
                         <span className="font-mono text-slate-500">
@@ -1286,7 +1380,7 @@ function CustomerDetailsModal({
                     <div className="flex items-center gap-3 sm:text-right shrink-0">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 block">Grand Total</span>
-                        <span className="text-xs font-mono font-bold text-[#B8860B]">
+                        <span className="text-xs font-mono font-bold text-slate-900">
                           {formatInr(totalNum)}
                         </span>
                       </div>
@@ -1294,7 +1388,7 @@ function CustomerDetailsModal({
                       <button
                         type="button"
                         onClick={() => onViewQuotation(q.quotationNumber)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-[#080C14] hover:text-[#F3CA52] hover:border-[#D4AF37] transition-all"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-all shadow-2xs"
                       >
                         <span>View Quote</span>
                         <ExternalLink size={12} />
@@ -1308,11 +1402,11 @@ function CustomerDetailsModal({
         </div>
       </div>
 
-      <div className="border-t border-slate-200 bg-white px-5 py-3 flex items-center justify-between">
+      <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-3 flex items-center justify-between">
         <span className="text-xs text-slate-400">
           Customer Phone: <strong className="font-mono text-slate-700">{customer.phone}</strong>
         </span>
-        <Button variant="outline" className="h-8 px-4 text-xs rounded-xl" onClick={onClose}>
+        <Button variant="outline" className="h-8 px-4 text-xs rounded-xl shadow-2xs" onClick={onClose}>
           Close Profile
         </Button>
       </div>
