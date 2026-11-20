@@ -268,32 +268,25 @@ function groupEditable(items: EditableLine[]): GroupedLine[] {
 /* Status config */
 const STATUS_FLOW: UiStatus[] = ['REQUESTED', 'UNDER_REVIEW', 'QUOTED', 'ACCEPTED'];
 const STATUS_LABELS: Record<UiStatus, string> = {
-  REQUESTED: 'New Request',
+  REQUESTED: 'New',
   UNDER_REVIEW: 'Under Review',
   QUOTED: 'Quoted',
-  ACCEPTED: 'Agreement Signed',
+  ACCEPTED: 'Accepted',
   DECLINED: 'Declined',
 };
 const STATUS_BADGE: Record<UiStatus, string> = {
-  REQUESTED: 'border-amber-500/40 bg-amber-500/10 text-amber-400',
-  UNDER_REVIEW: 'border-sky-500/40 bg-sky-500/10 text-sky-400',
-  QUOTED: 'border-[#D4AF37]/50 bg-[#D4AF37]/10 text-[#F3CA52]',
-  ACCEPTED: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
-  DECLINED: 'border-rose-500/40 bg-rose-500/10 text-rose-400',
+  REQUESTED: 'border-orange-200 bg-orange-50 text-orange-700',
+  UNDER_REVIEW: 'border-blue-200 bg-blue-50 text-blue-700',
+  QUOTED: 'border-amber-200 bg-amber-50 text-amber-800',
+  ACCEPTED: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  DECLINED: 'border-rose-200 bg-rose-50 text-rose-700',
 };
 const STATUS_DOT: Record<UiStatus, string> = {
-  REQUESTED: 'bg-amber-400 animate-pulse',
-  UNDER_REVIEW: 'bg-sky-400 animate-pulse',
-  QUOTED: 'bg-[#D4AF37]',
-  ACCEPTED: 'bg-emerald-400',
-  DECLINED: 'bg-rose-400',
-};
-const STATUS_BORDER: Record<UiStatus, string> = {
-  REQUESTED: 'border-l-amber-500',
-  UNDER_REVIEW: 'border-l-sky-500',
-  QUOTED: 'border-l-amber-600',
-  ACCEPTED: 'border-l-emerald-500',
-  DECLINED: 'border-l-rose-500',
+  REQUESTED: 'bg-orange-500',
+  UNDER_REVIEW: 'bg-blue-500',
+  QUOTED: 'bg-amber-500',
+  ACCEPTED: 'bg-emerald-600',
+  DECLINED: 'bg-rose-500',
 };
 
 /* ─── Kerala Tax Invoice Modal ───────────────────────────────── */
@@ -1713,7 +1706,7 @@ export function CustomerRequestsPage() {
                   <div
                     key={row.id}
                     onClick={() => onSelectRow(row)}
-                    className={`group relative cursor-pointer rounded-xl border border-slate-200/90 bg-white p-3.5 sm:px-5 sm:py-3.5 shadow-2xs hover:border-amber-400 hover:shadow-md transition-all duration-150 border-l-[3.5px] ${STATUS_BORDER[uiSt]}`}
+                    className="group relative cursor-pointer rounded-xl border border-slate-200/80 bg-white p-3.5 sm:px-5 sm:py-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.09)] hover:border-amber-400/80 transition-all duration-150"
                   >
                     {/* Desktop Aligned Grid */}
                     <div className="hidden lg:grid grid-cols-[130px_1.5fr_1.3fr_110px_90px_130px_110px_130px] items-center gap-4 text-xs">
