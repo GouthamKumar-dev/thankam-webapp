@@ -1,12 +1,17 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpDown,
   Building2,
   Calendar,
   CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronUp,
   Clock,
   Crown,
@@ -41,7 +46,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Skeleton, PageLoader } from '@/components/common/skeleton';
+import { Skeleton, CardListSkeleton, PageLoader } from '@/components/common/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectInput } from '@/components/ui/select-input';
@@ -542,7 +547,7 @@ function buildPayload(
    ══════════════════════════════════════════════════════════════════ */
 export function QuotationsPage() {
   const { confirm, confirmModal } = useConfirmModal();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const selectedIdFromUrl = searchParams.get('id');
 
   /* lists */
@@ -584,6 +589,66 @@ export function QuotationsPage() {
   /* list search & filter */
   const [listSearch, setListSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'FINALIZED' | 'DRAFT' | 'ACCEPTED'>('ALL');
+
+  /* sorting & pagination */
+  type SortField =
+    | 'quotationNumber'
+    | 'createdAt'
+    | 'customerName'
+    | 'eventType'
+    | 'eventDate'
+    | 'guestCount'
+    | 'status'
+    | 'grandTotal';
+
+  type SortOrder = 'asc' | 'desc';
+
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder(field === 'customerName' || field === 'eventType' ? 'asc' : 'desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const onBackToList = () => {
+    setSelectedRow(null);
+    setIsNew(false);
+    if (searchParams.has('id')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('id');
+      setSearchParams(next, { replace: true });
+    }
+  };
+
+  const getQuotationStatus = (row: QuotationRow): { label: string; badgeClass: string; dotClass: string } => {
+    if (row.agreementStatus === 'ACCEPTED') {
+      return {
+        label: 'Accepted',
+        badgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        dotClass: 'bg-emerald-600',
+      };
+    }
+    if (row.status === 'FINALIZED') {
+      return {
+        label: 'Finalized',
+        badgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
+        dotClass: 'bg-blue-500',
+      };
+    }
+    return {
+      label: 'Draft',
+      badgeClass: 'border-slate-200 bg-slate-100 text-slate-700',
+      dotClass: 'bg-slate-400',
+    };
+  };
 
   /* agreement viewer modal */
   const [agOpen, setAgOpen] = useState(false);
@@ -1097,11 +1162,15 @@ export function QuotationsPage() {
   };
 
   /* ── Filtered rows ── */
+  const adminRows = useMemo(() => rows.filter((r) => r.source !== 'CUSTOMER_PORTAL'), [rows]);
+  const draftCount = useMemo(() => adminRows.filter((r) => r.status === 'DRAFT' && r.agreementStatus !== 'ACCEPTED').length, [adminRows]);
+  const finalizedCount = useMemo(() => adminRows.filter((r) => r.status === 'FINALIZED' && r.agreementStatus !== 'ACCEPTED').length, [adminRows]);
+  const acceptedCount = metrics.acceptedCount;
+
   const filteredRows = useMemo(() => {
-    const adminOnly = rows.filter((r) => r.source !== 'CUSTOMER_PORTAL');
     const q = listSearch.trim().toLowerCase();
 
-    return adminOnly.filter((r) => {
+    return adminRows.filter((r) => {
       if (statusFilter === 'FINALIZED' && r.status !== 'FINALIZED') return false;
       if (statusFilter === 'DRAFT' && r.status !== 'DRAFT') return false;
       if (statusFilter === 'ACCEPTED' && r.agreementStatus !== 'ACCEPTED') return false;
@@ -1114,7 +1183,59 @@ export function QuotationsPage() {
         r.eventType?.toLowerCase().includes(q)
       );
     });
-  }, [rows, listSearch, statusFilter]);
+  }, [adminRows, listSearch, statusFilter]);
+
+  const sortedRows = useMemo(() => {
+    const list = [...filteredRows];
+    list.sort((a, b) => {
+      const valA: any = a[sortField];
+      const valB: any = b[sortField];
+
+      if (sortField === 'eventDate' || sortField === 'createdAt') {
+        const timeA = new Date(valA || 0).getTime();
+        const timeB = new Date(valB || 0).getTime();
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+      }
+
+      if (sortField === 'guestCount' || sortField === 'grandTotal') {
+        const numA = Number(valA || 0);
+        const numB = Number(valB || 0);
+        return sortOrder === 'asc' ? numA - numB : numB - numA;
+      }
+
+      const strA = String(valA || '').toLowerCase();
+      const strB = String(valB || '').toLowerCase();
+      if (strA < strB) return sortOrder === 'asc' ? -1 : 1;
+      if (strA > strB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return list;
+  }, [filteredRows, sortField, sortOrder]);
+
+  const totalItems = sortedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = totalItems === 0 ? 0 : (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+
+  const paginatedRows = useMemo(() => {
+    return sortedRows.slice(startIndex, endIndex);
+  }, [sortedRows, startIndex, endIndex]);
+
+  const getPaginationItems = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const items: (number | 'ellipsis')[] = [];
+    if (safeCurrentPage <= 4) {
+      items.push(1, 2, 3, 4, 5, 'ellipsis', totalPages);
+    } else if (safeCurrentPage >= totalPages - 3) {
+      items.push(1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      items.push(1, 'ellipsis', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, 'ellipsis', totalPages);
+    }
+    return items;
+  };
 
   const totals = useMemo(
     () => computeTotals(lines, services, form, mode, ppRate),
@@ -1459,278 +1580,521 @@ export function QuotationsPage() {
 
   return (
     <PageShell
-      title="Quotations & Tax Invoicing Hub"
-      subtitle="Craft professional wedding catering, event service packages, digital contracts, and GST tax invoices."
+      title={hasDetail ? (isNew ? 'New Event Quotation' : `Quotation: ${selectedRow?.quotationNumber || ''}`) : "Quotations & Tax Invoicing Hub"}
+      subtitle={hasDetail ? "Configure customer details, menu items, event services, and tax invoices." : "Craft professional wedding catering, event service packages, digital contracts, and GST tax invoices."}
     >
       {confirmModal}
 
-      {/* 1. Executive Metrics Strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4 mb-6">
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Quotes</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-[#B8860B]">
-              <FileText size={14} />
+      {!hasDetail ? (
+        /* ═══════════════════════════════════════════════════════════════
+           VIEW 1: DIRECTORY & QUOTATION PIPELINE (WHEN NO QUOTE SELECTED)
+        ═══════════════════════════════════════════════════════════════ */
+        <div className="space-y-5">
+          {/* 1. Minimal Key Metrics Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Quotes</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{metrics.total}</p>
+              </div>
+              <span className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                <FileText size={15} />
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80 block">Signed Agreements</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-emerald-700">{metrics.acceptedCount}</p>
+              </div>
+              <span className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle2 size={15} />
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700/80 block">Avg Deal Value</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-slate-900">{formatInr(metrics.avgValue)}</p>
+              </div>
+              <span className="h-8 w-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shrink-0">
+                <TrendingUp size={15} />
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 block">Total Pipeline</span>
+                <p className="mt-0.5 text-xl font-black font-mono text-amber-700">{formatInr(metrics.totalPipeline)}</p>
+              </div>
+              <span className="h-8 w-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                <Crown size={15} />
+              </span>
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.total}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Admin-crafted proposals</p>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Signed Agreements</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <CheckCircle2 size={14} />
+          {/* 2. Filter Tabs & Search & New Quotation Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
+            {/* Status Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { value: 'ALL' as const, label: 'All Quotations', count: adminRows.length },
+                { value: 'DRAFT' as const, label: 'Draft', count: draftCount },
+                { value: 'FINALIZED' as const, label: 'Finalized', count: finalizedCount },
+                { value: 'ACCEPTED' as const, label: 'Agreement Signed', count: acceptedCount },
+              ].map((tab) => {
+                const isActive = statusFilter === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setStatusFilter(tab.value)}
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search + Sync + New Quote Button */}
+            <div className="flex items-center gap-2 flex-1 sm:max-w-md justify-end">
+              <div className="relative flex-1">
+                <Search
+                  size={13}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                  placeholder="Search quotation #, customer, phone, event..."
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-7 text-xs text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                {listSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setListSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    title="Clear search"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void refresh(true)}
+                className="h-9 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs shrink-0"
+                title="Refresh list"
+              >
+                <RefreshCw size={12} className="text-slate-500" />
+                <span className="hidden sm:inline">Sync</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onNew}
+                className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-3.5 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all shrink-0"
+              >
+                <Plus size={14} />
+                <span>New Quotation</span>
+              </button>
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{metrics.acceptedCount}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Legally confirmed bookings</p>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Avg Deal Value</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
-              <TrendingUp size={14} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-slate-900">{formatInr(metrics.avgValue)}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Per catering contract</p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pipeline</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
-              <Crown size={14} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black font-mono text-slate-900">
-            {formatInr(metrics.totalPipeline)}
-          </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Combined quotation value</p>
-        </div>
-      </div>
-
-      {/* 2. Top Control & Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs mb-5">
-        <div className="relative min-w-0 flex-1 max-w-md">
-          <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={listSearch}
-            onChange={(e) => setListSearch(e.target.value)}
-            placeholder="Search quotations by #, customer, phone, or event..."
-            className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400 focus:border-amber-500 focus:bg-white transition-all"
-          />
-          {listSearch && (
-            <button
-              onClick={() => setListSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('ALL')}
-            className={cn(
-              'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
-              statusFilter === 'ALL'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 bg-slate-100',
-            )}
-          >
-            All ({rows.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('FINALIZED')}
-            className={cn(
-              'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
-              statusFilter === 'FINALIZED'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 bg-slate-100',
-            )}
-          >
-            Finalized
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('ACCEPTED')}
-            className={cn(
-              'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
-              statusFilter === 'ACCEPTED'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 bg-slate-100',
-            )}
-          >
-            Agreement Signed
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => void refresh(true)}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 transition-colors"
-            title="Refresh list"
-          >
-            <RefreshCw size={14} />
-          </button>
-          <button
-            onClick={onNew}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 text-xs font-bold text-white shadow-2xs hover:brightness-105 transition-all"
-          >
-            <Plus size={15} />
-            <span>New Quotation</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Split Panel: Left List vs Right Workspace */}
-      <div className="grid gap-5 lg:grid-cols-[340px_1fr]">
-        {/* LEFT: Quotation Cards Directory */}
-        <div
-          className={`space-y-2.5 lg:max-h-[calc(100vh-230px)] lg:overflow-y-auto pr-1 ${
-            hasDetail ? 'hidden lg:block' : 'block'
-          }`}
-        >
+          {/* Quotations List */}
           {loadingList ? (
-            <div className="space-y-2.5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-3.5 space-y-2.5 shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-4 w-24 font-mono" />
-                    <Skeleton className="h-4 w-16 rounded-full" />
-                  </div>
-                  <Skeleton className="h-4 w-36" />
-                  <div className="flex items-center justify-between pt-1">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-4 w-16 font-mono" />
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <CardListSkeleton count={6} />
             </div>
-          ) : filteredRows.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
-              <FileText size={28} className="mx-auto mb-2 text-slate-300" />
-              <p className="text-xs font-bold text-slate-700">No quotations found</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Click &ldquo;New Quotation&rdquo; to build one.</p>
-            </div>
-          ) : (
-            filteredRows.map((row) => {
-              const active = selectedRow?.id === row.id && !isNew;
-              const isAccepted = row.agreementStatus === 'ACCEPTED';
-              const isFinalized = row.status === 'FINALIZED';
-
-              return (
-                <button
-                  key={row.id}
-                  onClick={() => void onSelectRow(row)}
-                  className={cn(
-                    'w-full rounded-2xl border p-3.5 text-left transition-all duration-150 select-none shadow-2xs',
-                    active
-                      ? 'border-amber-400 bg-amber-50/40 text-slate-900 ring-2 ring-inset ring-amber-500'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/80',
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span
-                      className={cn(
-                        'font-mono text-xs font-black px-2 py-0.5 rounded-md border',
-                        active
-                          ? 'bg-amber-100 text-amber-900 border-amber-300'
-                          : 'bg-slate-100 text-slate-800 border-slate-200',
-                      )}
-                    >
-                      {row.quotationNumber}
-                    </span>
-
-                    <span
-                      className={cn(
-                        'text-[10px] font-bold px-2 py-0.2 rounded-full border',
-                        isAccepted
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : isFinalized
-                            ? 'bg-sky-50 text-sky-700 border-sky-200'
-                            : 'bg-slate-100 text-slate-500 border-slate-200',
-                      )}
-                    >
-                      {isAccepted ? 'Agreement Signed' : isFinalized ? 'Finalized' : row.status}
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-bold truncate mt-1 text-slate-900">
-                    {row.customerName}
-                  </p>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
-                    {row.eventType && (
-                      <span className="flex items-center gap-1 font-medium">
-                        <PartyPopper size={11} className="text-amber-700" />
-                        {row.eventType}
-                      </span>
-                    )}
-                    {row.eventDate && (
-                      <span className="flex items-center gap-1 font-mono">
-                        <CalendarDays size={11} />
-                        {new Date(row.eventDate).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">
-                      Total Quote
-                    </span>
-                    <span className="text-xs font-mono font-black text-slate-900">
-                      {formatInr(row.grandTotal)}
-                    </span>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        {/* RIGHT: Active Quotation Workspace & Editor */}
-        {!hasDetail ? (
-          <div className="hidden items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white lg:flex min-h-[460px]">
-            <div className="p-10 text-center">
-              <FileText size={44} className="mx-auto mb-3 text-slate-300" />
-              <p className="font-bold text-slate-700 text-sm">Select a quotation from the list</p>
+          ) : totalItems === 0 ? (
+            <div className="rounded-xl border border-slate-200/80 bg-white p-12 text-center shadow-2xs">
+              <FileText size={36} className="mx-auto mb-3 text-slate-300" />
+              <p className="text-sm font-bold text-slate-800">No quotations found</p>
               <p className="mt-1 text-xs text-slate-400">
-                or click &ldquo;New Quotation&rdquo; above to assemble an event feast and services proposal.
+                {listSearch || statusFilter !== 'ALL'
+                  ? 'Try clearing your search query or status filter.'
+                  : 'Click "New Quotation" above to craft your first proposal.'}
               </p>
-            </div>
-          </div>
-        ) : loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8">
-            <PageLoader message="Loading quotation details..." />
-          </div>
-        ) : (
-          <div className="space-y-4 lg:max-h-[calc(100vh-230px)] lg:overflow-y-auto lg:pr-1">
-            {/* Editor Action Header Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-xs">
-              <div className="flex items-center gap-3">
+              {listSearch || statusFilter !== 'ALL' ? (
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedRow(null);
-                    setIsNew(false);
+                    setListSearch('');
+                    setStatusFilter('ALL');
                   }}
-                  className="lg:hidden inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700"
+                  className="mt-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs"
                 >
-                  <ArrowLeft size={13} />
-                  <span>List</span>
+                  <RefreshCw size={12} />
+                  <span>Reset Filters</span>
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onNew}
+                  className="mt-3.5 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-[#fc8019] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:brightness-105"
+                >
+                  <Plus size={13} />
+                  <span>Create Quotation</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {/* Desktop Header Guide */}
+              <div className="hidden lg:grid grid-cols-[130px_1.5fr_1.3fr_110px_90px_130px_110px_130px] items-center gap-4 px-5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                <div
+                  onClick={() => handleSort('quotationNumber')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center gap-1.5"
+                >
+                  <span>Quotation #</span>
+                  {sortField === 'quotationNumber' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div
+                  onClick={() => handleSort('customerName')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center gap-1.5"
+                >
+                  <span>Customer</span>
+                  {sortField === 'customerName' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div
+                  onClick={() => handleSort('eventType')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center gap-1.5"
+                >
+                  <span>Event &amp; Venue</span>
+                  {sortField === 'eventType' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div
+                  onClick={() => handleSort('eventDate')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center justify-center gap-1.5"
+                >
+                  <span>Date</span>
+                  {sortField === 'eventDate' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div
+                  onClick={() => handleSort('guestCount')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center justify-center gap-1.5"
+                >
+                  <span>Guests</span>
+                  {sortField === 'guestCount' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div
+                  onClick={() => handleSort('status')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center justify-center gap-1.5"
+                >
+                  <span>Status</span>
+                  {sortField === 'status' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div
+                  onClick={() => handleSort('grandTotal')}
+                  className="cursor-pointer hover:text-slate-700 flex items-center justify-end gap-1.5"
+                >
+                  <span>Total Value</span>
+                  {sortField === 'grandTotal' ? (
+                    sortOrder === 'asc' ? <ChevronUp size={12} className="text-amber-600" /> : <ChevronDown size={12} className="text-amber-600" />
+                  ) : (
+                    <ArrowUpDown size={11} className="opacity-30" />
+                  )}
+                </div>
+
+                <div className="text-right">Action</div>
+              </div>
+
+              {/* Separated Quotation Cards */}
+              {paginatedRows.map((row) => {
+                const st = getQuotationStatus(row);
+                const eventDateObj = row.eventDate ? new Date(row.eventDate) : null;
+                const dateStr = !eventDateObj || Number.isNaN(eventDateObj.getTime())
+                  ? 'Date TBD'
+                  : eventDateObj.toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    });
+
+                return (
+                  <div
+                    key={row.id}
+                    onClick={() => void onSelectRow(row)}
+                    className="group relative cursor-pointer rounded-xl border border-slate-200/80 bg-white p-3.5 sm:px-5 sm:py-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.09)] hover:border-amber-400/80 transition-all duration-150"
+                  >
+                    {/* Desktop Aligned Grid */}
+                    <div className="hidden lg:grid grid-cols-[130px_1.5fr_1.3fr_110px_90px_130px_110px_130px] items-center gap-4 text-xs">
+                      {/* Quotation Number */}
+                      <div className="font-mono font-bold text-slate-900 group-hover:text-amber-700 transition-colors whitespace-nowrap">
+                        {row.quotationNumber}
+                      </div>
+
+                      {/* Customer Name & Phone */}
+                      <div className="min-w-0 pr-2">
+                        <p className="font-bold text-slate-900 truncate group-hover:text-amber-700 transition-colors">
+                          {row.customerName}
+                        </p>
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                          {row.customerPhone || '—'}
+                        </p>
+                      </div>
+
+                      {/* Event Type & Venue */}
+                      <div className="min-w-0 pr-2">
+                        <p className="font-semibold text-slate-800 truncate">
+                          {row.eventType || 'Catering Event'}
+                        </p>
+                        {row.venue && (
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5" title={row.venue}>
+                            {row.venue}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Event Date */}
+                      <div className="text-center text-slate-600 font-medium whitespace-nowrap">
+                        {dateStr}
+                      </div>
+
+                      {/* Guest Count */}
+                      <div className="text-center font-semibold text-slate-700 whitespace-nowrap">
+                        {row.guestCount} Guests
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="flex justify-center whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold shadow-2xs ${st.badgeClass}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${st.dotClass}`} />
+                          {st.label}
+                        </span>
+                      </div>
+
+                      {/* Total Value */}
+                      <div className="text-right whitespace-nowrap">
+                        {Number(row.grandTotal || 0) > 0 ? (
+                          <span className="font-mono font-bold text-slate-900 text-xs">
+                            {formatInr(Number(row.grandTotal))}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">
+                            Draft
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void onSelectRow(row);
+                          }}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 text-xs font-bold shadow-2xs transition-all group-hover:bg-amber-100"
+                        >
+                          <span>Open Quote</span>
+                          <ArrowRight size={12} className="text-amber-700 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Mobile & Tablet Compact View */}
+                    <div className="lg:hidden space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-slate-900">
+                            {row.quotationNumber}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${st.badgeClass}`}
+                          >
+                            <span className={`h-1 w-1 rounded-full ${st.dotClass}`} />
+                            {st.label}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500 font-medium">{dateStr}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-slate-900 truncate">{row.customerName}</p>
+                          <p className="text-[11px] text-slate-400 font-mono">{row.customerPhone || '—'}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-semibold text-slate-800">{row.eventType || 'Catering'}</p>
+                          <p className="text-[11px] text-slate-500">{row.guestCount} Guests</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <span className="font-mono font-bold text-slate-900 text-xs">
+                          {Number(row.grandTotal || 0) > 0 ? formatInr(Number(row.grandTotal)) : 'Draft'}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void onSelectRow(row);
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg"
+                        >
+                          <span>Open Quote</span>
+                          <ArrowRight size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Standalone Pagination Card */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-5 py-3 text-xs text-slate-500 shadow-2xs mt-4">
+                <div className="flex items-center gap-3">
+                  <span>
+                    Showing <strong className="text-slate-900">{startIndex + 1}</strong> to{' '}
+                    <strong className="text-slate-900">{endIndex}</strong> of{' '}
+                    <strong className="text-slate-900">{totalItems}</strong> quotations
+                  </span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none focus:border-amber-500"
+                  >
+                    {[10, 25, 50].map((s) => (
+                      <option key={s} value={s}>
+                        {s} per page
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={safeCurrentPage === 1}
+                    className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="First page"
+                  >
+                    <ChevronsLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Previous page"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  {getPaginationItems().map((it, idx) =>
+                    it === 'ellipsis' ? (
+                      <span key={`e-${idx}`} className="px-2 text-slate-400">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={it}
+                        type="button"
+                        onClick={() => setCurrentPage(it)}
+                        className={`h-8 min-w-[32px] px-2 rounded-lg text-xs font-bold transition-all ${
+                          safeCurrentPage === it
+                            ? 'bg-slate-900 text-white font-bold shadow-2xs'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {it}
+                      </button>
+                    ),
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Next page"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={safeCurrentPage === totalPages}
+                    className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Last page"
+                  >
+                    <ChevronsRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ═══════════════════════════════════════════════════════════════
+           VIEW 2: FULL-WIDTH QUOTATION WORKSPACE & STEP WIZARD
+        ═══════════════════════════════════════════════════════════════ */
+        <div className="space-y-4 pb-16">
+          {loading ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+              <PageLoader message="Loading quotation details..." />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Editor Action Header Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onBackToList}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 transition-colors shadow-2xs"
+                  >
+                    <ArrowLeft size={14} />
+                    <span>Back to Hub</span>
+                  </button>
 
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs">
@@ -3165,7 +3529,8 @@ export function QuotationsPage() {
             )}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* ── Official Tax Invoice Modal (Format matches Owner's Invoice #76) ── */}
       {invoiceOpen && (
